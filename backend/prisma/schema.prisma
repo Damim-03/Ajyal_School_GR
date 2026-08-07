@@ -1,0 +1,612 @@
+// ------------------------------------------------------
+// Generator & Datasource
+// ------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum EducationStageType {
+  PRIMARY
+  MIDDLE
+  SECONDARY
+}
+
+enum StudyGroupType {
+  NORMAL
+  ELITE
+  INTENSIVE
+  EVENING
+}
+
+enum DayOfWeek {
+  SATURDAY
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+
+enum PermissionModule {
+  STUDENT
+  TEACHER
+  ENROLLMENT
+  SUBJECT
+  STUDY_GROUP
+  LEVEL
+  EDUCATION_STAGE
+  ACADEMIC_YEAR
+  SCHEDULE
+  SESSION
+  ATTENDANCE
+  INVOICE
+  PAYMENT
+  RECEIPT
+  REPORT
+  USER
+  ROLE
+  SETTINGS
+  CLASSROOM
+  LESSON_SLOT
+  TUITION_FEE
+}
+
+// ------------------------------------------------------
+// Academic Year
+// ------------------------------------------------------
+
+model AcademicYear {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  startDate DateTime
+  endDate   DateTime
+  isCurrent Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teachingAssignments TeachingAssignment[]
+  invoices            Invoice[]
+
+  @@index([isCurrent])
+}
+
+// ------------------------------------------------------
+// Education Stage
+// ------------------------------------------------------
+
+model EducationStage {
+  id        String             @id @default(cuid())
+  name      String             @unique
+  type      EducationStageType
+  sortOrder Int
+  isActive  Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  levels Level[]
+}
+
+// ------------------------------------------------------
+// Level
+// ------------------------------------------------------
+
+model Level {
+  id               String   @id @default(cuid())
+  educationStageId String
+  name             String
+  sortOrder        Int
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  educationStage EducationStage @relation(fields: [educationStageId], references: [id])
+  studyGroups    StudyGroup[]
+
+  @@unique([educationStageId, name])
+  @@index([educationStageId])
+}
+
+// ------------------------------------------------------
+// Study Group
+// ------------------------------------------------------
+
+model StudyGroup {
+  id          String         @id @default(cuid())
+  levelId     String
+  name        String
+  type        StudyGroupType @default(NORMAL)
+  maxStudents Int?
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  level               Level                @relation(fields: [levelId], references: [id])
+  teachingAssignments TeachingAssignment[]
+  tuitionFees         TuitionFee[]
+
+  @@unique([levelId, name])
+  @@index([levelId])
+  @@index([type])
+}
+
+// ------------------------------------------------------
+// Subject
+// ------------------------------------------------------
+
+model Subject {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String?  @unique
+  description String?
+  color       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teachingAssignments TeachingAssignment[]
+  tuitionFees         TuitionFee[]
+}
+
+// ------------------------------------------------------
+// Classroom
+// ------------------------------------------------------
+
+model Classroom {
+  id          String   @id @default(cuid())
+  name        String
+  code        String?  @unique
+  capacity    Int?
+  floor       Int?
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  schedules Schedule[]
+
+  @@index([name])
+}
+
+// ------------------------------------------------------
+// Lesson Slot
+// الإدارة تتحكم بعدد الحصص وأوقاتها
+// ------------------------------------------------------
+
+model LessonSlot {
+  id        String   @id @default(cuid())
+  name      String
+  order     Int
+  startTime DateTime @db.Time
+  endTime   DateTime @db.Time
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schedules Schedule[]
+
+  @@unique([order])
+  @@index([isActive])
+}
+
+// ------------------------------------------------------
+// Tuition Fee
+// حقوق الاشتراك الشهرية
+// ------------------------------------------------------
+
+model TuitionFee {
+  id            String    @id @default(cuid())
+  subjectId     String
+  studyGroupId  String
+  amount        Decimal
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  subject    Subject    @relation(fields: [subjectId], references: [id])
+  studyGroup StudyGroup @relation(fields: [studyGroupId], references: [id])
+
+  @@unique([subjectId, studyGroupId])
+  @@index([subjectId])
+  @@index([studyGroupId])
+  @@index([isActive])
+}
+
+// ------------------------------------------------------
+// Teacher
+// ------------------------------------------------------
+
+model Teacher {
+  id             String    @id @default(cuid())
+  firstName      String
+  lastName       String
+  email          String?   @unique
+  phone          String?
+  gender         Gender
+  birthDate      DateTime?
+  hireDate       DateTime
+  address        String?
+  qualification  String?
+  specialization String?
+  salary         Decimal?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  teachingAssignments TeachingAssignment[]
+
+  @@index([lastName])
+}
+
+// ------------------------------------------------------
+// Student
+// ------------------------------------------------------
+
+model Student {
+  id               String    @id @default(cuid())
+  firstName        String
+  lastName         String
+  gender           Gender
+  birthDate        DateTime?
+  phone            String?
+  parentPhone      String
+  address          String?
+  schoolName       String?
+  emergencyPhone   String?
+  registrationDate DateTime  @default(now())
+  isActive         Boolean   @default(true)
+  note             String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  enrollments StudentEnrollment[]
+
+  @@index([lastName])
+}
+
+// ------------------------------------------------------
+// Teaching Assignment
+// أستاذ + مادة + فوج + سنة دراسية
+// ------------------------------------------------------
+
+model TeachingAssignment {
+  id             String   @id @default(cuid())
+  teacherId      String
+  subjectId      String
+  studyGroupId   String
+  academicYearId String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  teacher      Teacher             @relation(fields: [teacherId], references: [id])
+  subject      Subject             @relation(fields: [subjectId], references: [id])
+  studyGroup   StudyGroup          @relation(fields: [studyGroupId], references: [id])
+  academicYear AcademicYear        @relation(fields: [academicYearId], references: [id])
+  schedules    Schedule[]
+  enrollments  StudentEnrollment[]
+
+  @@unique([teacherId, subjectId, studyGroupId, academicYearId])
+  @@index([teacherId])
+  @@index([subjectId])
+  @@index([studyGroupId])
+  @@index([academicYearId])
+}
+
+// ------------------------------------------------------
+// Student Enrollment
+// تسجيل الطالب في مادة معينة
+// ------------------------------------------------------
+
+model StudentEnrollment {
+  id                   String   @id @default(cuid())
+  studentId            String
+  teachingAssignmentId String
+  enrolledAt           DateTime @default(now())
+  isActive             Boolean  @default(true)
+
+  student            Student            @relation(fields: [studentId], references: [id])
+  teachingAssignment TeachingAssignment @relation(fields: [teachingAssignmentId], references: [id])
+  invoices           Invoice[]
+  attendances        Attendance[]
+
+  @@unique([studentId, teachingAssignmentId])
+  @@index([studentId])
+  @@index([teachingAssignmentId])
+}
+
+// ------------------------------------------------------
+// Weekly Schedule
+// ------------------------------------------------------
+
+model Schedule {
+  id                   String    @id @default(cuid())
+  teachingAssignmentId String
+  classroomId          String?
+  lessonSlotId         String
+  dayOfWeek            DayOfWeek
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  teachingAssignment TeachingAssignment @relation(fields: [teachingAssignmentId], references: [id])
+  classroom          Classroom?         @relation(fields: [classroomId], references: [id])
+  lessonSlot         LessonSlot         @relation(fields: [lessonSlotId], references: [id])
+  sessions           Session[]
+
+  @@unique([teachingAssignmentId, dayOfWeek, lessonSlotId])
+  @@index([lessonSlotId])
+  @@index([classroomId])
+}
+
+// ------------------------------------------------------
+// Session — الحصة الفعلية
+// ------------------------------------------------------
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+model Session {
+  id           String        @id @default(cuid())
+  scheduleId   String
+  lessonNumber Int
+  sessionDate  DateTime
+  status       SessionStatus @default(SCHEDULED)
+  note         String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  schedule    Schedule     @relation(fields: [scheduleId], references: [id])
+  attendances Attendance[]
+
+  @@unique([scheduleId, lessonNumber])
+  @@index([sessionDate])
+}
+
+// ------------------------------------------------------
+// Attendance
+// ------------------------------------------------------
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+model Attendance {
+  id                  String           @id @default(cuid())
+  studentEnrollmentId String
+  sessionId           String
+  status              AttendanceStatus @default(PRESENT)
+  note                String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  studentEnrollment StudentEnrollment @relation(fields: [studentEnrollmentId], references: [id])
+  session           Session           @relation(fields: [sessionId], references: [id])
+
+  @@unique([studentEnrollmentId, sessionId])
+  @@index([sessionId])
+  @@index([studentEnrollmentId])
+}
+
+// ------------------------------------------------------
+// User
+// ------------------------------------------------------
+
+model User {
+  id          String    @id @default(cuid())
+  username    String    @unique
+  email       String?   @unique
+  password    String
+  firstName   String
+  lastName    String
+  phone       String?
+  avatar      String?
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  roleId      String
+
+  role     Role      @relation(fields: [roleId], references: [id])
+  invoices Invoice[] @relation("InvoiceCreatedBy")
+  payments Payment[] @relation("PaymentReceivedBy")
+  receipts Receipt[] @relation("ReceiptPrintedBy")
+
+  @@index([roleId])
+}
+
+// ------------------------------------------------------
+// Role
+// ------------------------------------------------------
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  permissions RolePermission[]
+}
+
+// ------------------------------------------------------
+// Permission
+// ------------------------------------------------------
+
+model Permission {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  module      PermissionModule
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  roles RolePermission[]
+
+  @@index([module])
+}
+
+// ------------------------------------------------------
+// Role Permission
+// ------------------------------------------------------
+
+model RolePermission {
+  id           String @id @default(cuid())
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+// ------------------------------------------------------
+// Invoice
+// فاتورة شهرية خاصة بمادة واحدة (StudentEnrollment)
+//
+// IMPORTANT — حقول مشتقة:
+//   total     = amount - discount         → يُحسب في service layer
+//   remaining = total - SUM(paidAmount)   → يُحدَّث atomically مع PaymentInvoice
+// ------------------------------------------------------
+
+enum InvoiceStatus {
+  PENDING
+  PARTIAL
+  PAID
+  CANCELLED
+}
+
+model Invoice {
+  id                  String        @id @default(cuid())
+  invoiceNumber       String        @unique
+  studentEnrollmentId String
+  academicYearId      String
+  month               Int
+  year                Int
+  amount              Decimal
+  discount            Decimal       @default(0)
+  total               Decimal
+  remaining           Decimal
+  status              InvoiceStatus @default(PENDING)
+  dueDate             DateTime
+  note                String?
+  createdById         String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  studentEnrollment StudentEnrollment @relation(fields: [studentEnrollmentId], references: [id])
+  academicYear      AcademicYear      @relation(fields: [academicYearId], references: [id])
+  createdBy         User?             @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
+  paymentInvoices   PaymentInvoice[]
+
+  @@unique([studentEnrollmentId, month, year])
+  @@index([status])
+  @@index([month, year])
+  @@index([studentEnrollmentId])
+}
+
+// ------------------------------------------------------
+// Payment
+// ------------------------------------------------------
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  paymentNumber String        @unique
+  amount        Decimal
+  paymentMethod PaymentMethod @default(CASH)
+  paymentDate   DateTime      @default(now())
+  note          String?
+  receivedById  String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  receivedBy      User             @relation("PaymentReceivedBy", fields: [receivedById], references: [id])
+  paymentInvoices PaymentInvoice[]
+  receipt         Receipt?
+
+  @@index([paymentDate])
+}
+
+// ------------------------------------------------------
+// PaymentInvoice — جدول وسيط
+// ------------------------------------------------------
+
+model PaymentInvoice {
+  id         String   @id @default(cuid())
+  paymentId  String
+  invoiceId  String
+  paidAmount Decimal
+  createdAt  DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@unique([paymentId, invoiceId])
+  @@index([paymentId])
+  @@index([invoiceId])
+}
+
+// ------------------------------------------------------
+// Receipt
+// RULE: printed = true → printedById و printedAt غير null
+//       printed = false → printedById و printedAt = null
+//       تُطبَّق في service layer
+// ------------------------------------------------------
+
+enum ReceiptStatus {
+  ACTIVE
+  CANCELLED
+  REPRINTED
+}
+
+model Receipt {
+  id            String        @id @default(cuid())
+  receiptNumber String        @unique
+  paymentId     String        @unique
+  status        ReceiptStatus @default(ACTIVE)
+  printed       Boolean       @default(false)
+  printedAt     DateTime?
+  printedById   String?
+  note          String?
+  createdAt     DateTime      @default(now())
+
+  payment   Payment @relation(fields: [paymentId], references: [id])
+  printedBy User?   @relation("ReceiptPrintedBy", fields: [printedById], references: [id])
+
+  @@index([status])
+}
