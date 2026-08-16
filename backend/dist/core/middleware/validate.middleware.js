@@ -50,6 +50,10 @@ const validateParams = (schema) => (req, res, next) => {
 exports.validateParams = validateParams;
 // --------------------------------------------------
 // validateQuery — يتحقق من query string
+//
+// ⚠️ في Express 5 صار req.query خاصية getter فقط (بلا setter)،
+//    فالإسناد المباشر `req.query = ...` يرمي TypeError.
+//    الحل: نعرّف خاصية own على الـ request تحجب الـ getter الموروث.
 // --------------------------------------------------
 const validateQuery = (schema) => (req, res, next) => {
     const result = schema.safeParse(req.query);
@@ -60,8 +64,12 @@ const validateQuery = (schema) => (req, res, next) => {
             errors: formatIssues(result.error.issues),
         });
     }
-    // cast مطلوب لأن TypeScript يتوقع ParsedQs
-    req.query = result.data;
+    Object.defineProperty(req, "query", {
+        value: result.data,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+    });
     return next();
 };
 exports.validateQuery = validateQuery;

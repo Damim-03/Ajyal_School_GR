@@ -64,6 +64,16 @@ export class BadRequestException extends AppError {
   }
 }
 
+export class ConflictException extends AppError {
+  constructor(message = "Resource conflict", errorCode?: ErrorCodeEnumType) {
+    super(
+      message,
+      HTTPSTATUS.CONFLICT,
+      errorCode || ErrorCodeEnum.RESOURCE_ALREADY_EXISTS,
+    );
+  }
+}
+
 export class UnauthorizedException extends AppError {
   constructor(message = "Unauthorized Access", errorCode?: ErrorCodeEnumType) {
     super(

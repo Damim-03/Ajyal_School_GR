@@ -1,0 +1,89 @@
+/**
+ * مسارات التطبيق — مصدر واحد للعناوين.
+ *
+ * `moduleOf` في features/home/modules.ts يشتقّ هويّة القسم من المسار
+ * بمطابقة أطول بادئة، لذلك يجب أن تكون شاشات القسم تحت جذره:
+ * ‏`/students/:id` تحت `/students` فتبقى البيئة والترويسة بلون الطلبة.
+ */
+export const PATHS = {
+  login: "/login",
+  home: "/",
+
+  /* محور القسم — ثلاث بطاقات */
+  students: "/students",
+  studentsList: "/students/list",
+  studentsFiles: "/students/files",
+  studentNew: "/students/new",
+  studentDetailPattern: "/students/:id",
+  studentDetail: (id: string) => `/students/${id}`,
+
+  /* محور الأساتذة — القائمة والملف والإسناد */
+  teachers: "/teachers",
+  teachersList: "/teachers/list",
+  teacherDetailPattern: "/teachers/:id",
+  teacherDetail: (id: string) => `/teachers/${id}`,
+
+  /* محور إسناد الطلبة — ثلاث شاشات تحت جذرٍ واحد */
+  enrollments: "/enrollments",
+  enrollmentsAssign: "/enrollments/assign",
+  enrollmentsTransfer: "/enrollments/transfer",
+  enrollmentsBrowse: "/enrollments/browse",
+
+  assignments: "/assignments",
+
+  /* الجداول — شبكةٌ أسبوعية واحدة، و`schedules` عنوانٌ يُحوَّل إليها */
+  schedules: "/schedules",
+  schedulesWeekly: "/schedules/weekly",
+
+  /* محور الكشوف — الحضور اليومي وما يشتقّ من الحصص والحقوق */
+  attendance: "/attendance",
+  attendanceDaily: "/attendance/daily",
+  attendanceMonthlyFees: "/attendance/monthly-fees",
+  attendanceClearance: "/attendance/clearance",
+  attendanceExpected: "/attendance/expected",
+
+  /*
+   * المالية.
+   *
+   * حقوق الاشتراك وسياسات التخليص كانتا في الإعدادات، ومحلُّهما هنا:
+   * الإعدادات تصف **البنية الدراسية** (أطوار ومستويات وأفواج ومواد)،
+   * وهذه تصف **المال**. وخلطُهما كان يجعل المحاسب يبحث عن السعر بين
+   * القاعات وأوقات الحصص.
+   */
+  finance: "/finance",
+  invoices: "/finance/invoices",
+  payments: "/finance/payments",
+  receipts: "/finance/receipts",
+  financeFees: "/finance/tuition-fees",
+  financePolicies: "/finance/settlement-policies",
+  financeSettlements: "/finance/settlements",
+
+  reports: "/reports",
+
+  /*
+   * البنية الدراسية — قسمٌ قائم بذاته لا ركنٌ في الإعدادات.
+   *
+   * الأطوار والمستويات والأفواج والمواد ليست «إعدادات» تُضبط مرّةً
+   * ثم تُنسى: هي هيكلُ المؤسسة نفسه، يُبنى في مطلع كل سنة ويُعدَّل
+   * كلّما فُتح فوجٌ أو أُضيفت مادة. ودفنُها تحت الإعدادات كان يجعل
+   * عملاً موسمياً متكرّراً يبدو ضبطاً تقنياً.
+   */
+  academic: "/academic",
+  academicYears: "/academic/years",
+  academicStages: "/academic/education-stages",
+  academicLevels: "/academic/levels",
+  academicGroups: "/academic/study-groups",
+  academicSubjects: "/academic/subjects",
+  academicClassrooms: "/academic/classrooms",
+  academicSlots: "/academic/lesson-slots",
+
+  /* الإعدادات — ما يخصّ المؤسسة والحسابات لا البنية */
+  settings: "/settings",
+  settingsSchool: "/settings/school",
+  settingsPrint: "/settings/print-test",
+  settingsUsers: "/settings/users",
+  settingsRoles: "/settings/roles",
+
+  users: "/users",
+  roles: "/users/roles",
+} as const;

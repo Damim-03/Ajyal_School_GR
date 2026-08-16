@@ -25,6 +25,18 @@ apiClient.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
+  /*
+   * رفع الملفّات: يُحذف Content-Type ليضعه المتصفّح بنفسه.
+   *
+   * القيمة الافتراضية أعلاه (application/json) تُطبَّق على كلّ طلب —
+   * بما فيها FormData. وحينها يُرسَل النوع بلا `boundary`، فلا يجد
+   * multer على الخادم أيّ ملفّ ويردّ «لم يُرفَق أي ملف» رغم أنّ الملفّ
+   * في الجسم فعلاً. حذفُ الترويسة يجعل المتصفّح يكتبها مع الحدّ الصحيح.
+   */
+  if (config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
+  }
+
   return config;
 });
 

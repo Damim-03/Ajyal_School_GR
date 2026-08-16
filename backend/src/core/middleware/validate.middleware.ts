@@ -61,6 +61,10 @@ export const validateParams =
 
 // --------------------------------------------------
 // validateQuery — يتحقق من query string
+//
+// ⚠️ في Express 5 صار req.query خاصية getter فقط (بلا setter)،
+//    فالإسناد المباشر `req.query = ...` يرمي TypeError.
+//    الحل: نعرّف خاصية own على الـ request تحجب الـ getter الموروث.
 // --------------------------------------------------
 
 export const validateQuery =
@@ -75,7 +79,12 @@ export const validateQuery =
       });
     }
 
-    // cast مطلوب لأن TypeScript يتوقع ParsedQs
-    req.query = result.data as Record<string, string>;
+    Object.defineProperty(req, "query", {
+      value: result.data,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+
     return next();
   };

@@ -1,130 +1,1933 @@
+/* ============================================================
+   SKK — واجهة نقاط البيع (RTL، هوية بنفسجي/وردي)
+   Tailwind CSS v4 (CSS-first) + طبقة أنماط الهوية
+   ============================================================ */
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
 
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+/* ألوان الهوية كـ Tailwind tokens → تولّد bg-skk-*, text-skk-*, border-skk-* */
+@theme {
+  --color-skk-primary: #7b1053;
+  --color-skk-primary-2: #c2185b;
+  --color-skk-accent: #4a0d5f;
+  --color-skk-bg: #f1f5f9;
+  --color-skk-surface: #ffffff;
+  --color-skk-text: #0f172a;
+  --color-skk-muted: #64748b;
+  --color-skk-border: #cbd5e1;
+  --color-skk-danger: #dc2626;
+  --font-sans: "Segoe UI", "Tahoma", "Arial", sans-serif;
 }
 
+/* متغيّرات الهوية (يستعملها CSS الحالي للشاشات غير المحوّلة بعد) */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+  --skk-primary: #7b1053;
+  --skk-primary-2: #c2185b;
+  --skk-accent: #4a0d5f;
+  --skk-bg: #f1f5f9;
+  --skk-surface: #ffffff;
+  --skk-text: #0f172a;
+  --skk-muted: #64748b;
+  --skk-border: #cbd5e1;
+  --skk-danger: #dc2626;
+  --skk-gradient: linear-gradient(to left, #c2185b, #7b1053, #4a0d5f);
 }
 
-.dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+* {
+  box-sizing: border-box;
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-    }
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: "Segoe UI", "Tahoma", "Arial", sans-serif;
+  background: var(--skk-bg);
+  color: var(--skk-text);
+  direction: rtl;
+}
+
+/* ================= صفحات المصادقة ================= */
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(194, 24, 91, 0.15), transparent),
+    radial-gradient(1000px 500px at 0% 110%, rgba(74, 13, 95, 0.15), transparent),
+    var(--skk-bg);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--skk-surface);
+  border: 1px solid var(--skk-border);
+  border-radius: 18px;
+  padding: 32px 28px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-logo {
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 8px;
+  border-radius: 20px;
+  background: var(--skk-gradient);
+  color: #fff;
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: 1px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 24px rgba(123, 16, 83, 0.4);
+}
+
+.auth-title {
+  text-align: center;
+  margin: 4px 0 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--skk-text);
+}
+
+.auth-sub {
+  text-align: center;
+  margin: 0 0 14px;
+  color: var(--skk-muted);
+  font-size: 13px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.field span {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--skk-muted);
+}
+
+.field input {
+  padding: 11px 14px;
+  border: 1.5px solid var(--skk-border);
+  border-radius: 10px;
+  font-size: 15px;
+  background: #f8fafc;
+  color: var(--skk-text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.field input:focus {
+  border-color: var(--skk-primary-2);
+  box-shadow: 0 0 0 3px rgba(194, 24, 91, 0.14);
+  background: #fff;
+}
+
+.auth-btn {
+  margin-top: 6px;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--skk-gradient);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(123, 16, 83, 0.35);
+  transition: transform 0.08s, opacity 0.15s;
+}
+
+.auth-btn:hover {
+  opacity: 0.95;
+}
+.auth-btn:active {
+  transform: translateY(1px);
+}
+.auth-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.auth-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: var(--skk-danger);
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 4px 0;
+  text-align: center;
+}
+
+.auth-switch {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--skk-muted);
+}
+
+.auth-switch a {
+  color: var(--skk-primary-2);
+  font-weight: 800;
+  text-decoration: none;
+}
+.auth-switch a:hover {
+  text-decoration: underline;
+}
+
+/* ================= الشاشة الرئيسية (مؤقتة) ================= */
+/*
+ * الترويسة تلتصق بأعلى الشاشة.
+ *
+ * كانت تمرّ مع التمرير، فيفقد المستخدم في الإعدادات — وهي أطول شاشة —
+ * زرّ «الرئيسية» واسمَ القسم معاً، ولا يبقى أمامه إلا العودة بالتمرير
+ * إلى الأعلى ليخرج. والمخرج يجب أن يكون حاضراً دائماً.
+ *
+ * و`--hd-h` يُنشر ارتفاعها ليبني عليه كلّ ما يلتصق تحتها (قائمة أقسام
+ * الإعدادات مثلاً)، فلا يُكتب الرقم مرّتين ويختلفان.
+ */
+.page { --hd-h: 74px; }
+.home-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 22px;
+  background: var(--skk-gradient);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(123, 16, 83, 0.3);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.home-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+}
+
+.home-titles h1 {
+  margin: 0;
+  font-size: 19px;
+}
+.home-titles span {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.home-spacer {
+  flex: 1;
+}
+
+.home-user {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.btn-logout {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-logout:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.home-body {
+  padding: 40px 28px;
+}
+.home-body h2 {
+  margin: 0 0 8px;
+}
+.home-body p {
+  color: var(--skk-muted);
+  margin: 4px 0;
+}
+.home-next {
+  margin-top: 16px !important;
+  font-weight: 600;
+}
+
+/* ================= التخطيط العام للصفحات ================= */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.page-body {
+  padding: 20px 24px;
+  flex: 1;
+}
+.welcome {
+  margin: 0 0 18px;
+}
+
+/* ================= لوحة المخزون ================= */
+/*
+ * ثلاث طبقات بإيقاعٍ واحد: أرقام الحالة، ثمّ الإجراءات، ثمّ ما يحتاج
+ * تصرّفاً. والأخيرة تملأ الفراغ الذي كان تحت البلاطات — وهو فراغٌ كان
+ * يجعل الشاشة تبدو غير مكتملة مهما زُخرفت بطاقاتها.
+ */
+.inv-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ================= استيراد Excel ================= */
+/*
+ * **اللون من لون القسم لا من لون التطبيق.**
+ *
+ * كان الشريط قرمزيّاً (‏لون المبيعات) بينما رأس الصفحة أزرق (‏لون المخزون)،
+ * فتقرأ الشاشة الواحدة بلونين متنافسين. والقيم أدناه مأخوذة حرفياً من
+ * تعريف قسم المخزون في `modules.ts` — لا لونٌ «قريبٌ منه».
+ */
+.imp {
+  --imp: #1257b0;
+  --imp-deep: #0a2f6b;
+  --imp-soft: #e8f1fc;
+  --imp-ring: rgba(18, 87, 176, .16);
+
+  display: flex; flex-direction: column; gap: 16px;
+  max-width: 1180px; width: 100%; margin-inline: auto;
+  /* الأبناء شبكات بعرضٍ مرن — وبلا هذا يفيض أعرضُها فيدفع الصفحة كلّها. */
+  min-width: 0;
+}
+
+/* ----- شريط الخطوات ----- */
+.imp-steps {
+  list-style: none; margin: 0; padding: 14px 16px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  background: var(--skk-surface); border: 1px solid #dbe6f3;
+  border-radius: 18px;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, .03), 0 10px 24px -12px rgba(18, 87, 176, .28);
+  overflow: hidden;
+}
+.imp-steps li { position: relative; min-width: 0; }
+/*
+ * الواصل يُرسم **إلى الخلف** لا إلى الأمام.
+ *
+ * كان `inset-inline-start: 100%` فيمتدّ من كلّ عنصرٍ إلى ما بعده — وللعنصر
+ * الأخير لا «بعد»، فيخرج الخطّ من البطاقة ويدفع الصفحة كلّها فيظهر شريط
+ * تمريرٍ أفقيّ. الآن يمتدّ من مركز العنصر إلى مركز سابقه، فينتهي المسار
+ * حيث تنتهي الخطوات.
+ */
+.imp-steps li + li::after {
+  content: ""; position: absolute; top: 18px;
+  inset-inline-end: 50%; width: 100%; height: 3px; border-radius: 3px;
+  background: #e2e8f0; z-index: 0;
+  transition: background .3s ease;
+}
+.imp-steps li.st-ok::after { background: linear-gradient(to left, #22c55e, #4ade80); }
+.imp-steps button {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  width: 100%; background: none; border: 0; padding: 2px; font: inherit; cursor: pointer;
+}
+.imp-steps button:disabled { cursor: default; }
+.imp-dot {
+  position: relative; width: 38px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 900; font-size: 15px;
+  background: #fff; color: #94a3b8; border: 2px solid #e2e8f0;
+  transition: background .25s, color .25s, border-color .25s, transform .25s, box-shadow .25s;
+}
+.imp-stitle { font-size: 13px; font-weight: 800; color: #94a3b8; transition: color .25s; }
+.st-ok .imp-dot { background: #16a34a; border-color: #16a34a; color: #fff; box-shadow: 0 4px 10px -3px rgba(22, 163, 74, .5); }
+.st-ok .imp-stitle { color: #15803d; }
+.st-now .imp-dot {
+  background: linear-gradient(135deg, var(--imp), var(--imp-deep));
+  border-color: var(--imp); color: #fff; transform: scale(1.1);
+  box-shadow: 0 0 0 5px var(--imp-ring), 0 6px 14px -4px rgba(18, 87, 176, .55);
+}
+.st-now .imp-stitle { color: var(--imp); }
+.st-off .imp-dot { background: #f8fafc; }
+/* النبضة خلف القرص، وبلا اعتراضٍ للمؤشّر. */
+.imp-pulse { position: absolute; inset: -3px; border-radius: 50%; background: var(--imp); pointer-events: none; z-index: -1; }
+
+/* ----- البطاقة الحاملة ----- */
+.imp-card {
+  background: var(--skk-surface); border: 1px solid #dbe6f3;
+  border-radius: 20px; padding: 22px 24px; min-width: 0;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, .03), 0 18px 40px -22px rgba(10, 47, 107, .45);
+}
+.imp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.imp-head h3 { margin: 0 0 4px; font-size: 18px; font-weight: 800; color: #0f2547; }
+.imp-head p { margin: 0; font-size: 13px; }
+.imp-chip {
+  background: var(--imp-soft); color: var(--imp); font-size: 12.5px; font-weight: 800;
+  padding: 6px 14px; border-radius: 999px; white-space: nowrap; border: 1px solid #cfe0f5;
+}
+
+/* ----- منطقة الإفلات ----- */
+.imp-drop {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 54px 20px; border: 2px dashed #c3d7ee; border-radius: 18px;
+  background: linear-gradient(180deg, #fbfdff, #f2f7fd);
+  cursor: pointer; text-align: center;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.imp-drop:hover, .imp-drop.is-over {
+  border-color: var(--imp); background: var(--imp-soft);
+  box-shadow: inset 0 0 0 4px rgba(18, 87, 176, .06);
+}
+.imp-drop-icon { font-size: 46px; line-height: 1; filter: drop-shadow(0 6px 10px rgba(18, 87, 176, .18)); }
+.imp-drop b { font-size: 16.5px; color: #0f2547; }
+.imp-formats {
+  margin-top: 6px; background: #fff; color: var(--imp); border: 1px solid #cfe0f5;
+  font-size: 11.5px; font-weight: 800; padding: 4px 14px; border-radius: 999px; letter-spacing: .3px;
+}
+
+/* ----- مجموعات الحقول ----- */
+.imp-group {
+  border: 1px solid #e6eef8; border-radius: 16px; padding: 14px 16px; margin-bottom: 12px;
+  background: linear-gradient(180deg, #fcfdff, #f7fafd);
+}
+.imp-group-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.imp-group-h b { font-size: 14.5px; font-weight: 800; color: #0f2547; }
+.imp-group-h b::before {
+  content: ""; display: inline-block; width: 4px; height: 13px; border-radius: 3px;
+  background: var(--imp); margin-inline-end: 8px; vertical-align: -1px;
+}
+.imp-group-h span { font-size: 12px; color: var(--skk-muted); }
+/*
+ * `auto-fill` لا `auto-fit`: المجموعة ذات الحقلين تُبقي بطاقتيها بعرض
+ * بطاقات المجموعات الأخرى بدل أن تتمدّدا على العرض كلّه — فتتّسق الشبكة
+ * رأسياً عبر المجموعات الأربع.
+ */
+.imp-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(228px, 1fr)); gap: 12px; }
+/*
+ * كلّ حقلٍ بطاقةٌ مستقلّة: اسمٌ فوق، قائمةٌ وسط، ومثالٌ حيّ من الملفّ تحت.
+ * الصفّ الأفقي (اسم | قائمة) كان يجعل العين تخلط بين اسم حقلٍ وقائمة
+ * جاره حين تصطفّ أربعة أعمدة.
+ */
+.imp-field {
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+  border: 1px solid #dfe7f1; border-radius: 14px; padding: 11px 13px;
+  background: #fff; transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.imp-field.is-set { border-color: #a7f3c4; background: linear-gradient(180deg, #fbfffd, #f2fdf7); }
+.imp-field.is-need { border-color: #fca5a5; background: linear-gradient(180deg, #fffbfb, #fef2f2); }
+.imp-field:focus-within { box-shadow: 0 0 0 4px var(--imp-ring); border-color: var(--imp); }
+.ff-name { font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 7px; color: #0f2547; }
+.ff-name i {
+  font-style: normal; font-size: 10px; font-weight: 800;
+  background: #fee2e2; color: #b91c1c; padding: 2px 8px; border-radius: 999px;
+}
+.imp-field select {
+  border: 1px solid #dfe7f1; border-radius: 10px; padding: 7px 9px;
+  font: inherit; font-size: 13px; background: #fff; width: 100%; min-width: 0;
+  color: #0f2547; cursor: pointer;
+}
+.imp-field select:focus { outline: none; }
+/* المثال بالإنجليزية غالباً — يُعزل اتجاهياً فلا تنقلب أرقامه. */
+.ff-eg {
+  font-size: 11.5px; color: #7c8ba1; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; direction: ltr; text-align: start;
+  background: #f6f9fc; border-radius: 7px; padding: 3px 8px;
+}
+.imp-field.is-need .ff-eg { background: #fff1f1; }
+
+/* ----- الخيارات ----- */
+.imp-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.imp-modes label {
+  position: relative; display: flex; flex-direction: column; gap: 4px;
+  border: 2px solid #dfe7f1; border-radius: 16px; padding: 18px 20px;
+  cursor: pointer; background: #fff; transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.imp-modes label:hover { border-color: #b9cfe8; }
+.imp-modes label.on {
+  border-color: #16a34a; background: linear-gradient(180deg, #fbfffd, #f0fdf4);
+  box-shadow: 0 8px 20px -12px rgba(22, 163, 74, .6);
+}
+.imp-modes .mo-i { font-size: 28px; line-height: 1; margin-bottom: 6px; }
+.imp-modes b { font-size: 15.5px; color: #0f2547; }
+.imp-modes .mo-d { font-size: 12.5px; color: var(--skk-muted); line-height: 1.55; }
+.imp-modes .mo-mark {
+  position: absolute; top: 14px; inset-inline-start: 16px;
+  width: 26px; height: 26px; border-radius: 50%; background: #16a34a; color: #fff;
+  display: grid; place-items: center; font-size: 14px; font-weight: 900;
+  box-shadow: 0 4px 10px -3px rgba(22, 163, 74, .6);
+}
+
+/* ----- التذييل والتنقّل ----- */
+.imp-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-top: 18px; padding-top: 16px;
+  border-top: 1px solid #eef3f9;
+}
+.imp-nav { display: flex; gap: 10px; margin-inline-start: auto; }
+.imp-warn { color: #b91c1c; font-weight: 800; font-size: 13px; }
+.imp-ok { color: #15803d; font-weight: 800; font-size: 13px; }
+.imp-btn {
+  border: 1px solid #dfe7f1; background: #fff; color: #0f2547;
+  border-radius: 13px; padding: 11px 20px; font: inherit; font-weight: 800;
+  cursor: pointer; transition: background .16s, box-shadow .16s, border-color .16s;
+}
+/*
+ * تحويم الزرّ **العاديّ وحده**.
+ *
+ * كان `.imp-btn:hover:not(:disabled)` عامّاً، وأولويّته (0-3-0) تغلب
+ * `.imp-btn.is-next` (0-2-0). فعند التحويم تُستبدل خلفيةُ التدرّج بلونٍ
+ * شبه أبيض بينما `color:#fff` يبقى قائماً — لأنّ قاعدة التحويم لا تمسّ
+ * اللون. النتيجة: **أبيض على أبيض، والنصّ يختفي**.
+ *
+ * والاستثناء في المحدّد لا في ترتيب القواعد: الترتيب يُصلح العَرَض ثمّ
+ * ينكسر مع أوّل قاعدةٍ تُضاف بعده، والاستثناء يقول القصد صراحةً.
+ */
+.imp-btn:not(.is-next):not(.is-go):hover:not(:disabled) { background: #f4f8fc; border-color: #c3d7ee; }
+.imp-btn:disabled { opacity: .38; cursor: not-allowed; box-shadow: none; }
+.imp-btn.is-next {
+  background: linear-gradient(135deg, var(--imp), var(--imp-deep));
+  color: #fff; border-color: transparent;
+  box-shadow: 0 8px 20px -10px rgba(18, 87, 176, .75);
+}
+.imp-btn.is-go {
+  background: linear-gradient(135deg, #22c55e, #15803d); color: #fff; border-color: transparent;
+  box-shadow: 0 8px 20px -10px rgba(21, 128, 61, .8);
+}
+/* الملوّن يُضيء ويرتفع ظلّه بدل أن يفقد لونه — والنصّ يبقى أبيض على تدرّج. */
+.imp-btn.is-next:hover:not(:disabled) {
+  filter: brightness(1.12);
+  box-shadow: 0 12px 26px -10px rgba(18, 87, 176, .9);
+}
+.imp-btn.is-go:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 12px 26px -10px rgba(21, 128, 61, .95);
+}
+
+/* ----- الانتظار ----- */
+.imp-busy { display: flex; align-items: center; gap: 12px; padding: 46px 0; justify-content: center; font-weight: 800; color: var(--skk-muted); }
+.imp-spin { width: 24px; height: 24px; border-radius: 50%; border: 3px solid #e2e8f0; border-top-color: var(--imp); display: inline-block; }
+
+/* ----- التقرير ----- */
+.imp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(116px, 1fr)); gap: 12px; }
+.imp-stats > div {
+  border: 1px solid #dfe7f1; border-radius: 15px; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 2px; background: #fff;
+}
+.imp-stats b { font-size: 27px; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.1; color: #0f2547; }
+.imp-stats span { font-size: 12px; color: var(--skk-muted); }
+.imp-stats .ok { border-color: #a7f3c4; background: linear-gradient(180deg, #fbfffd, #f0fdf4); }
+.imp-stats .ok b { color: #15803d; }
+.imp-stats .bad { border-color: #fecaca; background: linear-gradient(180deg, #fffbfb, #fef2f2); }
+.imp-stats .bad b { color: #b91c1c; }
+
+.imp-preview { overflow-x: auto; margin-top: 16px; border: 1px solid #e6eef8; border-radius: 14px; }
+.imp-preview table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.imp-preview th, .imp-preview td { padding: 9px 12px; text-align: start; white-space: nowrap; border-bottom: 1px solid #eef3f9; }
+.imp-preview th { background: #f6f9fc; font-weight: 800; color: #0f2547; }
+.imp-preview tr:last-child td { border-bottom: 0; }
+.imp-act { font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 999px; }
+.a-new { background: #dcfce7; color: #15803d; }
+.a-upd { background: var(--imp-soft); color: var(--imp); }
+.a-skip { background: #f1f5f9; color: #64748b; }
+
+.imp-errbox { margin-top: 16px; border: 1px solid #fecaca; border-radius: 14px; background: #fef6f6; padding: 12px 16px; }
+.imp-errbox summary { font-weight: 800; color: #b91c1c; cursor: pointer; font-size: 13px; }
+.imp-errbox ul { list-style: none; margin: 10px 0 0; padding: 0; max-height: 240px; overflow-y: auto; font-size: 12.5px; }
+.imp-errbox li { padding: 6px 0; border-bottom: 1px solid #fee2e2; }
+.imp-errbox li:last-child { border-bottom: 0; }
+.imp-errbox code { background: #fff; padding: 2px 7px; border-radius: 6px; font-size: 11.5px; }
+.imp-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; border-radius: 14px; padding: 13px 16px; font-weight: 800; font-size: 13px; }
+
+/* ----- تحذير الجرد ----- */
+.inv-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #78350f;
+}
+.inv-notice strong {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.inv-notice-icon {
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+/* ----- أرقام الحالة ----- */
+.inv-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+.inv-stat {
+  position: relative;
+  background: var(--skk-surface);
+  border: 1px solid var(--skk-border);
+  border-radius: 16px;
+  padding: 14px 16px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+/*
+ * اللون شريطٌ على الحافّة لا أرضيّةٌ ملوّنة: أربع بطاقاتٍ مصمتة الألوان
+ * تتنافس على العين ولا تُقرأ أرقامها. والشريط يُصنَّف بلمحة ويترك الرقم
+ * أسود على أبيض — وهو ما جاء المستخدم ليقرأه.
+ */
+.inv-stat::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 4px;
+  background: #94a3b8;
+}
+.inv-stat.tone-ok::before { background: #16a34a; }
+.inv-stat.tone-warn::before { background: #d97706; }
+.inv-stat.tone-bad::before { background: #dc2626; }
+.inv-stat-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--skk-muted);
+}
+.inv-stat-value {
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.inv-stat.tone-warn .inv-stat-value { color: #b45309; }
+.inv-stat.tone-bad .inv-stat-value { color: #b91c1c; }
+.inv-stat-hint {
+  font-size: 11px;
+  color: var(--skk-muted);
+}
+
+/* ----- بطاقات الإجراءات ----- */
+.inv-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 14px;
+}
+.inv-card {
+  position: relative;
+  background: var(--skk-surface);
+  border: 1px solid var(--skk-border);
+  border-radius: 16px;
+  padding: 16px;
+  text-decoration: none;
+  color: var(--skk-text);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 92px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  transition: transform 0.1s, box-shadow 0.15s, border-color 0.15s;
+}
+.inv-card:hover {
+  transform: translateY(-2px);
+  border-color: #94a3b8;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+}
+/* الأيقونة في قرصٍ ملوّن: اللون يُميّز الإجراء بلا صبغ البطاقة كلّها. */
+.inv-card-icon {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  font-size: 24px;
+  background: #f1f5f9;
+}
+.inv-card.tone-green .inv-card-icon { background: #dcfce7; }
+.inv-card.tone-blue .inv-card-icon { background: #dbeafe; }
+.inv-card.tone-amber .inv-card-icon { background: #fef3c7; }
+.inv-card.tone-violet .inv-card-icon { background: #ede9fe; }
+.inv-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.inv-card-label {
+  font-weight: 800;
+  font-size: 15px;
+}
+.inv-card-desc {
+  font-size: 12px;
+  color: var(--skk-muted);
+  line-height: 1.45;
+}
+.inv-card.is-soon {
+  opacity: 0.55;
+  pointer-events: none;
+}
+.inv-chip {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 10px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+.inv-chip.chip-soon { background: #fef3c7; color: #92400e; }
+.inv-chip.chip-alert { background: #fee2e2; color: #b91c1c; }
+
+/* ----- ما يحتاج تصرّفاً ----- */
+.inv-attention {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+}
+.inv-panel {
+  background: var(--skk-surface);
+  border: 1px solid var(--skk-border);
+  border-radius: 16px;
+  padding: 14px 16px 6px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+}
+.inv-panel > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.inv-panel h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+}
+.inv-panel .muted {
+  font-size: 12px;
+  color: var(--skk-muted);
+}
+.inv-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.inv-list button {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid #eef2f6;
+  padding: 9px 0;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.inv-list button:hover { background: #f8fafc; }
+.inv-list .nm {
+  font-weight: 700;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* الرقم لا ينكمش أبداً: هو سبب النظر إلى السطر، والاسم هو من يُقتطع. */
+.inv-list .qt {
+  flex: none;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--skk-muted);
+  font-variant-numeric: tabular-nums;
+}
+.inv-list .qt.is-out { color: #b91c1c; }
+
+/* بلاطات قديمة — أُبقيت لأن أدواتٍ أخرى قد تشير إليها */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+.tile {
+  position: relative;
+  background: var(--skk-surface);
+  border: 1px solid var(--skk-border);
+  border-radius: 16px;
+  padding: 24px 18px;
+  text-decoration: none;
+  color: var(--skk-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  transition: transform 0.1s, box-shadow 0.15s, border-color 0.15s;
+}
+.tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--skk-primary-2);
+  box-shadow: 0 12px 26px rgba(123, 16, 83, 0.18);
+}
+.tile-icon {
+  font-size: 34px;
+}
+.tile-label {
+  font-weight: 800;
+  font-size: 16px;
+}
+.tile-soon {
+  opacity: 0.6;
+}
+.tile-badge {
+  position: absolute;
+  top: 8px;
+  inset-inline-start: 8px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* شريط الأدوات + البحث */
+.toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.search {
+  flex: 1;
+  padding: 11px 14px;
+  border: 1.5px solid var(--skk-border);
+  border-radius: 10px;
+  font-size: 15px;
+  background: #fff;
+  outline: none;
+}
+.search:focus {
+  border-color: var(--skk-primary-2);
+  box-shadow: 0 0 0 3px rgba(194, 24, 91, 0.12);
+}
+.btn-primary {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: var(--skk-gradient);
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+}
+
+/* نموذج الإضافة */
+.add-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  background: var(--skk-surface);
+  border: 1px solid var(--skk-border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.add-form input {
+  padding: 9px 12px;
+  border: 1.5px solid var(--skk-border);
+  border-radius: 8px;
+  font-size: 14px;
+  min-width: 130px;
+  flex: 1;
+}
+.form-error {
+  color: var(--skk-danger);
+  font-weight: 700;
+  font-size: 13px;
+  width: 100%;
+}
+
+/* الجدول */
+.table-wrap {
+  background: var(--skk-surface);
+  border: 1px solid var(--skk-border);
+  border-radius: 12px;
+  overflow: auto;
+  max-height: calc(100vh - 260px);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--skk-gradient);
+  color: #fff;
+  text-align: right;
+  padding: 12px 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #eef2f6;
+}
+.table tbody tr:hover {
+  background: #faf5f8;
+}
+.table .num {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.btn-danger-sm {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-danger-sm:hover {
+  background: #fecaca;
+}
+
+.state {
+  padding: 40px;
+  text-align: center;
+  color: var(--skk-muted);
+  font-weight: 600;
+}
+.state.error {
+  color: var(--skk-danger);
+}
+.foot {
+  margin-top: 12px;
+  color: var(--skk-muted);
+  font-weight: 600;
+}
+
+/* ================= عناصر مشتركة ================= */
+.panel {
+  background: var(--skk-surface);
+  border: 1px solid var(--skk-border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+}
+.card-title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #334155;
+}
+.muted {
+  color: var(--skk-muted);
+}
+.btn-sm {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-sm:hover {
+  background: #c7d2fe;
+}
+.actions-cell {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* ================= بطاقة العنوان (مشتركة — تستعملها شاشة عرض المنتجات) ================= */
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #334155;
+}
+/* ملاحظة: نموذج المنتج (ProductForm) صار بأصناف Tailwind بالكامل — لا CSS مخصص له هنا */
+
+/* ================= عرض المنتجات (جدول + تفاصيل) ================= */
+.split {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.split-main {
+  flex: 1;
+  min-width: 0;
+}
+.details {
+  width: 320px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 12px;
+}
+.details-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.details-grid > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid #eef2f6;
+  padding-bottom: 8px;
+}
+.details-grid span {
+  color: var(--skk-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+.details-grid b {
+  text-align: left;
+}
+.row-selected {
+  background: #fce7f3 !important;
+}
+
+/* ================= دفتر حركة المخزون ================= */
+/*
+ * أربعة أعمدة بعرضٍ محسوب: الفرق ثابت العرض فتصطفّ الأرقام رأسياً وتُقرأ
+ * بالمسح لا بالقراءة، والسبب يتمدّد لأنّه وحده متغيّر الطول.
+ *
+ * وقائمة لا جدول: هذه لوحةٌ جانبية ضيّقة، وجدولٌ برؤوسٍ فيها يأكل عرضاً
+ * لا يملكه — والرؤوس تتكرّر في كل سطرٍ مقروءةً من سياقها أصلاً.
+ */
+.moves-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.moves-list li {
+  display: grid;
+  grid-template-columns: 46px 1fr auto;
+  align-items: baseline;
+  gap: 4px 8px;
+  border-bottom: 1px solid #eef2f6;
+  padding: 7px 0;
+  font-size: 13px;
+}
+.moves-list .delta {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.moves-list .why {
+  font-weight: 700;
+  color: var(--skk-text);
+}
+.moves-list .bal {
+  color: var(--skk-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+/* التاريخ يبدأ من عمود السبب: صفٌّ ثانٍ تحت الحركة لا عمودٌ خامس يضغطها. */
+.moves-list .when {
+  grid-column: 2 / -1;
+  color: var(--skk-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ================= شارات الصلاحية ================= */
+.legend {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+.badge {
+  font-weight: 700;
+  font-size: 13px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.badge-valid {
+  color: #15803d;
+  background: #dcfce7;
+}
+.badge-near {
+  color: #b45309;
+  background: #fef3c7;
+}
+.badge-expired {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+.badge-none {
+  color: var(--skk-muted);
+  background: #f1f5f9;
+}
+.legend .badge-valid,
+.legend .badge-near,
+.legend .badge-expired {
+  background: transparent;
+  padding: 0;
+}
+
+@media (max-width: 820px) {
+  .pf-cols {
+    grid-template-columns: 1fr;
+  }
+  .pf-image-panel {
+    order: -1;
+  }
+  .split {
+    flex-direction: column;
+  }
+  .details {
+    width: 100%;
+    position: static;
+  }
+}
+
+/* ================= الطباعة: عزل الإيصال فقط ================= */
+@media print {
+  html,
   body {
-    @apply bg-background text-foreground;
-    }
-  html {
-    @apply font-sans;
-    }
+    background: #fff !important;
+    height: auto !important;
+  }
+  body * {
+    visibility: hidden !important;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+  .print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+  }
+  /* الحراري: يملأ عرض الورق كاملاً */
+  .print-area.ppr-thermal {
+    width: 100% !important;
+  }
+  /* A4: عرض معقول موسّط (لا يتمدّد على كامل الصفحة) */
+  .print-area.ppr-a4 {
+    width: 110mm !important;
+  }
+  .print-area .receipt-card {
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding-left: 1mm !important;
+    padding-right: 1mm !important;
+    /*
+     * المقاس بالمليمتر عند الطباعة لا بالبكسل.
+     *
+     * البكسل وحدة شاشة: يُترجَم عند الطباعة إلى 1/96 بوصة، فيصير نصّ 11px
+     * نحو 2.91mm على الورق — دون الحدّ المألوف للإيصالات الحرارية
+     * (‏3.2–4.5mm). وهذا سبب صغر الطباعة، لا الطابعة.
+     *
+     * `--rcp-print` يُضبط من نافذة المعاينة، وهذه قيمته الافتراضية.
+     */
+    font-size: var(--rcp-print, 3.5mm) !important;
+    --rcp: var(--rcp-print, 3.5mm) !important;
+  }
+  /* منع أي تجاوز أفقي في الإيصال المطبوع */
+  .print-area table {
+    width: 100% !important;
+    table-layout: fixed;
+  }
+  .print-area td,
+  .print-area th {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
 }
+
+/* ===================================================================
+   كشوف الحضور — ورقة عريضة
+   ===================================================================
+
+   الإيصال شريطٌ ضيّق والكشف ورقةٌ عريضة، فلا يشتركان في قواعد طباعة:
+   ‏`.print-area.ppr-a4` تفرض 110mm وهو ما يقصّ ثمانية أعمدة إلى ثلاثة.
+   لذلك صنف مستقلّ وصفحةٌ مسمّاة.
+
+   الصفحة المسمّاة (`@page sheet`) لا العامّة: لو ضُبط الاتجاه أفقياً
+   على `@page` وحدها لخرج كلُّ إيصالٍ حرارّي أفقياً بعدها. التسمية تحصر
+   الأثر في الورقة التي طلبته.
+*/
+
+.sheet-print {
+  display: none;
+}
+
+@media print {
+  /*
+   * هامش الصفحة صفر، والهامش الحقيقي حشوةٌ على `.sheet-page`.
+   *
+   * السبب أنّ المتصفّح يطبع ترويسته وتذييله — عنوان النافذة «desktop»
+   * ورابط «localhost:5173/#/…» والتاريخ و«1/2» — **في هامش الصفحة**.
+   * فإن لم يبقَ هامش لم يبقَ لها موضع.
+   *
+   * والمساحة لا تتغيّر: 210mm ناقص حشوة 6mm علوّاً وسفلاً = 198mm،
+   * وهي نفسها التي كان يعطيها هامشُ 6mm. القياس أثبت أنّ المحتوى
+   * يشغل 188.6mm منها.
+   */
+  @page sheet {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  .sheet-print {
+    page: sheet;
+    display: block !important;
+    visibility: visible !important;
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: 100%;
+    color: #000;
+    background: #fff;
+    font-family: inherit;
+  }
+
+  .sheet-print * {
+    visibility: visible !important;
+  }
+
+  /*
+   * الصفحة الواحدة: التقطيع صريحٌ في المكوّن لا متروكٌ للمتصفّح،
+   * فيُعرف عددُها فتُرقَّم.
+   *
+   * ولا عرضَ ولا ارتفاعَ ولا `overflow` هنا: المقاسات تأتي من `@page`
+   * وحدها، والمحتوى يتّسع لها لأنّ ارتفاع صفوفه مضبوط.
+   */
+  .sheet-page {
+    break-after: page;
+  }
+  .sheet-page:last-child {
+    break-after: auto;
+  }
+
+  /*
+   * الطباعة من داخل نافذة المعاينة.
+   *
+   * الورقة `position: absolute`، وهي تُنسب إلى أقرب سلفٍ **موضَّع أو
+   * محوَّل**. ونافذة المعاينة كلاهما: `fixed` و`transform` من حركة
+   * الدخول. فلو تُركت لخرجت الورقة مزاحةً بمقدار حافّة النافذة،
+   * ومقصوصةً بـ`overflow` عند أوّل صفحةٍ ثانية.
+   *
+   * فتُبطَل صناديقُ الغلاف عند الطباعة ويُخفى ما ليس ورقة. والتصغير
+   * يعود إلى 1: المعاينة تصغّر لتدخل الشاشة، والورق لا يُصغَّر.
+   */
+  .sheet-preview-shell {
+    position: static !important;
+    inset: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+    background: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .sheet-preview-chrome {
+    display: none !important;
+  }
+  .sheet-preview {
+    zoom: 1 !important;
+  }
+  .sheet-preview .sheet-page {
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+  }
+}
+
+/* ===================================================================
+   المعاينة على الشاشة — ورقةٌ لا تُهدر
+   ===================================================================
+
+   الورقة كانت تُرى بطباعتها. ونافذة ويندوز تعرض معاينةً، لكنّها تعرضها
+   **بعد** اختيار الطابعة وبمقاسها هي، فمن أراد أن يتأكّد من كشفٍ ناقصٍ
+   قبل توزيعه طبعه وأتلفه.
+
+   فالمعاينة هنا الورقةُ نفسها: 297×210 مم حقيقيّتين بنفس مقاسات
+   الطباعة، مصغَّرةً بـ`zoom` لتدخل النافذة. و`zoom` لا `transform`
+   لأنّ الثاني يصغّر الشكل ويُبقي مساحته محجوزة، فيترك فراغاً أسفل كل
+   ورقة بقدر ما صغّرها.
+
+   وأنماط المحتوى مشتركة بين الوسيطين (`@media screen, print` أدناه)،
+   فما تراه في المعاينة هو ما يخرج من الطابعة حرفياً — لا نسخةٌ ثانية
+   تفترق عن الأولى عند أوّل تعديل.
+*/
+
+@media screen {
+  .sheet-preview {
+    zoom: var(--sheet-zoom, 1);
+  }
+  .sheet-preview .sheet-print {
+    display: block;
+    color: #000;
+    font-family: inherit;
+  }
+  .sheet-preview .sheet-page {
+    width: 297mm;
+    height: 210mm;
+    background: #fff;
+    box-sizing: border-box;
+    margin: 0 auto 8mm;
+  }
+}
+
+@media screen, print {
+  .sheet-page {
+    padding: 6mm;
+  }
+
+  /*
+    ترويسةٌ ثلاثية المناطق — نقلاً عن الورقة الأصلية حرفياً:
+    المستوى والكشف يميناً، هوية المؤسسة وسطاً، والمادة والفوج
+    والأستاذ يساراً. والشبكة ثلاثة أعمدة لا سطرٌ متدفّق، لأنّ
+    مواضع الكتابة في الورقة ثابتة يعرفها من يقرؤها كل شهر.
+  */
+  .sheet-print-top {
+    display: grid;
+    /* الأطراف تتقلّص عند الحاجة — الوسط وحده يأخذ ما يلزمه */
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: start;
+    gap: 3mm;
+    margin-bottom: 2.5mm;
+  }
+
+  .sheet-print-side {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8mm;
+    font-size: 3.2mm;
+    font-weight: 800;
+    padding-top: 1mm;
+    min-width: 0;
+  }
+  /* تاريخ الطباعة أخفّ من بيانات الكشف — بيانُ إصدارٍ لا بيانُ مضمون */
+  .sheet-print-printed {
+    font-size: 2.9mm;
+    font-weight: 600;
+  }
+  /* المنطقة اليسرى تُحاذي حافّتها */
+  .sheet-print-side-end {
+    align-items: flex-end;
+    text-align: left;
+  }
+
+  .sheet-print-center {
+    text-align: center;
+  }
+  /*
+   * الشعار يُقيَّد بارتفاعه لا بعرضه وحده: شعارٌ طويل بعرض 24mm قد
+   * يبلغ 30mm ارتفاعاً فيدفع الجدول إلى ورقةٍ ثانية.
+   */
+  .sheet-print-logo {
+    display: block;
+    margin: 0 auto 0.8mm;
+    height: auto;
+    max-height: 13mm;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .sheet-print-center h1 {
+    font-size: 5mm;
+    font-weight: 900;
+    margin: 0;
+    white-space: nowrap;
+  }
+  .sheet-print-year {
+    font-size: 3.6mm;
+    font-weight: 800;
+    margin: 0.6mm 0;
+    direction: ltr;
+  }
+  .sheet-print-center h2 {
+    font-size: 4.6mm;
+    font-weight: 900;
+    margin: 0;
+    text-decoration: underline;
+    white-space: nowrap;
+  }
+
+  /*
+   * ارتفاع الصف مضبوطٌ بالحساب لا بالتقدير: A4 أفقية 210mm، ناقص
+   * 12mm هوامش، ناقص ~34mm ترويسةً و~11mm رؤوسَ جدول و~6mm تذييلاً
+   * = 137mm لخمسةٍ وعشرين صفاً، أي 5.4mm لكلٍّ منها. فجُعل 4.9mm
+   * ليبقى فضلٌ يستوعب اسماً طويلاً يلتفّ سطرين.
+   */
+  .sheet-print-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 3.2mm;
+    font-weight: 700;
+    color: #000;
+  }
+  .sheet-print-table th,
+  .sheet-print-table td {
+    border: 0.3mm solid #000;
+    padding: 0.4mm 0.7mm;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .sheet-print-table tbody td {
+    height: 4.9mm;
+  }
+  .sheet-print-table th {
+    font-weight: 900;
+    text-align: center;
+    /*
+      بلا تظليل: الورقة الأصلية أبيض على أبيض بحدودٍ سوداء وحدها،
+      والتظليل يستهلك حبراً ويُغيّر شكلها بلا داعٍ.
+    */
+  }
+  .sheet-print-table th.sheet-print-date {
+    font-size: 2.7mm;
+    font-weight: 700;
+    direction: ltr;
+  }
+  .sheet-print-table td.c {
+    text-align: center;
+  }
+  .sheet-print-table td.b {
+    font-weight: 900;
+  }
+  .sheet-print-table tr {
+    break-inside: avoid;
+  }
+
+  /*
+    كشف الحقوق: نصفان على ورقةٍ واحدة (1..26 يميناً و27..52 يساراً).
+    الفاصل بينهما أثخن من شبكة الجدول — وهو ما يجعل العين تقرأ الورقة
+    جدولين لا اثني عشر عموداً متلاصقة.
+  */
+  .sheet-print-table .fees-print-split {
+    border-inline-end-width: 0.9mm;
+  }
+
+  /* الترقيم وسط أسفل الورقة */
+  .sheet-print-foot {
+    margin-top: 1.5mm;
+    text-align: center;
+    font-size: 3.2mm;
+    font-weight: 800;
+  }
+}
+
+/* ===== حركات واجهة الرئيسية (نمط PS5) ===== */
+@keyframes skk-fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes skk-float {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(-16px, -12px); }
+}
+@keyframes skk-fade-down {
+  from { opacity: 0; transform: translateY(-14px); }
+  to   { opacity: 1; transform: none; }
+}
+/*
+ * حُذفت من هنا ستّ حركات ميتة: `skk-tile-in` و`skk-row-slide`
+ * و`skk-tile-appear` و`skk-iris` و`skk-iris-tile` و`skk-launch-icon`.
+ *
+ * كلّها بقايا أجيالٍ سابقة من دخول الصفّ والانتقال بين الشاشات، استُبدلت
+ * بنظام الحركة (تجميع الصفّ بجدول الإقلاع، ورحلة الرمز، وحجاب العودة) ولم
+ * تُحذف تعريفاتها. لم تكن مُشار إليها من سطر واحد في التطبيق.
+ *
+ * وإبقاؤها لم يكن مجرّد وزنٍ زائد في الحزمة: هي **مصدر تضليل**. من يقرأ
+ * الملف يجد وصفةً موثَّقة بالقياس لدخول الصفّ («ينزلق 300px خلال 533ms»)
+ * فيظنّها الوصف الحيّ للسلوك، بينما الحقيقة في `spatial/boot.ts`. توثيقٌ
+ * دقيقٌ لشيءٍ لم يعد موجوداً أسوأ من غياب التوثيق.
+ */
+/*
+ * نظام تركيز موحّد (البند 52): لا يُنزع تركيز المتصفّح بل يُستبدل بمؤشّر
+ * أوضح. `:focus-visible` وحده — فلا تظهر الحلقة عند النقر بالفأرة، وتظهر
+ * دائماً عند التنقّل بلوحة المفاتيح.
+ * شريط الرئيسية له مؤشّره المكاني الخاص فيُستثنى.
+ */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+[data-spatial-item]:focus-visible {
+  outline: none; /* المؤشّر المكاني المشترك يتكفّل بالتركيز هنا */
+}
+
+/*
+ * احترام تفضيل تقليل الحركة على مستوى النظام كلّه: تُلغى الحركات الجوّية
+ * الطويلة والانتقالات الكبيرة، ويبقى التسلسل الهرمي والشفافية والقراءة.
+ * (motion يحترم التفضيل برمجياً عبر MotionConfig؛ هذا يغطّي حركات CSS.)
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* لوح الإدخال ينبثق حول الهوية: إزاحة وتكبير ضئيلان لا تبديل شاشة */
+@keyframes skk-panel-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/*
+ * تنفّس البيئة الدائمة. المدد أعداد أوّلية (17 / 23 / 29 ثانية) فلا تلتقي
+ * دوراتها إلا بعد ساعات — الهدف ألّا يلمح المستخدم أيّ تكرار.
+ * المقادير دقيقة عمداً: يُفترض ألّا ينتبه أحد لهذه الحركة، بل يشعر فقط
+ * بأن المشهد حيّ.
+ */
+@keyframes skk-breathe-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.9; }
+  50%      { transform: translate3d(2%, 1.5%, 0) scale(1.06); opacity: 1; }
+}
+@keyframes skk-breathe-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.04); opacity: 0.75; }
+  50%      { transform: translate3d(-1.5%, -2%, 0) scale(1); opacity: 1; }
+}
+@keyframes skk-haze {
+  0%, 100% { transform: translate3d(-6%, 0, 0); }
+  50%      { transform: translate3d(6%, 0, 0); }
+}
+/*
+ * انجراف الخلفية — **خُفِّض إلى نصفه تقريباً** (1.09 ← 1.045).
+ *
+ * تسعة بالمئة على صورةٍ ملء الشاشة ليست «حركة خفيّة»: على شاشة 1280 تعني
+ * زحفاً يتجاوز مئة بكسل عند الحافّة. والقاعدة أنّ الخلفية **تسند التجربة
+ * ولا تصير هي التجربة** — فإن لُوحظت وجب خفضها.
+ *
+ * وللأمر ثمنٌ ثانٍ: تحويلٌ لانهائي على صورةٍ ملء الشاشة يُبقي طبقة
+ * تركيبٍ كبيرة حيّة على الدوام. خفضُ الاتّساع يُبقي الإحساس بأنّ المشهد
+ * يتنفّس ويُخفّف ما يُدفَع في كل إطار.
+ */
+@keyframes skk-bg-zoom {
+  0%   { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.045) translate(-0.8%, -0.5%); }
+}
+/* انجراف بطيء للفنّ (Parallax طبقة مختلفة السرعة) */
+@keyframes skk-drift {
+  0%, 100% { transform: translate(0, -50%) scale(1); }
+  50%      { transform: translate(2.5%, -52%) scale(1.04); }
+}
+/* دورة شعار الإقلاع: تلاشٍ داخل → ثبات → تلاشٍ خارج (خلال 6 ثوانٍ) */
+@keyframes skk-logo-cycle {
+  0%   { opacity: 0; transform: scale(1.07); letter-spacing: 0.05em; }
+  16%  { opacity: 1; transform: scale(1); letter-spacing: 0; }
+  76%  { opacity: 1; transform: scale(1); letter-spacing: 0; }
+  100% { opacity: 0; transform: scale(0.99); }
+}
+/* دورة جملة التحذير: تلاشٍ داخل → ثبات → تلاشٍ خارج */
+@keyframes skk-notice-cycle {
+  0%   { opacity: 0; }
+  18%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+/*
+ * حلقة واحدة تتنفّس حول مفتاح Enter — **لا اثنتان**.
+ *
+ * كان للمفتاح الواحد حركتان متزامنتان: حلقةٌ تنبض حوله، والمفتاح نفسه
+ * يرتفع ويتوهّج بظلٍّ متحرّك. أي مركزان بصريان على جسمٍ واحد، وأحدهما
+ * يحرّك `box-shadow` — وهو أغلى ما يُرسَم.
+ *
+ * بقيت الحلقة لأنها الأوضح دلالةً («افعل هنا»)، وسقط تنفّس المفتاح:
+ * حركةٌ مكرّرة تزاحم قائدها ولا تضيف معنى. والمفتاح احتفظ بتوهّجه
+ * **ساكناً** فلم يفقد حضوره.
+ *
+ * وخُفِّض اتّساع النبضة (1.12 ← 1.06) وشُدّ مداها اللوني: دعوةٌ هادئة
+ * لا استدعاءٌ ملحّ.
+ */
+@keyframes skk-ring-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.45; }
+  50%      { transform: scale(1.06); opacity: 0.22; }
+}
+/*
+ * `skk-logo-glow` حُذف: توهّجٌ نابض على شعار الإقلاع لم يُستعمل قطّ —
+ * والنبض على النصّ ممنوع أصلاً في هذه اللغة الحركية.
+ *
+ * وحُذف معه طاقم النوافذ القديم (`skk-modal-in` و`.skk-backdrop`
+ * و`.skk-modal-in`): صار للنوافذ مالكٌ واحد هو `MotionDialog` بمتغيّراته،
+ * وبقاء طريقٍ ثانٍ لفتح نافذة — بضبابية 10px مكتوبة بيدها — دعوةٌ إلى
+ * لغتين حركيتين في تطبيق واحد.
+ *
+ * `skk-backdrop-in` وحده باقٍ: يستعمله حجاب العودة في screen-transition.
+ */
+@keyframes skk-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ===== احترام تفضيل تقليل الحركة =====
+   يُبقي التغذية الراجعة الوظيفية (تغيّر الحالة مرئي) ويلغي الحركة الزخرفية:
+   الحركات المحيطة اللانهائية، التمدّد، الانجراف، والمسافات الكبيرة. */
+@media (prefers-reduced-motion: reduce) {
+  /* أوقف الحركات الزخرفية المستمرة تماماً */
+  [style*="skk-bg-zoom"],
+  [style*="skk-drift"],
+  [style*="skk-float"],
+  [style*="skk-ring-pulse"] {
+    animation: none !important;
+  }
+
+  /* قصّر كل الانتقالات والحركات المتبقية بدل إلغائها (تبقى الحالة مفهومة) */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 120ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* استثناء: شاشة الإقلاع تحتاج مدّتها كي لا تُتخطّى فوراً */
+  .skk-boot-phase {
+    animation-duration: inherit !important;
+  }
+}
+
+/* ===== هيكل التحميل (Skeleton) ===== */
+@keyframes skk-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skk-skeleton {
+  background: linear-gradient(90deg, rgba(148,163,184,0.16) 25%, rgba(148,163,184,0.30) 37%, rgba(148,163,184,0.16) 63%);
+  background-size: 200% 100%;
+  animation: skk-shimmer 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skk-skeleton { animation: none; }
+}
+
+/* ================= الإعدادات ================= */
+/*
+ * شريطٌ علويّ ثابت ولوحٌ يتبدّل تحته: الأقسام عشرة، وعرضها كلّها في
+ * صفحةٍ واحدة يجعل «أين أجد الطابعة؟» سؤالاً يحتاج تمريراً. والشريط
+ * يُبقي الخريطة ظاهرة والمحتوى واحداً.
+ *
+ * **كان عموداً جانبياً فصار شريطاً أعلى.** والسبب أنّ اللوح نفسه أعرض
+ * ممّا هو أطول: حقول هوية المحلّ والطباعة تُقرأ في صفّين أو ثلاثة،
+ * فسرقةُ 268px من عرضها لقائمةٍ من عشرة أسطر تضغط الحقول بلا مقابل.
+ * وأعلى الصفحة مكانٌ يمسحه النظر أوّلاً في كلّ الأحوال.
+ */
+.set {
+  --set: #475569;
+  --set-deep: #1e293b;
+  --set-soft: #eef2f7;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  max-width: 1240px; width: 100%; margin-inline: auto;
+}
+
+/* ----- قائمة الأقسام ----- */
+.set-nav {
+  /*
+   * صفٌّ يلتفّ لا شريطٌ يُمرَّر أفقياً.
+   *
+   * التمرير الأفقيّ يخفي أقساماً خلف حافّةٍ لا يظهر أنّ وراءها شيئاً،
+   * فيبحث المستخدم عن «النسخ الاحتياطي» في مكانٍ آخر. والالتفاف يُنزل
+   * الفائض سطراً ثانياً — يُرى كلّه دفعةً واحدة.
+   */
+  display: flex; flex-direction: row; flex-wrap: wrap; gap: 5px;
+  align-items: center;
+  background: var(--skk-surface); border: 1px solid #dde5ef;
+  border-radius: 16px; padding: 8px;
+  box-shadow: 0 2px 4px rgba(15,23,42,.03), 0 14px 30px -20px rgba(30,41,59,.5);
+  /* تحت الترويسة الملتصقة لا تحتها بالخفاء. */
+  position: sticky; top: calc(var(--hd-h) + 12px);
+  z-index: 3;
+}
+
+.set-tab {
+  position: relative; display: flex; align-items: center; gap: 7px;
+  border: 0; background: none; border-radius: 11px; padding: 6px 9px 8px;
+  font: inherit; text-align: start; cursor: pointer; width: auto; flex: none;
+  transition: background .15s;
+}
+.set-tab:hover { background: #f5f8fb; }
+
+/*
+ * الأيقونة في بلاطة لا عائمة.
+ *
+ * حين تُطوى القائمة تبقى الأيقونة وحدها دليلاً على القسم — والرمز
+ * الطافي بلا إطار يفقد وزنه ويصير زخرفة. والبلاطة تعطيه حدّاً ومساحة
+ * نقرٍ ثابتة في الحالتين، فلا يقفز شيء عند الطيّ.
+ */
+.set-ico {
+  position: relative;
+  font-size: 16px; flex: none;
+  width: 30px; height: 30px; border-radius: 9px;
+  display: grid; place-items: center;
+  background: #f2f5f9; border: 1px solid #e6ecf4;
+  transition: background .18s, border-color .18s;
+}
+.set-txt { display: flex; min-width: 0; }
+.set-txt b { font-size: 12.5px; font-weight: 800; color: #0f2547; white-space: nowrap; }
+
+.set-tab.on { background: var(--set-soft); }
+.set-tab.on .set-txt b { color: var(--set-deep); }
+.set-tab.on .set-ico { background: #fff; border-color: #cfd9e6; }
+.set-tab.soon .set-ico, .set-tab.soon .set-txt { opacity: .62; }
+/*
+ * «قريباً» نقطةٌ لا كلمة — في الحالتين.
+ *
+ * كانت الكلمة تظهر في القائمة الجانبية حيث السطر عريض. وفي شريطٍ أفقيّ
+ * تُضيف حبّةً بعرض 52px إلى سبعة أقسام، فيتضاعف طول الشريط لأجل خبرٍ
+ * ثانويّ. والنقطة تحمله وتبقى في `title` كاملاً.
+ */
+.set-tab.soon .set-ico::after {
+  content: ""; position: absolute; top: 3px; inset-inline-end: 4px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #f59e0b; border: 1.5px solid var(--skk-surface);
+}
+
+/*
+ * العلامة تحت القسم الجاري لا على حافّته.
+ *
+ * كانت شريطاً رأسياً في بداية السطر — وهو الاتّجاه الصحيح لقائمةٍ
+ * عمودية. وفي شريطٍ أفقيّ يقع تحت البلاطة كما في كلّ شريط تبويب.
+ */
+.set-mark {
+  position: absolute; inset-inline: 10px; bottom: 2px;
+  height: 3px; border-radius: 3px; background: var(--set-deep);
+}
+
+/* ----- اللوح ----- */
+.set-body { min-width: 0; }
+.set-card {
+  background: var(--skk-surface); border: 1px solid #dde5ef;
+  border-radius: 18px; padding: 20px 22px; min-width: 0;
+  box-shadow: 0 2px 4px rgba(15,23,42,.03), 0 16px 36px -24px rgba(30,41,59,.55);
+}
+.set-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+.set-head h3 { margin: 0 0 3px; font-size: 17.5px; font-weight: 800; color: #0f2547; }
+.set-head p { margin: 0; font-size: 13px; }
+.set-ok { color: #15803d; font-weight: 800; font-size: 13px; }
+
+/* الهوية ومعاينتها جنباً إلى جنب — تكتب فترى. */
+.set-split { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .set-split { grid-template-columns: 1fr; } }
+.set-preview { position: sticky; top: 16px; }
+.set-preview h4 { margin: 0 0 10px; font-size: 14px; font-weight: 800; color: #0f2547; }
+.set-paper {
+  background: #fff; width: 72mm; max-width: 100%; margin-inline: auto;
+  border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;
+  box-shadow: 0 10px 26px -14px rgba(15,23,42,.5);
+  max-height: 62vh; overflow-y: auto;
+}
+
+/* ----- الحقول ----- */
+.set-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 12px; }
+.set-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.set-field.wide { grid-column: 1 / -1; }
+.sf-name { font-size: 12.5px; font-weight: 800; color: #0f2547; }
+.set-field input, .set-field textarea {
+  border: 1px solid #dde5ef; border-radius: 11px; padding: 9px 11px;
+  font: inherit; font-size: 13.5px; background: #fff; color: #0f2547;
+  width: 100%; min-width: 0; resize: vertical;
+  transition: border-color .15s, box-shadow .15s;
+}
+.set-field input:focus, .set-field textarea:focus {
+  outline: none; border-color: var(--set); box-shadow: 0 0 0 4px rgba(71,85,105,.13);
+}
+.sf-hint { font-size: 11.5px; color: var(--skk-muted); line-height: 1.55; }
+/* حقل رقميّ بوحدته — الوحدة داخل الإطار فلا تُقرأ رقماً. */
+.sf-num { display: flex; align-items: stretch; gap: 8px; }
+.sf-num input { max-width: 150px; font-variant-numeric: tabular-nums; font-weight: 800; }
+.sf-num i { font-style: normal; font-size: 12.5px; font-weight: 700; color: var(--skk-muted); align-self: center; }
+
+/* ----- مجموعات الخيارات (الطباعة) ----- */
+.set-group { margin-bottom: 18px; }
+.set-glabel { font-size: 13px; font-weight: 800; color: #0f2547; margin-bottom: 8px; }
+.set-opts { display: flex; gap: 10px; flex-wrap: wrap; }
+.set-opt {
+  display: flex; flex-direction: column; gap: 2px; min-width: 118px;
+  border: 2px solid #dde5ef; border-radius: 13px; padding: 10px 14px;
+  background: #fff; font: inherit; cursor: pointer; text-align: start;
+  transition: border-color .15s, background .15s;
+}
+.set-opt:hover { border-color: #bccbdb; }
+.set-opt.on { border-color: var(--set-deep); background: var(--set-soft); }
+.set-opt b { font-size: 14px; color: #0f2547; }
+.set-opt span { font-size: 11.5px; color: var(--skk-muted); }
+.set-note { font-size: 12px; color: var(--skk-muted); margin: 8px 0 0; line-height: 1.6; }
+.set-printers { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.set-printers li { padding: 7px 0; border-bottom: 1px solid #eef3f9; font-weight: 700; }
+
+/* ----- التذييل ----- */
+.set-foot {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 18px; padding-top: 15px; border-top: 1px solid #eef3f9;
+}
+.set-foot .set-btn:last-child { margin-inline-start: auto; }
+.set-btn {
+  border: 1px solid #dde5ef; background: #fff; color: #0f2547;
+  border-radius: 12px; padding: 10px 20px; font: inherit; font-weight: 800;
+  cursor: pointer; transition: background .15s, border-color .15s;
+}
+.set-btn:not(.is-save):hover:not(:disabled) { background: #f4f7fb; border-color: #bccbdb; }
+.set-btn:disabled { opacity: .4; cursor: not-allowed; }
+.set-btn.is-save {
+  background: linear-gradient(135deg, var(--set), var(--set-deep));
+  color: #fff; border-color: transparent;
+  box-shadow: 0 8px 20px -10px rgba(30,41,59,.8);
+}
+.set-btn.is-save:hover:not(:disabled) { filter: brightness(1.15); }
+
+.set-err { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; border-radius: 12px; padding: 12px 15px; font-weight: 800; font-size: 13px; margin-bottom: 14px; }
+.set-err-inline { color: #b91c1c; font-weight: 800; font-size: 12.5px; }
+
+/* ----- قسمٌ لم يُبنَ ----- */
+.set-soonbox { text-align: center; padding: 40px 26px; }
+.ss-icon { font-size: 44px; line-height: 1; display: block; margin-bottom: 10px; opacity: .85; }
+.set-soonbox h3 { margin: 0 0 4px; font-size: 19px; font-weight: 800; color: #0f2547; }
+.ss-lead { margin: 0 0 18px; color: var(--skk-muted); font-size: 13.5px; }
+.ss-list {
+  list-style: none; margin: 0 auto; padding: 0; max-width: 460px;
+  display: flex; flex-direction: column; gap: 8px; text-align: start;
+}
+.ss-list li {
+  background: #f6f9fc; border: 1px solid #e6eef8; border-radius: 11px;
+  padding: 9px 13px; font-size: 13px; font-weight: 700; color: #0f2547;
+}
+.ss-list li::before { content: "○"; color: var(--skk-muted); margin-inline-end: 8px; }
+.ss-why {
+  margin: 18px auto 0; max-width: 520px; font-size: 12.5px; line-height: 1.75;
+  color: #92400e; background: #fffbeb; border: 1px solid #fde68a;
+  border-radius: 12px; padding: 11px 14px; text-align: start;
+}
+
+/* ----- الجهاز والمزامنة ----- */
+.sy-id { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sy-id code {
+  flex: 1; min-width: 240px;
+  font-family: ui-monospace, "Courier New", monospace; font-size: 12.5px;
+  background: #f4f7fb; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 9px 12px; color: #0f2547;
+  /* معرّفٌ لاتينيّ داخل واجهةٍ عربية — يُعزل فلا ينقلب أوّله. */
+  direction: ltr; text-align: left; user-select: all;
+}
+.sy-val {
+  font-size: 13px; font-weight: 700; color: #0f2547;
+  background: #f8fafc; border: 1px solid #eef2f7; border-radius: 9px;
+  padding: 8px 11px; word-break: break-all;
+}
+
+/*
+ * صفوف الحالة — النقطة واللون معاً لا اللون وحده.
+ *
+ * ثلاث حالاتٍ: سليم، ومنقطع، وغيرُ مهيّأ. والثالثة رماديّة عمداً: ليست
+ * خطأً يُصلَح بل شيئاً لم يُبنَ، وحمرتُها تجعل صاحب المحلّ يبحث عن عطل.
+ */
+.sy-states { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sy-states li {
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid #e6ecf4; border-radius: 12px; padding: 10px 13px;
+  background: #f8fafc;
+}
+.sy-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: #94a3b8; }
+.sy-name { font-size: 13px; font-weight: 800; color: #0f2547; flex: 1; }
+.sy-state { font-size: 12.5px; font-weight: 700; color: var(--skk-muted); }
+.sy-states li.is-ok { background: #f0fdf4; border-color: #bbf7d0; }
+.sy-states li.is-ok .sy-dot { background: #16a34a; }
+.sy-states li.is-ok .sy-state { color: #15803d; }
+.sy-states li.is-bad { background: #fef2f2; border-color: #fecaca; }
+.sy-states li.is-bad .sy-dot { background: #dc2626; }
+.sy-states li.is-bad .sy-state { color: #b91c1c; }
+.sy-states li.is-off { opacity: .8; }
+/* المنتظِر ليس خطأً: عنبريّ لا أحمر — البيع لم يضع، بل ينتظر الخادم. */
+.sy-states li.is-wait { background: #fffbeb; border-color: #fde68a; }
+.sy-states li.is-wait .sy-dot { background: #d97706; }
+.sy-states li.is-wait .sy-state { color: #92400e; }
+
+.sy-queue { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sy-queue li {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 9px 13px;
+}
+.sy-q-kind {
+  font-size: 12px; font-weight: 800; color: #78350f;
+  background: #fef3c7; border-radius: 999px; padding: 3px 10px;
+}
+.sy-q-when { font-size: 12.5px; font-weight: 700; color: #78350f; }
+.sy-q-id { font-family: ui-monospace, monospace; font-size: 11.5px; color: #92400e; opacity: .8; }
+.sy-q-tries { font-size: 11px; font-weight: 700; color: #92400e; background: #fef3c7; padding: 2px 8px; border-radius: 999px; }
+.sy-q-err { font-size: 11.5px; color: #b91c1c; width: 100%; }
+
+.sy-lead { margin: 0 0 12px; font-size: 13px; line-height: 1.75; color: #334155; }
+.sy-lead strong { color: #0f2547; }
+.sy-note {
+  margin: 14px 0 0; font-size: 12.5px; line-height: 1.75; color: #92400e;
+  background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 11px 14px;
+}
+
+/* ----- شعار المحل ----- */
+.set-logo {
+  display: flex; gap: 16px; align-items: flex-start;
+  background: #f8fafc; border: 1px solid #e6eef8; border-radius: 14px;
+  padding: 14px 16px; margin-bottom: 16px; flex-wrap: wrap;
+}
+/* مربّعٌ برقعةِ شطرنج: الشعار الشفّاف على أبيضَ لا يُرى حدُّه. */
+.lg-box {
+  flex: none; width: 108px; height: 108px; border-radius: 12px;
+  border: 1px solid #dde5ef; display: grid; place-items: center; overflow: hidden;
+  background:
+    linear-gradient(45deg, #eef2f7 25%, transparent 25%, transparent 75%, #eef2f7 75%) 0 0/16px 16px,
+    linear-gradient(45deg, #eef2f7 25%, #fff 25%, #fff 75%, #eef2f7 75%) 8px 8px/16px 16px;
+}
+.lg-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.lg-empty { font-size: 12px; font-weight: 700; color: var(--skk-muted); }
+.lg-side { display: flex; flex-direction: column; gap: 7px; min-width: 200px; flex: 1; }
+.lg-side > b { font-size: 14px; font-weight: 800; color: #0f2547; }
+.lg-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.lg-actions .set-btn { padding: 7px 15px; font-size: 13px; }
+.lg-size { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
+.lg-size input[type="range"] { flex: 1; max-width: 220px; accent-color: var(--set-deep); }
+.lg-size .sf-num i { min-width: 52px; }

@@ -17,7 +17,20 @@ export const errorHandler: ErrorRequestHandler = (
     });
   }
 
-  // 2) أخطاء التطبيق المعروفة (AppError وكل ما يرث منها)
+  // 2) أخطاء رفع الملفات — خطأ المستخدم لا خطأ الخادم
+  //    multer يرمي MulterError عند تجاوز الحجم، وError عادياً من fileFilter.
+  //    بلا هذا الفرع يتلقّى المستخدم 500 غامضاً بدل «الملف كبير».
+  if (error?.name === "MulterError" || error?.storageErrors) {
+    return res.status(HTTPSTATUS.BAD_REQUEST).json({
+      message:
+        error.code === "LIMIT_FILE_SIZE"
+          ? "حجم الملف يتجاوز 3 ميغابايت"
+          : error.message || "تعذّر رفع الملف",
+      errorCode: ErrorCodeEnum.VALIDATION_ERROR,
+    });
+  }
+
+  // 3) أخطاء التطبيق المعروفة (AppError وكل ما يرث منها)
   //    مثل UnauthorizedException / BadRequestException / NotFoundException
   if (error instanceof AppError) {
     return res.status(error.statusCode).json({

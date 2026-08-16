@@ -62,6 +62,16 @@ exports.ErrorCodeEnum = {
     RECEIPT_NOT_FOUND: "RECEIPT_NOT_FOUND",
     TUITION_FEE_NOT_FOUND: "TUITION_FEE_NOT_FOUND",
     // --------------------------------------------------
+    // Settlement — تخليص الأستاذ
+    // --------------------------------------------------
+    SETTLEMENT_NOT_FOUND: "SETTLEMENT_NOT_FOUND",
+    SETTLEMENT_POLICY_NOT_FOUND: "SETTLEMENT_POLICY_NOT_FOUND",
+    /// التخليص المؤكَّد مجمَّد — لا يُعاد حسابه ولا يُعدَّل (§21)
+    SETTLEMENT_LOCKED: "SETTLEMENT_LOCKED",
+    SETTLEMENT_ALREADY_EXISTS: "SETTLEMENT_ALREADY_EXISTS",
+    /// المورد مرتبط بسجلات أخرى فلا يُحذف
+    RESOURCE_IN_USE: "RESOURCE_IN_USE",
+    // --------------------------------------------------
     // System
     // --------------------------------------------------
     INTERNAL_SERVER_ERROR: "INTERNAL_SERVER_ERROR",

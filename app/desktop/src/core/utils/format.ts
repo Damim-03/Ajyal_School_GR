@@ -16,18 +16,14 @@ export const formatRelative = (date: string | Date): string =>
 
 // --------------------------------------------------
 // الأرقام والعملة
+//
+// كانت هنا `formatCurrency` بصيغةٍ خامسة (ar-DZ، ومن صفرٍ إلى منزلتين
+// بحسب المبلغ) لا يستدعيها أحد. وكتابةُ المال صارت في
+// `core/utils/money` وحدها — رقمان بعد الفاصلة دائماً — فحُذفت من هنا
+// حتى لا يعود إليها من يبحث عن دالّة تنسيق فيتفرّق الشكل من جديد.
 // --------------------------------------------------
 
-export const formatCurrency = (amount: number | string): string => {
-  const num = typeof amount === "string" ? parseFloat(amount) : amount
-  return new Intl.NumberFormat("ar-DZ", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(num) + " دج"
-}
-
-export const formatNumber = (num: number): string =>
-  new Intl.NumberFormat("ar-DZ").format(num)
+export { formatMoney, formatAmount, parseMoney } from "./money"
 
 // --------------------------------------------------
 // الأسماء

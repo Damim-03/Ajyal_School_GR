@@ -23,3 +23,28 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2.11.3", features = [] }
 tauri-plugin-log = "2"
+
+# بيانات الطباعة تعبر الجسر مُرمَّزة base64 لا مصفوفةَ أرقام: إيصالٌ
+# منقَّط يبلغ مئات الكيلوبايتات، ونقلُه رقماً رقماً في JSON يضاعف حجمه
+# أضعافاً ويُثقل التسلسل على الطرفين.
+base64 = "0.22"
+
+# الطباعة المباشرة (src/printing.rs): واجهات WebView2 للطباعة الصامتة،
+# وسردُ الطابعات من Win32. النسختان هما نفسهما اللتان يستعملهما tauri،
+# فلا تتضاعف الأنواع ولا يُبنى شيء جديد.
+#
+# و(src/usbprint.rs): الكتابة إلى منفذ الطابعة الحرارية مباشرةً — تحتاج
+# سردَ واجهات الأجهزة وفتحَ الملفّ والكتابة فيه.
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.38"
+windows = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_Graphics_Printing",
+  "Win32_Devices_DeviceAndDriverInstallation",
+  "Win32_Storage_FileSystem",
+  # `CreateFileW` يقبل `SECURITY_ATTRIBUTES` وهي من هذه الوحدة — فبلا
+  # هذا العلَم لا تُصدَّر الدالّة أصلاً.
+  "Win32_Security",
+  # و`WriteFile` يقبل `OVERLAPPED` وهي من هذه الوحدة.
+  "Win32_System_IO",
+] }

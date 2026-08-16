@@ -46,6 +46,7 @@ enum DayOfWeek {
 enum PermissionModule {
   STUDENT
   TEACHER
+  TEACHING_ASSIGNMENT
   ENROLLMENT
   SUBJECT
   STUDY_GROUP
@@ -65,6 +66,25 @@ enum PermissionModule {
   CLASSROOM
   LESSON_SLOT
   TUITION_FEE
+  SETTLEMENT_POLICY
+  SETTLEMENT
+}
+
+// ------------------------------------------------------
+// Setting — مفتاح / قيمة
+//
+// هوية المدرسة كانت ثوابت مكتوبة في الواجهة (اسم المركز في الترويسة
+// وشاشة الإقلاع والدخول)، أي أنّ تغيير اسمٍ أو هاتف كان يحتاج مبرمجاً
+// وإعادة بناء. هذا الجدول يجعلها بيانات لا شيفرة.
+//
+// وقيمة نصّية واحدة لكل مفتاح: الأرقام والمنطقيّات تُخزَّن نصّاً وتُفسَّر
+// عند القراءة، فإضافة إعدادٍ جديد لا تمسّ المخطّط إطلاقاً.
+// ------------------------------------------------------
+
+model Setting {
+  key       String   @id @map("setting_key") @db.VarChar(64)
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
 }
 
 // ------------------------------------------------------
@@ -78,11 +98,24 @@ model AcademicYear {
   endDate   DateTime
   isCurrent Boolean  @default(false)
   isActive  Boolean  @default(true)
+
+  /// عدد الحصص المقرَّرة شهرياً لكل مادة — سقفُ كشف الحضور.
+  ///
+  /// محلُّه السنة لا الإعدادات العامّة: المؤسسة قد تقرّر ثماني حصص في
+  /// 2026/2027 وعشراً في 2027/2028، ولو كان الرقم عامّاً لتبدّلت معه
+  /// كشوفُ السنوات الماضية بأثر رجعي.
+  sessionsPerMonth Int @default(8)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   teachingAssignments TeachingAssignment[]
   invoices            Invoice[]
+  lessonSlots         LessonSlot[]
+  attendanceSheets    AttendanceSheet[]
+  settlementPolicies  SettlementPolicy[]
+  settlements         Settlement[]
+  tuitionFees         TuitionFee[]
 
   @@index([isCurrent])
 }
@@ -100,7 +133,8 @@ model EducationStage {
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
 
-  levels Level[]
+  levels      Level[]
+  tuitionFees TuitionFee[]
 }
 
 // ------------------------------------------------------
@@ -118,6 +152,7 @@ model Level {
 
   educationStage EducationStage @relation(fields: [educationStageId], references: [id])
   studyGroups    StudyGroup[]
+  tuitionFees    TuitionFee[]
 
   @@unique([educationStageId, name])
   @@index([educationStageId])
@@ -140,6 +175,7 @@ model StudyGroup {
   level               Level                @relation(fields: [levelId], references: [id])
   teachingAssignments TeachingAssignment[]
   tuitionFees         TuitionFee[]
+  settlementPolicies  SettlementPolicy[]
 
   @@unique([levelId, name])
   @@index([levelId])
@@ -162,6 +198,7 @@ model Subject {
 
   teachingAssignments TeachingAssignment[]
   tuitionFees         TuitionFee[]
+  settlementPolicies  SettlementPolicy[]
 }
 
 // ------------------------------------------------------
@@ -187,46 +224,112 @@ model Classroom {
 // ------------------------------------------------------
 // Lesson Slot
 // الإدارة تتحكم بعدد الحصص وأوقاتها
+//
+// مربوط بالسنة الدراسية عمداً: عدد الحصص سياسةُ مؤسسةٍ تتغيّر
+// (8 حصص في 2026/2027 ثم 10 في 2027/2028)، ولو كانت الحصص
+// عالمية لكان تعديلُ سياسةِ سنةٍ جديدة يعدّل نفس السجلات التي
+// تشير إليها جداولُ السنوات الماضية، فتتبدّل كشوفها التاريخية.
+//
+// الترتيب فريد داخل السنة لا عبر السنوات: لكل سنة حصّتها رقم 1.
 // ------------------------------------------------------
 
 model LessonSlot {
-  id        String   @id @default(cuid())
-  name      String
-  order     Int
-  startTime DateTime @db.Time
-  endTime   DateTime @db.Time
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  academicYearId String
+  /// الأستاذ صاحب الفترة — وفارغُه فترةٌ عامّة للمؤسسة.
+  ///
+  /// في مركز الدعم لا جدولَ موحَّد: كلُّ أستاذٍ يأتي في أوقاته، فقد
+  /// يدرّس اثنان في 08:00 كلٌّ في قاعته. ولذلك صارت الفترة مملوكةً.
+  ///
+  /// ولا يُمنع التداخل الزمني — لا في السنة ولا عند المالك الواحد.
+  /// الفترة قالبُ وقتٍ بلا يوم، فأستاذةٌ لها 08:00–10:00 و08:00–09:30
+  /// تدرّس بهما يومين مختلفين. والتعارض الحقيقي يُفحص في `Schedule`:
+  /// أستاذٌ أو فوجٌ أو قاعةٌ في وقتين متداخلين من يومٍ واحد.
+  teacherId      String?
+  name           String
+  order          Int
+  startTime      DateTime @db.Time
+  endTime        DateTime @db.Time
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  schedules Schedule[]
+  /// بصمة المالك — yr:<سنة>|tch:<أستاذ أو ->
+  ///
+  /// ضرورةٌ لا زينة: القيد على (academicYearId, teacherId, order) لا
+  /// يمنع تكرار الترتيب بين الفترات العامّة، لأنّ MySQL يعتبر كل NULL
+  /// مميّزاً عن غيره. البصمة النصّية تسدّ الثغرة.
+  ownerKey String @db.VarChar(191)
 
-  @@unique([order])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  teacher      Teacher?     @relation(fields: [teacherId], references: [id])
+  schedules    Schedule[]
+
+  @@unique([ownerKey, order])
+  @@index([academicYearId])
+  @@index([teacherId])
   @@index([isActive])
 }
 
 // ------------------------------------------------------
 // Tuition Fee
 // حقوق الاشتراك الشهرية
+//
+// النطاق أربعةُ حقول اختيارية، والفارغُ منها يعني «أيّاً كان». فصفٌّ
+// بـ educationStageId وحده يسعّر المادة لكل الطور، وصفٌّ بـ studyGroupId
+// يسعّرها لفوجٍ بعينه.
+//
+// وعند تعدّد المطابقات يفوز **أخصُّها**، بأوزان ثنائية:
+//   فوج 8 · مستوى 4 · طور 2 · نوعية 1
+// الثنائيةُ مقصودة: مجموع كل تركيبة فريدٌ لا يساوي غيره، فلا يقع
+// تعادلٌ يحتاج قاعدةَ كسر. الحسابُ في resolveTuitionFee.
+//
+// و `scopeKey` بصمةُ النطاق نصّاً. وجودُه ضرورة لا زينة: MySQL يعتبر
+// كل NULL مميّزاً عن غيره، فقيدٌ فريد على الأعمدة الاختيارية نفسها
+// لا يمنع صفَّين متطابقَي النطاق. البصمةُ تجعل القيد ممكناً.
+//
+// والسعر مربوطٌ بـ **السنة الدراسية** لا بفترة سريان بالتواريخ.
+//
+// كانت هنا [effectiveFrom, effectiveTo)، فكان على المستخدم أن يضبط
+// تاريخاً لا يعنيه ليعمل السعر — ومن أخطأه بقيت الفواتير لا تُولَّد
+// بلا سببٍ ظاهر. والمؤسسة لا تسعّر بالتواريخ أصلاً بل بالسنة: «سعر
+// 2026/2027».
+//
+// وحمايةُ التاريخ المالي لم تكن بالتواريخ يوماً: `Invoice.amount`
+// و`Settlement.tuitionSnapshot` ينسخان السعر لحظة الإصدار، فسبتمبر
+// يبقى بسعره ولو رُفع بعده. النسخُ هو الحارس لا فترةُ السريان.
 // ------------------------------------------------------
 
 model TuitionFee {
-  id            String    @id @default(cuid())
-  subjectId     String
-  studyGroupId  String
-  amount        Decimal
-  effectiveFrom DateTime
-  effectiveTo   DateTime?
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id               String          @id @default(cuid())
+  academicYearId   String
+  subjectId        String
+  studyGroupId     String?
+  levelId          String?
+  educationStageId String?
+  groupType        StudyGroupType?
+  /// بصمة النطاق — yr:Z|sub:X|grp:-|lvl:Y|stg:-|typ:INTENSIVE
+  scopeKey         String          @db.VarChar(255)
+  amount           Decimal         @db.Decimal(10, 2)
+  /// معاملةُ الملتحق متأخّراً — تناسبيٌّ افتراضاً
+  lateEnrollmentMode LateEnrollmentBillingMode @default(PRORATED_BY_REMAINING_SESSIONS)
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
-  subject    Subject    @relation(fields: [subjectId], references: [id])
-  studyGroup StudyGroup @relation(fields: [studyGroupId], references: [id])
+  academicYear   AcademicYear    @relation(fields: [academicYearId], references: [id])
+  subject        Subject         @relation(fields: [subjectId], references: [id])
+  studyGroup     StudyGroup?     @relation(fields: [studyGroupId], references: [id])
+  level          Level?          @relation(fields: [levelId], references: [id])
+  educationStage EducationStage? @relation(fields: [educationStageId], references: [id])
 
-  @@unique([subjectId, studyGroupId])
+  // سعرٌ واحد لكل نطاق في كل سنة — والسنة داخل البصمة
+  @@unique([scopeKey])
+  @@index([academicYearId])
   @@index([subjectId])
   @@index([studyGroupId])
+  @@index([levelId])
+  @@index([educationStageId])
   @@index([isActive])
 }
 
@@ -246,12 +349,17 @@ model Teacher {
   address        String?
   qualification  String?
   specialization String?
-  salary         Decimal?
+  salary         Decimal?  @db.Decimal(10, 2)
   isActive       Boolean   @default(true)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
   teachingAssignments TeachingAssignment[]
+  settlementPolicies  SettlementPolicy[]
+  settlements         Settlement[]
+  lessonSlots         LessonSlot[]
+  debtShares          TeacherDebtShare[]
+  teacherPayments     TeacherPayment[]
 
   @@index([lastName])
 }
@@ -262,10 +370,22 @@ model Teacher {
 
 model Student {
   id               String    @id @default(cuid())
+  /// رقم الطالب في المؤسسة — «2026000147».
+  ///
+  /// أربعُ خاناتٍ لسنة بدء السنة الدراسية التي سُجّل فيها، ثمّ متسلسلٌ
+  /// داخلها. و`id` معرّفٌ داخلي (cuid) لا يُقرأ ولا يُملى ولا يُطبع على
+  /// بطاقة، فهذا هو الرقم الذي يشفّره باركود البطاقة ويراه الموظّف.
+  ///
+  /// والسابقة تُثبَّت **يوم التسجيل** ولا تتغيّر بعده: البطاقة مطبوعةٌ
+  /// في جيب الطالب، ورقمٌ يتبدّل كل سبتمبر يجعل كلّ بطاقةٍ قديمة ورقةً
+  /// لا تُمسح. الجديدُ وحده يأخذ سابقة السنة الجديدة.
+  studentNumber    String    @unique
   firstName        String
   lastName         String
   gender           Gender
   birthDate        DateTime?
+  /// مسار الصورة كما يُرجعه /api/uploads — مثل "/uploads/1712-93.jpg"
+  avatar           String?
   phone            String?
   parentPhone      String
   address          String?
@@ -278,8 +398,41 @@ model Student {
   updatedAt        DateTime  @updatedAt
 
   enrollments StudentEnrollment[]
+  documents   StudentDocument[]
 
   @@index([lastName])
+}
+
+// ------------------------------------------------------
+// Student Document — وثائق ملف الطالب
+//
+// وثيقة واحدة لكل نوع لكل طالب (@@unique): إعادة الرفع تستبدل
+// ولا تُراكم، وبذلك يصير سؤال «هل الملف مكتمل؟» قابلاً للحساب
+// بمقارنة الأنواع الموجودة بالأنواع المطلوبة.
+//
+// كتالوج الأنواع في src/modules/student/document.types.ts
+// ------------------------------------------------------
+
+model StudentDocument {
+  id           String   @id @default(cuid())
+  studentId    String
+  /// مفتاح النوع — birth_certificate, photo, ...
+  type         String   @db.VarChar(64)
+  /// مسار الملف كما يُرجعه /api/uploads
+  filePath     String
+  /// الاسم الأصلي للعرض والتنزيل
+  fileName     String?
+  note         String?
+  uploadedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student    Student @relation(fields: [studentId], references: [id])
+  uploadedBy User?   @relation("DocumentUploadedBy", fields: [uploadedById], references: [id])
+
+  @@unique([studentId, type])
+  @@index([studentId])
+  @@index([type])
 }
 
 // ------------------------------------------------------
@@ -300,9 +453,11 @@ model TeachingAssignment {
   teacher      Teacher             @relation(fields: [teacherId], references: [id])
   subject      Subject             @relation(fields: [subjectId], references: [id])
   studyGroup   StudyGroup          @relation(fields: [studyGroupId], references: [id])
-  academicYear AcademicYear        @relation(fields: [academicYearId], references: [id])
-  schedules    Schedule[]
-  enrollments  StudentEnrollment[]
+  academicYear     AcademicYear        @relation(fields: [academicYearId], references: [id])
+  schedules        Schedule[]
+  enrollments      StudentEnrollment[]
+  attendanceSheets AttendanceSheet[]
+  settlements      Settlement[]
 
   @@unique([teacherId, subjectId, studyGroupId, academicYearId])
   @@index([teacherId])
@@ -320,7 +475,19 @@ model StudentEnrollment {
   id                   String   @id @default(cuid())
   studentId            String
   teachingAssignmentId String
+  /// طابعُ إنشاء السجل — لا تاريخُ الالتحاق. لا يُبنى عليه حسابٌ.
   enrolledAt           DateTime @default(now())
+  /**
+   * أوّلُ يومٍ صار الطالب فيه عضواً في الفوج — ومنه تُحسب أهليتُه.
+   *
+   * **وفارغُه يعني «مؤهَّلٌ من البداية»**، وهو ما يجعل هذه الإضافة بلا
+   * أثرٍ رجعيّ: كلُّ تسجيلٍ قائمٍ يبقى مؤهَّلاً لكل حصةٍ كما كان، ولا
+   * يتغيّر رقمٌ حُسب سابقاً. والتناسب لا يعمل إلّا لمن يُملأ له صراحةً.
+   *
+   * وتاريخٌ لا مؤشّرُ حصة: الحصص تُفصل عن كشفٍ وتُضمّ إلى آخر ويُعاد
+   * ترقيمُها، فمؤشّرٌ إليها يكسره أوّلُ إعادة ضمّ — والتاريخ يصمد.
+   */
+  eligibleFrom         DateTime?
   isActive             Boolean  @default(true)
 
   student            Student            @relation(fields: [studentId], references: [id])
@@ -374,14 +541,61 @@ model Session {
   sessionDate  DateTime
   status       SessionStatus @default(SCHEDULED)
   note         String?
+  /// الكشف الذي تنتمي إليه — اختياري لأنّ الحصص المولَّدة من الجدول
+  /// الأسبوعي لا تنتمي إلى كشفٍ حتى تُضمّ إليه
+  sheetId      String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  schedule    Schedule     @relation(fields: [scheduleId], references: [id])
-  attendances Attendance[]
+  schedule        Schedule         @relation(fields: [scheduleId], references: [id])
+  sheet           AttendanceSheet? @relation(fields: [sheetId], references: [id])
+  attendances     Attendance[]
+  settlementLines SettlementLine[]
 
   @@unique([scheduleId, lessonNumber])
   @@index([sessionDate])
+  @@index([sheetId])
+}
+
+// ------------------------------------------------------
+// Attendance Sheet — كشف الحضور
+//
+// الكشف كان يُشتقّ من نافذة تواريخ: «حصص سبتمبر» ثم ما امتدّ إليه.
+// وكان ذلك يورث تضارباً لا مخرج منه — حصةٌ في مطلع الشهر التالي: أهي
+// ذيلُ هذا الكشف أم مطلعُ الذي يليه؟ والجواب لا يوجد في التقويم لأنّ
+// السؤال ليس تقويمياً: الكشف وحدةٌ إدارية تقررها المؤسسة، وورقتُها
+// الأصلية تحمل «الشهر: 6» لا «فيفري».
+//
+// فصار الكشف كياناً يملك حصصه صراحةً. لا نافذة ولا تخمين: العمود في
+// هذا الكشف لأنّ أحداً وضعه فيه.
+//
+// `sessionCount` منسوخٌ عن سياسة السنة لحظة الإنشاء لا مقروءاً منها —
+// فتغييرُ السياسة لاحقاً لا يُعيد رسم كشوفٍ أُغلقت.
+// ------------------------------------------------------
+
+model AttendanceSheet {
+  id                   String   @id @default(cuid())
+  teachingAssignmentId String
+  academicYearId       String
+  /// ترتيبه ضمن الإسناد — يُعرض «الشهر رقم 1» ما لم تُكتب تسمية
+  number               Int
+  /// تسمية حرّة تُغني عن الرقم
+  label                String?
+  /// عدد الأعمدة — منسوخ عن سياسة السنة عند الإنشاء
+  sessionCount         Int
+  note                 String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  teachingAssignment TeachingAssignment @relation(fields: [teachingAssignmentId], references: [id])
+  academicYear       AcademicYear       @relation(fields: [academicYearId], references: [id])
+  sessions           Session[]
+  settlements        Settlement[]
+  invoices           Invoice[]
+
+  @@unique([teachingAssignmentId, number])
+  @@index([teachingAssignmentId])
+  @@index([academicYearId])
 }
 
 // ------------------------------------------------------
@@ -425,16 +639,31 @@ model User {
   lastName    String
   phone       String?
   avatar      String?
+  /// يُستعمل للأفاتار الافتراضي حين لا صورة — والافتراض MALE لأنّ
+  /// الحسابات القائمة أُنشئت قبل وجود الحقل ولا سبيل لاستنتاج جنسها.
+  gender      Gender    @default(MALE)
   isActive    Boolean   @default(true)
   lastLoginAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   roleId      String
 
-  role     Role      @relation(fields: [roleId], references: [id])
-  invoices Invoice[] @relation("InvoiceCreatedBy")
-  payments Payment[] @relation("PaymentReceivedBy")
-  receipts Receipt[] @relation("ReceiptPrintedBy")
+  role               Role              @relation(fields: [roleId], references: [id])
+  invoices           Invoice[]         @relation("InvoiceCreatedBy")
+  cancelledInvoices  Invoice[]         @relation("InvoiceCancelledBy")
+  payments           Payment[]         @relation("PaymentReceivedBy")
+  cancelledPayments  Payment[]         @relation("PaymentCancelledBy")
+  receipts           Receipt[]         @relation("ReceiptPrintedBy")
+  cancelledReceipts  Receipt[]         @relation("ReceiptCancelledBy")
+  documents          StudentDocument[] @relation("DocumentUploadedBy")
+
+  confirmedSettlements Settlement[]        @relation("SettlementConfirmedBy")
+  paidSettlements      Settlement[]        @relation("SettlementPaidBy")
+  cancelledSettlements Settlement[]        @relation("SettlementCancelledBy")
+  auditLogs            FinancialAuditLog[] @relation("AuditUser")
+  debtSharesApproved       TeacherDebtShare[] @relation("DebtShareApprovedBy")
+  teacherPaymentsPaid      TeacherPayment[]   @relation("TeacherPaymentPaidBy")
+  teacherPaymentsCancelled TeacherPayment[]   @relation("TeacherPaymentCancelledBy")
 
   @@index([roleId])
 }
@@ -490,8 +719,15 @@ model RolePermission {
 }
 
 // ------------------------------------------------------
-// Invoice
-// فاتورة شهرية خاصة بمادة واحدة (StudentEnrollment)
+// Invoice — الاستحقاق الشهري للطالب (StudentMonthlyFee)
+//
+// صفٌّ واحد لكل (طالب + مادة + شهر): الطالب المسجَّل في ثلاث مواد
+// له ثلاثة صفوف مستقلة في سبتمبر، يُدفع كلٌّ منها على حدة.
+// القيد @@unique([studentEnrollmentId, month, year]) هو ما يجعل
+// توليد الشهر Idempotent: الضغط على Generate مرتين لا يُكرّر شيئاً.
+//
+// السعر يُنسخ من TuitionFee لحظةَ التوليد إلى amount، فتغييرُ
+// التسعيرة لاحقاً لا يمسّ أشهراً مضت.
 //
 // IMPORTANT — حقول مشتقة:
 //   total     = amount - discount         → يُحسب في service layer
@@ -512,21 +748,44 @@ model Invoice {
   academicYearId      String
   month               Int
   year                Int
-  amount              Decimal
-  discount            Decimal       @default(0)
-  total               Decimal
-  remaining           Decimal
+  amount              Decimal       @db.Decimal(10, 2)
+  /// لقطاتُ التناسب — تشرح كيف خرج المبلغ.
+  ///
+  /// وفارغُها يعني «شهراً كاملاً»، فالفواتير المنشأة قبل هذه الإضافة
+  /// تبقى على معناها بلا تعديل صفٍّ واحد.
+  approvedSessions    Int?
+  eligibleSessions    Int?
+  sessionRate         Decimal?      @db.Decimal(12, 4)
+  /**
+   * الكشف الذي وُلّدت عنه — إن أمكن تحديدُه بلا لبس.
+   *
+   * الفاتورة مفتاحُها (تسجيل + شهر + سنة)، والمؤسسة تفكّر بالكشوف:
+   * «فواتير الكشف 2». والربطُ صريحٌ لا مشتقّ لأنّ الاشتقاق يكذب حين
+   * يمتدّ كشفٌ على شهرين أو يتقاسم شهراً كشفان — فيبقى فارغاً حينها
+   * بدل أن يُخمّن.
+   */
+  attendanceSheetId   String?
+  discount            Decimal       @default(0) @db.Decimal(10, 2)
+  total               Decimal       @db.Decimal(10, 2)
+  remaining           Decimal       @db.Decimal(10, 2)
   status              InvoiceStatus @default(PENDING)
   dueDate             DateTime
   note                String?
   createdById         String?
+  /// أثر الإلغاء — يبقى السجل ويُوثَّق مَن ألغى ومتى ولماذا
+  cancelledAt         DateTime?
+  cancelledById       String?
+  cancelReason        String?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
   studentEnrollment StudentEnrollment @relation(fields: [studentEnrollmentId], references: [id])
   academicYear      AcademicYear      @relation(fields: [academicYearId], references: [id])
+  attendanceSheet   AttendanceSheet?  @relation(fields: [attendanceSheetId], references: [id])
   createdBy         User?             @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
+  cancelledBy       User?             @relation("InvoiceCancelledBy", fields: [cancelledById], references: [id])
   paymentInvoices   PaymentInvoice[]
+  debtCollections   DebtCollection[]
 
   @@unique([studentEnrollmentId, month, year])
   @@index([status])
@@ -544,22 +803,38 @@ enum PaymentMethod {
   BANK_TRANSFER
 }
 
+// الدفعة لا تُحذف — تُلغى، وتبقى توزيعاتها للتدقيق.
+// RULE: كل حساب للمدفوع يستثني الدفعات CANCELLED
+//       (يُطبَّق في service layer)
+enum PaymentStatus {
+  ACTIVE
+  CANCELLED
+}
+
 model Payment {
   id            String        @id @default(cuid())
   paymentNumber String        @unique
-  amount        Decimal
+  amount        Decimal       @db.Decimal(10, 2)
   paymentMethod PaymentMethod @default(CASH)
+  status        PaymentStatus @default(ACTIVE)
   paymentDate   DateTime      @default(now())
   note          String?
   receivedById  String
+  /// أثر الإلغاء — الدفعة لا تُحذف، وتوزيعاتها تبقى للتدقيق
+  cancelledAt   DateTime?
+  cancelledById String?
+  cancelReason  String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   receivedBy      User             @relation("PaymentReceivedBy", fields: [receivedById], references: [id])
+  cancelledBy     User?            @relation("PaymentCancelledBy", fields: [cancelledById], references: [id])
   paymentInvoices PaymentInvoice[]
+  debtCollections DebtCollection[]
   receipt         Receipt?
 
   @@index([paymentDate])
+  @@index([status])
 }
 
 // ------------------------------------------------------
@@ -570,7 +845,7 @@ model PaymentInvoice {
   id         String   @id @default(cuid())
   paymentId  String
   invoiceId  String
-  paidAmount Decimal
+  paidAmount Decimal  @db.Decimal(10, 2)
   createdAt  DateTime @default(now())
 
   payment Payment @relation(fields: [paymentId], references: [id])
@@ -603,10 +878,477 @@ model Receipt {
   printedAt     DateTime?
   printedById   String?
   note          String?
+  /// أثر الإلغاء — الوصل إثباتُ استلام، فلا يُحذف
+  cancelledAt   DateTime?
+  cancelledById String?
+  cancelReason  String?
   createdAt     DateTime      @default(now())
 
-  payment   Payment @relation(fields: [paymentId], references: [id])
-  printedBy User?   @relation("ReceiptPrintedBy", fields: [printedById], references: [id])
+  payment     Payment @relation(fields: [paymentId], references: [id])
+  printedBy   User?   @relation("ReceiptPrintedBy", fields: [printedById], references: [id])
+  cancelledBy User?   @relation("ReceiptCancelledBy", fields: [cancelledById], references: [id])
 
   @@index([status])
+}
+
+// ------------------------------------------------------
+// Settlement Policy — سياسة تخليص الأستاذ
+//
+// ما يدفعه الطالب ليس ما يقبضه الأستاذ. لا علاقة ثابتة بينهما إلا
+// ما تقرّره الإدارة هنا، ولذلك لا يوجد في الكود نسبةٌ ولا مبلغ.
+//
+// والحقولُ المشروطة ليست إلزامية كلها: PERCENTAGE تستعمل
+// teacherPercentage وحدها، وPER_SESSION تستعمل amountPerSession
+// وحدها. التحقق من اكتمال حقول الطريقة في service layer، لأن SQL
+// لا يعبّر عن «إلزاميٌّ إذا كان العمود الآخر يساوي كذا».
+// ------------------------------------------------------
+
+enum SettlementMethod {
+  /// نسبة من حقوق الطلبة
+  PERCENTAGE
+  /// مبلغ ثابت لكل طالب
+  PER_STUDENT
+  /// مبلغ ثابت لكل حصة، لا علاقة له بعدد الطلبة
+  PER_SESSION
+  /// نصيب الأستاذ من حصة الطالب الواحدة × الحضور الفعلي
+  PER_ATTENDED_SHARE
+}
+
+/// مَن يُعَدّ طالباً في الحساب.
+///
+/// ENROLLED هو الافتراضي: §6 يُبقي الحقَّ الشهري كاملاً على الطالب
+/// الغائب، فلو خُصم من الأستاذ الذي حضر ودرّس لصار غيابُ الطالب
+/// ربحاً للمؤسسة وحدها. والطرفان يتبعان القاعدة نفسها.
+///
+/// وPAID يجعل الأستاذ يتحمّل تعثّر التحصيل — يُستعمل عن قصد لا سهواً.
+enum SettlementCountBasis {
+  ENROLLED
+  PAID
+  PRESENT
+}
+
+enum RoundingMode {
+  ROUND
+  ROUND_UP
+  ROUND_DOWN
+}
+
+model SettlementPolicy {
+  id     String           @id @default(cuid())
+  name   String
+  method SettlementMethod
+
+  teacherPercentage Decimal? @db.Decimal(5, 2)
+  amountPerStudent  Decimal? @db.Decimal(10, 2)
+  amountPerSession  Decimal? @db.Decimal(10, 2)
+
+  countBasis        SettlementCountBasis @default(ENROLLED)
+  /// أين تُنسب حصةُ الأستاذ من دَينٍ حُصِّل متأخّراً
+  debtSettlementBasis DebtSettlementBasis @default(COLLECTION_PERIOD)
+  /// بأيّ مقياسٍ تُحسب تلك الحصة
+  debtShareBasis      DebtShareBasis      @default(ATTENDED_UNITS)
+  roundingMode      RoundingMode         @default(ROUND)
+  /// عدد المنازل العشرية — التقريب مركزيٌّ هنا لا مبعثرٌ في الحسابات
+  roundingPrecision Int                  @default(2)
+
+  // نطاق التطبيق — الفارغ يعني «أيّاً كان»، بأوزان: أستاذ 8 · فوج 4 · مادة 2
+  academicYearId String
+  subjectId      String?
+  studyGroupId   String?
+  teacherId      String?
+  /// بصمة النطاق — لنفس سبب scopeKey في TuitionFee
+  scopeKey       String  @db.VarChar(255)
+
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  isActive      Boolean   @default(true)
+  note          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  subject      Subject?     @relation(fields: [subjectId], references: [id])
+  studyGroup   StudyGroup?  @relation(fields: [studyGroupId], references: [id])
+  teacher      Teacher?     @relation(fields: [teacherId], references: [id])
+  settlements  Settlement[]
+
+  @@unique([scopeKey, effectiveFrom])
+  @@index([academicYearId])
+  @@index([teacherId])
+  @@index([isActive])
+}
+
+// ------------------------------------------------------
+// Settlement — التخليص الفعلي
+//
+// وحدتُه كشفُ الحضور لا الشهر التقويمي: «الشهر: 4» في الورقة رقمُ
+// كشفٍ، والأستاذ يُخلَّص عن كشفٍ امتلأ بحصصه.
+//
+// وكلُّ ما دخل الحساب منسوخٌ هنا لا مقروءاً من مصدره وقت العرض.
+// فتغييرُ السياسة أو التسعيرة غداً لا يمسّ تخليصاً حُسب اليوم — وهذا
+// شرطٌ غير قابل للتفاوض (§21).
+//
+// و DRAFT وحده يُعاد حسابه؛ CONFIRMED مجمَّد، وتصحيحُه بالإلغاء
+// وإنشاء بديل لا بالتعديل. يُطبَّق في service layer.
+// ------------------------------------------------------
+
+/// كيف يُحتسب حقُّ الشهر لمن التحق بعد بدايته.
+///
+/// محلُّها `TuitionFee` لا `SettlementPolicy`: هذه قاعدةُ **سعرِ طالب**،
+/// وتلك محرّكُ **أجر أستاذ** نطاقُه يشمل المدرّس. ووضعُها هناك يُنتج
+/// سؤالاً بلا جواب — أيُّ سياسةِ أستاذٍ تحكم فاتورةَ طالبٍ يدرس عند ثلاثة؟
+enum LateEnrollmentBillingMode {
+  /// الحقُّ كاملٌ مهما تأخّر الالتحاق
+  FULL_MONTH
+  /// الحقُّ بقدر الحصص التي صار مسؤولاً عنها
+  PRORATED_BY_REMAINING_SESSIONS
+}
+
+enum SettlementStatus {
+  DRAFT
+  CONFIRMED
+  PAID
+  CANCELLED
+}
+
+/// أين تُنسب حصةُ الأستاذ من دَينٍ حُصِّل بعد فترته.
+enum DebtSettlementBasis {
+  /// تعود إلى الفترة التي نشأ فيها الدين — تعديلٌ رجعيّ، لا يصحّ بعد التأكيد
+  ORIGINAL_PERIOD
+  /// تُستحقّ لحظةَ التحصيل وتُدفع مع راتب الفترة التالية — المعتمدة هنا
+  COLLECTION_PERIOD
+  /// تحصيلُ الدين لا يولّد حصةً للأستاذ
+  EXCLUDED
+}
+
+/// بأيّ مقياسٍ تُحسب حصةُ الأستاذ من المبلغ المحصَّل.
+///
+/// المقياسان يفترقان حين يغيب الطالبُ بعضَ الحصص ويسدّد حقَّه كاملاً:
+/// من حضر ثلاثاً من ثمانٍ وسدّد 1500 يُنتج بالمبلغ 1,125 وبالحضور
+/// 421.88. والأوّل يعطي الأستاذ عن ثلاث حصصٍ أجرَ ثمان، والثاني يُبقي
+/// السلسلة كلَّها على مقياس `PER_ATTENDED_SHARE` نفسه فتتصالح المجاميع
+/// مع عمود «غير محصَّل» المعروض في الكشف.
+enum DebtShareBasis {
+  /// حضورُ الطالب في فترته الأصلية × نصيب الوحدة وقتها — الافتراض
+  ATTENDED_UNITS
+  /// المبلغ المحصَّل × نسبة الأستاذ وقتها
+  COLLECTED_AMOUNT
+}
+
+/// مسار حصة الأستاذ من دَينٍ محصَّل.
+enum TeacherDebtShareStatus {
+  /// حُسبت ولم تُعتمد بعد
+  PENDING
+  /// اعتمدتها الإدارة فصارت واجبة الدفع
+  APPROVED
+  /// دُفعت للأستاذ
+  PAID
+  /// أُلغيت — ولا تُحذف
+  CANCELLED
+}
+
+/// حالة دفعةٍ تخرج من المؤسسة إلى الأستاذ.
+enum TeacherPaymentStatus {
+  ACTIVE
+  CANCELLED
+}
+
+model Settlement {
+  id               String @id @default(cuid())
+  settlementNumber String @unique
+
+  teachingAssignmentId String
+  attendanceSheetId    String
+  academicYearId       String
+  teacherId            String
+  policyId             String
+
+  /// رقم المحاولة لهذا (إسناد + كشف).
+  ///
+  /// الملغى يبقى ويأخذ البديلُ رقماً تالياً. ولولاه لكان الإلغاء طريقاً
+  /// مسدوداً: قيدُ التفرّد يمنع بديلاً، فيصير «ألغِ واحسب بديلاً»
+  /// نصيحةً لا يمكن اتّباعها.
+  revision Int @default(1)
+
+  // ---- snapshots: السياسة لحظة الحساب ----
+  methodSnapshot            SettlementMethod
+  countBasisSnapshot        SettlementCountBasis
+  roundingModeSnapshot      RoundingMode
+  roundingPrecisionSnapshot Int
+  percentageSnapshot        Decimal?             @db.Decimal(5, 2)
+  perStudentSnapshot        Decimal?             @db.Decimal(10, 2)
+  perSessionSnapshot        Decimal?             @db.Decimal(10, 2)
+
+  // ---- snapshots: المعطيات لحظة الحساب ----
+  /// حقّ الطالب الشهري في هذا الإسناد
+  tuitionSnapshot           Decimal @db.Decimal(10, 2)
+  approvedSessionsSnapshot  Int
+  completedSessionsSnapshot Int
+  studentCountSnapshot      Int
+  paidStudentCountSnapshot  Int
+  /// مجموع (طالب × حصة حضرها) — أساس PER_ATTENDED_SHARE
+  attendedUnitsSnapshot     Int
+  grossTuitionSnapshot      Decimal @db.Decimal(12, 2)
+  collectedSnapshot         Decimal @db.Decimal(12, 2)
+  remainingSnapshot         Decimal @db.Decimal(12, 2)
+
+  /// النتيجة — يحسبها النظام ولا تُقبل من الإدخال إطلاقاً (§18)
+  teacherAmount Decimal @db.Decimal(12, 2)
+
+  status      SettlementStatus @default(DRAFT)
+  computedAt  DateTime         @default(now())
+  confirmedAt DateTime?
+  confirmedById String?
+  paidAt      DateTime?
+  paidById    String?
+  note        String?
+
+  cancelledAt   DateTime?
+  cancelledById String?
+  cancelReason  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teachingAssignment TeachingAssignment @relation(fields: [teachingAssignmentId], references: [id])
+  attendanceSheet    AttendanceSheet    @relation(fields: [attendanceSheetId], references: [id])
+  academicYear       AcademicYear       @relation(fields: [academicYearId], references: [id])
+  teacher            Teacher            @relation(fields: [teacherId], references: [id])
+  policy             SettlementPolicy   @relation(fields: [policyId], references: [id])
+  confirmedBy        User?              @relation("SettlementConfirmedBy", fields: [confirmedById], references: [id])
+  paidBy             User?              @relation("SettlementPaidBy", fields: [paidById], references: [id])
+  cancelledBy        User?              @relation("SettlementCancelledBy", fields: [cancelledById], references: [id])
+  lines              SettlementLine[]
+  debtSharesOrigin     TeacherDebtShare[]         @relation("DebtShareOrigin")
+  debtSharesCollected  TeacherDebtShare[]         @relation("DebtShareCollection")
+  teacherAllocations   TeacherPaymentAllocation[]
+
+  // تخليصٌ واحد **غير ملغى** لكل (إسناد + كشف) — والقيد يشمل
+  // revision لأن MySQL لا يعرف الفهارس الجزئية، فشرطُ «غير ملغى»
+  // يُطبَّق في service layer
+  @@unique([teachingAssignmentId, attendanceSheetId, revision])
+  @@index([teacherId])
+  @@index([academicYearId])
+  @@index([status])
+  @@index([attendanceSheetId])
+}
+
+// ------------------------------------------------------
+// Settlement Line — سطرٌ لكل حصة
+//
+// هو نفسه «الكشف التقديري للحصص» (§16) مخزَّناً: الحصة، وعدد
+// الطلبة المحتسبين فيها، وقيمة الوحدة، والمجموع. تخزينُه لا اشتقاقُه
+// عند الطباعة هو ما يجعل الورقة المطبوعة اليوم مطابقةً لنسختها
+// بعد سنة.
+// ------------------------------------------------------
+
+model SettlementLine {
+  id           String    @id @default(cuid())
+  settlementId String
+  sessionId    String?
+  lessonNumber Int
+  sessionDate  DateTime?
+  /// عدد الطلبة المحتسبين في هذه الحصة وفق countBasis
+  countedStudents Int
+  /// قيمة الوحدة الواحدة — للطالب أو للحصة حسب الطريقة
+  rate            Decimal @db.Decimal(10, 4)
+  lineTotal       Decimal @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+
+  settlement Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  session    Session?   @relation(fields: [sessionId], references: [id])
+
+  @@index([settlementId])
+  @@index([sessionId])
+}
+
+// ------------------------------------------------------
+// Financial Audit Log — أثر التغيير المالي
+//
+// آثارُ الإلغاء الموجودة على الفاتورة والدفعة والوصل تجيب عن «مَن
+// ألغى ولماذا»، لكنها لا تجيب عن «كم كان السعر قبل أن يُرفع». هذا
+// الجدول يحفظ القيمة القديمة والجديدة لكل تغيير مالي.
+//
+// entity نصٌّ لا مفتاح أجنبي عمداً: السجل يبقى بعد حذف موضوعه،
+// وسجلُّ تدقيقٍ يُحذف مع ما يدقّقه لا معنى له.
+// ------------------------------------------------------
+
+enum FinancialAuditAction {
+  CREATE
+  UPDATE
+  CANCEL
+  CONFIRM
+  RECOMPUTE
+}
+
+model FinancialAuditLog {
+  id       String               @id @default(cuid())
+  entity   String               @db.VarChar(64)
+  entityId String
+  action   FinancialAuditAction
+  /// الحقل المتغيّر — فارغ في CREATE و CANCEL
+  field    String?              @db.VarChar(64)
+  oldValue String?              @db.Text
+  newValue String?              @db.Text
+  reason   String?
+  userId   String?
+  createdAt DateTime            @default(now())
+
+  user User? @relation("AuditUser", fields: [userId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ======================================================================
+// تحصيل الديون القديمة وحصةُ الأستاذ منها
+//
+// المبدأ الذي تقوم عليه هذه الجداول الأربعة: **المال المحصَّل متأخّراً
+// لا يُعدّل الماضي.** تخليصُ سبتمبر المؤكَّد يبقى 6,750 وإن سُدِّد دينُه
+// في نوفمبر؛ والتصحيح يكون بإنشاء عمليةٍ جديدة تُنسب إلى أصلها لا بمسّ
+// سجلٍّ مضى.
+//
+// والحصة تُخزَّن مستقلّةً وتُدفع مدموجة: الأستاذ يقبض «راتب نوفمبر +
+// حصة دين سبتمبر» دفعةً واحدة، والقاعدةُ تحتفظ بمصدر كلّ دينارٍ منها.
+// ======================================================================
+
+/// تحصيلُ دَينٍ نشأ في فترةٍ سابقة.
+///
+/// مشتقٌّ نظرياً من `PaymentInvoice` + شهر الفاتورة، لكنّه يُصرَّح به
+/// جدولاً لأنّه **الواقعة المحاسبية** التي تتعلّق بها حصةُ الأستاذ.
+/// واستخراجُه باستعلامٍ في كل مرّة يجعل الحصة بلا سندٍ ثابت تُنسب إليه.
+model DebtCollection {
+  id String @id @default(cuid())
+
+  /// الفاتورة الأصلية — منها يُعرف الطالب والمادة والفترة
+  invoiceId        String
+  /// الدفعة التي حُصِّل بها
+  paymentId        String
+  /// حصةُ هذه الفاتورة من تلك الدفعة
+  collectedAmount  Decimal  @db.Decimal(12, 2)
+  /// شهر الفاتورة وسنتها — منسوخان تسهيلاً للاستعلام والتقارير
+  originalMonth    Int
+  originalYear     Int
+  /// تاريخ القبض — به تُحدَّد فترةُ التحصيل
+  collectedAt      DateTime
+  createdAt        DateTime @default(now())
+
+  invoice     Invoice            @relation(fields: [invoiceId], references: [id])
+  payment     Payment            @relation(fields: [paymentId], references: [id])
+  teacherShares TeacherDebtShare[]
+
+  /// واقعةٌ واحدة لكل (فاتورة + دفعة) — الدفعة الواحدة لا تُحصّل الفاتورة مرّتين
+  @@unique([invoiceId, paymentId])
+  @@index([collectedAt])
+  @@index([originalYear, originalMonth])
+}
+
+/// حصةُ الأستاذ من دَينٍ حُصِّل — مستحقّةٌ ولمّا تُدفع.
+///
+/// ولقطاتُها ضرورة لا زينة: الدينُ نشأ تحت سياسةٍ قد تكون تغيّرت. فمن
+/// حضر تحت نسبة 75% يُحاسَب بها ولو صارت اليوم 80%.
+model TeacherDebtShare {
+  id String @id @default(cuid())
+
+  teacherId        String
+  debtCollectionId String
+
+  /// التخليص الذي غطّى الفترة الأصلية — سندُ اللقطات ومانعُ الازدواج
+  originalSettlementId String?
+  /// التخليص الذي دُفعت معه — يُملأ عند الدمج في راتب فترة التحصيل
+  collectionSettlementId String?
+
+  /// لقطاتُ السياسة الأصلية — لا تُقرأ من `SettlementPolicy` الحالية
+  basisSnapshot      DebtShareBasis
+  percentageSnapshot Decimal        @db.Decimal(5, 2)
+  /// نصيب الوحدة الواحدة وقتها — يُملأ مع ATTENDED_UNITS
+  unitRateSnapshot   Decimal?       @db.Decimal(12, 4)
+  /// وحدات حضور الطالب في فترته الأصلية — يُملأ مع ATTENDED_UNITS
+  attendedUnits      Int?
+
+  /// المبلغ المحصَّل الذي بُنيت عليه
+  collectedAmount Decimal @db.Decimal(12, 2)
+  /// ما يستحقّه الأستاذ — محسوبٌ لا مُدخَل
+  shareAmount     Decimal @db.Decimal(12, 2)
+
+  status TeacherDebtShareStatus @default(PENDING)
+
+  approvedAt   DateTime?
+  approvedById String?
+  paidAt       DateTime?
+  cancelledAt  DateTime?
+  cancelReason String?
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  teacher              Teacher        @relation(fields: [teacherId], references: [id])
+  debtCollection       DebtCollection @relation(fields: [debtCollectionId], references: [id])
+  originalSettlement   Settlement?    @relation("DebtShareOrigin", fields: [originalSettlementId], references: [id])
+  collectionSettlement Settlement?    @relation("DebtShareCollection", fields: [collectionSettlementId], references: [id])
+  approvedBy           User?          @relation("DebtShareApprovedBy", fields: [approvedById], references: [id])
+  allocations          TeacherPaymentAllocation[]
+
+  /// حصةٌ واحدة لكل واقعة تحصيل — الحارس البنيوي ضدّ ازدواج الدفع
+  @@unique([debtCollectionId])
+  @@index([teacherId, status])
+  @@index([collectionSettlementId])
+}
+
+/// دفعةٌ تخرج من المؤسسة إلى الأستاذ.
+///
+/// جدولٌ مستقلٌّ عن `Payment` لأنّ اتجاه المال معكوس: ذاك طالبٌ ←
+/// مؤسسة، وهذا مؤسسةٌ ← أستاذ. وخلطُهما يُفسد كلَّ تقرير إيرادٍ ومصروف.
+model TeacherPayment {
+  id            String   @id @default(cuid())
+  paymentNumber String   @unique
+  teacherId     String
+  /// المجموع — مشتقٌّ من التخصيصات ومحفوظٌ للاستعلام السريع
+  amount        Decimal  @db.Decimal(12, 2)
+  paymentMethod PaymentMethod @default(CASH)
+  paymentDate   DateTime
+  reference     String?
+  note          String?
+  status        TeacherPaymentStatus @default(ACTIVE)
+
+  paidById     String?
+  cancelledAt  DateTime?
+  cancelledById String?
+  cancelReason String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  teacher     Teacher @relation(fields: [teacherId], references: [id])
+  paidBy      User?   @relation("TeacherPaymentPaidBy", fields: [paidById], references: [id])
+  cancelledBy User?   @relation("TeacherPaymentCancelledBy", fields: [cancelledById], references: [id])
+  allocations TeacherPaymentAllocation[]
+
+  @@index([teacherId])
+  @@index([paymentDate])
+  @@index([status])
+}
+
+/// أين ذهب كلُّ جزءٍ من دفعة الأستاذ.
+///
+/// «دفعتُ له 9,875» جوابٌ لا يكفي. والتخصيص يقول: 8,000 راتب نوفمبر،
+/// و1,125 حصة دين سبتمبر، و750 حصة دين أكتوبر. وهو الفرق بين رقمٍ
+/// يُدافَع عنه ورقمٍ يُصدَّق.
+model TeacherPaymentAllocation {
+  id               String  @id @default(cuid())
+  teacherPaymentId String
+  /// أحدهما لا كلاهما: تخليصُ فترة أو حصةُ دَين
+  settlementId       String?
+  teacherDebtShareId String?
+  amount           Decimal @db.Decimal(12, 2)
+
+  teacherPayment   TeacherPayment    @relation(fields: [teacherPaymentId], references: [id])
+  settlement       Settlement?       @relation(fields: [settlementId], references: [id])
+  teacherDebtShare TeacherDebtShare? @relation(fields: [teacherDebtShareId], references: [id])
+
+  @@unique([teacherPaymentId, settlementId])
+  @@unique([teacherPaymentId, teacherDebtShareId])
+  @@index([settlementId])
+  @@index([teacherDebtShareId])
 }

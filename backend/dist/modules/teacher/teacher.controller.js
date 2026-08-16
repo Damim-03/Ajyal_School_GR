@@ -1,0 +1,32 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.deleteTeacherController = exports.updateTeacherController = exports.createTeacherController = exports.getTeacherController = exports.listTeachersController = void 0;
+const api_response_1 = require("../../core/config/api-response");
+const teacher_service_1 = require("./teacher.service");
+const listTeachersController = async (req, res) => {
+    const query = req.query;
+    const { teachers, pagination } = await (0, teacher_service_1.listTeachersService)(query);
+    return api_response_1.ApiResponse.paginated(res, teachers, pagination, "Teachers retrieved");
+};
+exports.listTeachersController = listTeachersController;
+const getTeacherController = async (req, res) => {
+    const teacher = await (0, teacher_service_1.getTeacherService)(req.params.id);
+    return api_response_1.ApiResponse.success(res, { teacher }, "Teacher retrieved");
+};
+exports.getTeacherController = getTeacherController;
+const createTeacherController = async (req, res) => {
+    const teacher = await (0, teacher_service_1.createTeacherService)(req.body);
+    return api_response_1.ApiResponse.created(res, { teacher }, "Teacher created");
+};
+exports.createTeacherController = createTeacherController;
+const updateTeacherController = async (req, res) => {
+    const teacher = await (0, teacher_service_1.updateTeacherService)(req.params.id, req.body);
+    return api_response_1.ApiResponse.success(res, { teacher }, "Teacher updated");
+};
+exports.updateTeacherController = updateTeacherController;
+const deleteTeacherController = async (req, res) => {
+    await (0, teacher_service_1.deleteTeacherService)(req.params.id);
+    return api_response_1.ApiResponse.success(res, null, "Teacher deleted");
+};
+exports.deleteTeacherController = deleteTeacherController;
+//# sourceMappingURL=teacher.controller.js.map

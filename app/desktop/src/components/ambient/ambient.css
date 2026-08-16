@@ -1,0 +1,236 @@
+/* ============================================================
+   AmbientBackground — طبقات الغلاف الجوّي (CSS/GPU)
+   الجسيمات على Canvas منفصل. كل ما هنا transform/opacity فقط.
+   ============================================================ */
+
+.amb-root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* أسود مائل للأزرق بدل #000 — أعمق على شاشات OLED وبلا حزوز تدرّج */
+  background: #06070a;
+  isolation: isolate;
+}
+
+.amb-layer {
+  position: absolute;
+  inset: -12%; /* هامش زائد كي لا تظهر حواف عند الإزاحة/التكبير */
+  will-change: transform, opacity;
+}
+
+/* ---------- 1) البيئة الأساسية: تدرّجات متراكبة بلا حدود مرئية ---------- */
+.amb-base {
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 12% 8%, rgba(37, 44, 52, 0.55) 0%, rgba(21, 27, 37, 0.28) 34%, rgba(8, 13, 25, 0) 68%),
+    radial-gradient(100% 80% at 78% 92%, rgba(11, 16, 29, 0.9) 0%, rgba(5, 9, 20, 0.98) 60%),
+    linear-gradient(160deg, #0a0c11 0%, #0b0d13 44%, #050608 100%);
+  opacity: 0;
+  animation: amb-fade-in 1200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ---------- 2) التوهّج السفلي (ضوء بيئي منعكس، لا مصباح مرئي) ---------- */
+.amb-lower-glow {
+  background: radial-gradient(
+    74% 50% at 24% 96%,
+    rgba(138, 162, 184, 0.34) 0%,
+    rgba(84, 104, 124, 0.18) 36%,
+    rgba(17, 23, 34, 0) 70%
+  );
+  opacity: 0;
+  animation:
+    amb-fade-in 1800ms cubic-bezier(0.22, 1, 0.36, 1) 600ms forwards,
+    amb-glow-breathe 21s ease-in-out 2s infinite;
+}
+
+/* ---------- 3) الضوء الحجميّ من أعلى اليسار ---------- */
+.amb-volumetric {
+  background:
+    radial-gradient(46% 52% at 6% -6%, rgba(224, 209, 194, 0.26) 0%, rgba(210, 192, 174, 0.10) 40%, rgba(199, 165, 143, 0) 70%),
+    radial-gradient(70% 70% at 0% 0%, rgba(220, 205, 190, 0.15) 0%, rgba(212, 181, 158, 0) 62%);
+  opacity: 0;
+  animation:
+    amb-fade-in 2000ms cubic-bezier(0.22, 1, 0.36, 1) 400ms forwards,
+    amb-volumetric-drift 27s ease-in-out 2.4s infinite;
+}
+
+/* ---------- 4) أشعّة ضوئية ناعمة جداً ---------- */
+.amb-rays {
+  inset: -30%;
+  opacity: 0;
+  animation: amb-fade-in 2400ms cubic-bezier(0.22, 1, 0.36, 1) 700ms forwards;
+}
+
+.amb-ray {
+  position: absolute;
+  top: -20%;
+  height: 150%;
+  transform-origin: top center;
+  filter: blur(15px); /* ثابت — لا نحرّك قيمة الضبابية (مكلفة) */
+  mix-blend-mode: screen;
+}
+
+.amb-ray-1 {
+  left: 2%;
+  width: 16%;
+  background: linear-gradient(to bottom, rgba(238, 231, 223, 0.55), rgba(216, 202, 188, 0.17) 46%, transparent 76%);
+  transform: rotate(19deg);
+  animation: amb-ray-drift-a 23s ease-in-out infinite;
+}
+.amb-ray-2 {
+  left: 11%;
+  width: 9%;
+  background: linear-gradient(to bottom, rgba(244, 238, 231, 0.40), rgba(220, 206, 190, 0.11) 42%, transparent 70%);
+  transform: rotate(25deg);
+  animation: amb-ray-drift-b 31s ease-in-out infinite;
+}
+.amb-ray-3 {
+  left: -4%;
+  width: 22%;
+  background: linear-gradient(to bottom, rgba(214, 210, 218, 0.27), rgba(200, 196, 206, 0.08) 48%, transparent 78%);
+  transform: rotate(14deg);
+  animation: amb-ray-drift-c 39s ease-in-out infinite;
+}
+
+/* ---------- 5) الضباب الجوّي ---------- */
+.amb-haze {
+  opacity: 0;
+  animation: amb-fade-in 2600ms cubic-bezier(0.22, 1, 0.36, 1) 1000ms forwards;
+}
+
+.amb-haze-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+}
+.amb-haze-1 {
+  left: 4%;
+  top: 18%;
+  width: 46%;
+  height: 44%;
+  background: radial-gradient(circle, rgba(37, 44, 52, 0.34) 0%, rgba(21, 27, 37, 0) 68%);
+  animation: amb-haze-drift-a 34s ease-in-out infinite;
+}
+.amb-haze-2 {
+  left: 22%;
+  top: 52%;
+  width: 54%;
+  height: 40%;
+  background: radial-gradient(circle, rgba(48, 55, 64, 0.24) 0%, rgba(17, 23, 34, 0) 70%);
+  animation: amb-haze-drift-b 44s ease-in-out infinite;
+}
+
+/* ---------- 6) الفينييت ---------- */
+.amb-vignette {
+  inset: 0;
+  background:
+    radial-gradient(78% 78% at 34% 44%, rgba(5, 9, 20, 0) 42%, rgba(5, 9, 20, 0.42) 78%, rgba(5, 9, 20, 0.72) 100%),
+    linear-gradient(215deg, rgba(5, 9, 20, 0.34) 0%, rgba(5, 9, 20, 0) 46%);
+}
+
+/* ---------- 7) حبيبات دقيقة (تكسر حزوز التدرّج) ---------- */
+.amb-noise {
+  inset: 0;
+  opacity: 0.018;
+  background-image: var(--amb-noise);
+  background-size: 180px 180px;
+  animation: amb-noise-shift 8s steps(6) infinite;
+}
+
+/* ---------- لوحة الجسيمات ---------- */
+.amb-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- استجابة الحالات (نجاح/خطأ/نبضة) ---------- */
+.amb-state {
+  inset: 0;
+  opacity: 0;
+  transition: opacity 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.amb-root[data-state="success"] .amb-state,
+.amb-root[data-pulse="1"] .amb-state {
+  background: radial-gradient(58% 40% at 26% 90%, rgba(183, 200, 232, 0.14) 0%, rgba(183, 200, 232, 0) 70%);
+  opacity: 1;
+}
+.amb-root[data-state="error"] .amb-state {
+  background: radial-gradient(70% 60% at 20% 80%, rgba(199, 165, 143, 0.07) 0%, rgba(5, 9, 20, 0.22) 72%);
+  opacity: 1;
+}
+/* الخطأ: خفض الإضاءة العامة قليلاً بلا وميض أحمر */
+.amb-root[data-state="error"] .amb-lower-glow,
+.amb-root[data-state="error"] .amb-volumetric {
+  filter: brightness(0.78);
+  transition: filter 700ms ease-out;
+}
+
+/* ============================ Keyframes ============================ */
+@keyframes amb-fade-in {
+  to { opacity: 1; }
+}
+
+@keyframes amb-glow-breathe {
+  0%, 100% { transform: scale(0.97); opacity: 0.72; }
+  50% { transform: scale(1.03); opacity: 1; }
+}
+
+@keyframes amb-volumetric-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(1.6%, 0.8%, 0) scale(1.035); }
+}
+
+@keyframes amb-ray-drift-a {
+  0%, 100% { transform: rotate(19deg) translate3d(0, 0, 0); opacity: 0.9; }
+  50% { transform: rotate(21.5deg) translate3d(1.4%, 0, 0); opacity: 0.55; }
+}
+@keyframes amb-ray-drift-b {
+  0%, 100% { transform: rotate(25deg) translate3d(0, 0, 0); opacity: 0.6; }
+  50% { transform: rotate(23deg) translate3d(-1.2%, 0, 0); opacity: 0.95; }
+}
+@keyframes amb-ray-drift-c {
+  0%, 100% { transform: rotate(14deg) translate3d(0, 0, 0); opacity: 0.75; }
+  50% { transform: rotate(15.5deg) translate3d(0.9%, 0, 0); opacity: 0.45; }
+}
+
+@keyframes amb-haze-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(20px, -10px, 0) scale(1.05); }
+}
+@keyframes amb-haze-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.04); }
+  50% { transform: translate3d(-18px, 8px, 0) scale(1); }
+}
+
+@keyframes amb-noise-shift {
+  0% { transform: translate3d(0, 0, 0); }
+  20% { transform: translate3d(-2%, 1%, 0); }
+  40% { transform: translate3d(1%, -2%, 0); }
+  60% { transform: translate3d(-1%, -1%, 0); }
+  80% { transform: translate3d(2%, 1%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+/* ============================ تقليل الحركة ============================
+   تبقى البيئة جميلة وشبه ساكنة: تلاشٍ خفيف فقط، بلا انجراف/دوران/تذبذب. */
+@media (prefers-reduced-motion: reduce) {
+  .amb-lower-glow,
+  .amb-volumetric,
+  .amb-ray,
+  .amb-haze-blob,
+  .amb-noise {
+    animation: none !important;
+  }
+  .amb-base,
+  .amb-lower-glow,
+  .amb-volumetric,
+  .amb-rays,
+  .amb-haze {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+}

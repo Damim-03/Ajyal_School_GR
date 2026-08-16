@@ -4,22 +4,25 @@ exports.prisma = void 0;
 require("dotenv/config");
 const adapter_mariadb_1 = require("@prisma/adapter-mariadb");
 const prisma_1 = require("../../generated/prisma");
-const adapter = new adapter_mariadb_1.PrismaMariaDb({
-    host: process.env.DB_HOST ?? "127.0.0.1",
-    port: Number(process.env.DB_PORT) || 3306,
-    user: process.env.DB_USER ?? "root",
-    password: process.env.DB_PASSWORD ?? "",
-    database: process.env.DB_NAME ?? "ajyal_school",
-    connectionLimit: 5,
+const app_config_1 = require("../config/app.config");
+// --------------------------------------------------
+// مصدر واحد للاتصال: DATABASE_URL
+// نفس القيمة يستعملها prisma.config.ts (migrate / generate)
+// --------------------------------------------------
+if (!app_config_1.config.DATABASE_URL) {
+    throw new Error("Missing env variable: DATABASE_URL");
+}
+const databaseUrl = new URL(app_config_1.config.DATABASE_URL);
+const adapter = new adapter_mariadb_1.PrismaMariaDb(app_config_1.config.DATABASE_URL, {
+    // اسم قاعدة البيانات المستعمل في الاستعلامات المولَّدة
+    database: decodeURIComponent(databaseUrl.pathname.slice(1)),
 });
 exports.prisma = global.__prisma ??
     new prisma_1.PrismaClient({
         adapter,
-        log: process.env.NODE_ENV === "development"
-            ? ["query", "info", "warn", "error"]
-            : ["error"],
+        log: app_config_1.config.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
     });
-if (process.env.NODE_ENV !== "production") {
+if (app_config_1.config.NODE_ENV !== "production") {
     global.__prisma = exports.prisma;
 }
 exports.default = exports.prisma;

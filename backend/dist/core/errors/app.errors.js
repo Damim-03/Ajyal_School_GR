@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UnauthorizedException = exports.BadRequestException = exports.NotFoundException = exports.InternalServerException = exports.HttpException = exports.AppError = void 0;
+exports.UnauthorizedException = exports.ConflictException = exports.BadRequestException = exports.NotFoundException = exports.InternalServerException = exports.HttpException = exports.AppError = void 0;
 const http_config_1 = require("../config/http.config");
 const error_code_enum_1 = require("../enums/error-code.enum");
 class AppError extends Error {
@@ -38,6 +38,12 @@ class BadRequestException extends AppError {
     }
 }
 exports.BadRequestException = BadRequestException;
+class ConflictException extends AppError {
+    constructor(message = "Resource conflict", errorCode) {
+        super(message, http_config_1.HTTPSTATUS.CONFLICT, errorCode || error_code_enum_1.ErrorCodeEnum.RESOURCE_ALREADY_EXISTS);
+    }
+}
+exports.ConflictException = ConflictException;
 class UnauthorizedException extends AppError {
     constructor(message = "Unauthorized Access", errorCode) {
         super(message, http_config_1.HTTPSTATUS.UNAUTHORIZED, errorCode || error_code_enum_1.ErrorCodeEnum.ACCESS_UNAUTHORIZED);

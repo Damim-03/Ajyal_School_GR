@@ -1,0 +1,22 @@
+/** نقطة الدخول الموحّدة لنظام الحركة. استورد من "../../motion" لا من الملفات مباشرة. */
+export * from "./system";
+export * from "./layers";
+export * from "./direction";
+export * from "./shared-id";
+export * from "./orchestrator";
+export * from "./route-motion";
+export * from "./page-memory";
+export * from "./camera";
+export * from "./materials";
+export * from "./variants";
+export * from "./interactions";
+export * as utility from "./utility";
+export { PageSlotGroup } from "./StaggerGroup";
+export { CameraProvider } from "./CameraProvider";
+export { MotionDebug } from "./MotionDebug";
+export { MotionDialog } from "./MotionDialog";
+export { SemanticPage } from "./MotionPage";
+export { MotionToastStack } from "./MotionToast";
+export type { ToastItem, ToastTone } from "./MotionToast";
+export { useToasts } from "./useToasts";
+export { SkeletonBar, TableSkeleton } from "./Skeleton";

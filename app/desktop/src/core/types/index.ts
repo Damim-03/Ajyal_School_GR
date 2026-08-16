@@ -34,6 +34,8 @@ export interface User {
   email: string | null;
   phone: string | null;
   avatar: string | null;
+  /** منه يُرسم الأفاتار الافتراضي حين لا صورة — كما للطالب والأستاذ */
+  gender: Gender;
   isActive: boolean;
   lastLoginAt: string | null;
   role: {

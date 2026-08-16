@@ -5,13 +5,14 @@ const auth_controller_1 = require("./auth.controller");
 const async_handler_middleware_1 = require("../../core/middleware/async-handler.middleware");
 const auth_middleware_1 = require("../../core/middleware/auth.middleware");
 const validate_middleware_1 = require("../../core/middleware/validate.middleware");
+const rate_limit_middleware_1 = require("../../core/middleware/rate-limit.middleware");
 const auth_schema_1 = require("./auth.schema");
 const router = (0, express_1.Router)();
 // --------------------------------------------------
 // POST /api/auth/login
-// Public
+// Public — 10 محاولات فاشلة لكل 15 دقيقة
 // --------------------------------------------------
-router.post("/login", (0, validate_middleware_1.validate)(auth_schema_1.loginSchema), (0, async_handler_middleware_1.asyncHandler)(auth_controller_1.loginController));
+router.post("/login", rate_limit_middleware_1.loginLimiter, (0, validate_middleware_1.validate)(auth_schema_1.loginSchema), (0, async_handler_middleware_1.asyncHandler)(auth_controller_1.loginController));
 // --------------------------------------------------
 // POST /api/auth/refresh
 // Public — refreshToken من Cookie

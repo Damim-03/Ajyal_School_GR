@@ -30,6 +30,7 @@ const userSelect = {
     email: true,
     phone: true,
     avatar: true,
+    gender: true,
     isActive: true,
     lastLoginAt: true,
     role: {

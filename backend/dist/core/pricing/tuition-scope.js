@@ -1,0 +1,206 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.resolveTuitionFeeForGroup = exports.explainMissingFee = exports.resolveTuitionFee = exports.loadPricingTarget = exports.describeScope = exports.scopeSpecificity = exports.buildScopeKey = exports.SCOPE_NONE = void 0;
+const client_1 = require("../prisma/client");
+/**
+ * ترجيح نطاق التسعير.
+ *
+ * السعر لم يعد يُطلب بـ (مادة + فوج) بل بنطاقٍ أربعةُ حقوله اختيارية،
+ * والفارغُ منها يعني «أيّاً كان». فصفٌّ بالطور وحده يسعّر المادة لكل
+ * أفواجه، وصفٌّ بالفوج يسعّرها لفوجٍ بعينه.
+ *
+ * وعند تعدّد المطابقات يفوز **أخصُّها**. والأوزان ثنائية عمداً:
+ *
+ *     فوج 8 · مستوى 4 · طور 2 · نوعية 1
+ *
+ * فمجموعُ كل تركيبة فريدٌ لا يساوي غيره (8، 4، 2، 1، 5، 3، 9…)،
+ * ولا يقع تعادلٌ يحتاج قاعدةَ كسر. ولو كانت الأوزان 4/3/2/1 لتساوى
+ * «مستوى + نوعية» مع «فوج» وصار الترتيب رهنَ مصادفة.
+ */
+/** ما يُكتب في البصمة مكان الحقل الفارغ */
+exports.SCOPE_NONE = "-";
+const W_GROUP = 8;
+const W_LEVEL = 4;
+const W_STAGE = 2;
+const W_TYPE = 1;
+/**
+ * بصمة النطاق نصّاً.
+ *
+ * وجودُها ضرورة لا زينة: MySQL يعتبر كل NULL مميّزاً عن غيره، فقيدٌ
+ * فريد على الأعمدة الاختيارية نفسها لا يمنع صفَّين متطابقَي النطاق.
+ */
+const buildScopeKey = (scope) => [
+    `yr:${scope.academicYearId}`,
+    `sub:${scope.subjectId}`,
+    `grp:${scope.studyGroupId ?? exports.SCOPE_NONE}`,
+    `lvl:${scope.levelId ?? exports.SCOPE_NONE}`,
+    `stg:${scope.educationStageId ?? exports.SCOPE_NONE}`,
+    `typ:${scope.groupType ?? exports.SCOPE_NONE}`,
+].join("|");
+exports.buildScopeKey = buildScopeKey;
+const scopeSpecificity = (scope) => (scope.studyGroupId ? W_GROUP : 0) +
+    (scope.levelId ? W_LEVEL : 0) +
+    (scope.educationStageId ? W_STAGE : 0) +
+    (scope.groupType ? W_TYPE : 0);
+exports.scopeSpecificity = scopeSpecificity;
+/** وصفٌ عربي للنطاق — يُعرض في الواجهة وفي رسائل التعارض */
+const describeScope = (scope) => {
+    const parts = [];
+    if (scope.studyGroup)
+        parts.push(`فوج ${scope.studyGroup.name}`);
+    if (scope.level)
+        parts.push(scope.level.name);
+    if (scope.educationStage)
+        parts.push(scope.educationStage.name);
+    if (scope.groupType)
+        parts.push(GROUP_TYPE_LABEL[scope.groupType]);
+    return parts.length > 0 ? parts.join(" · ") : "كل الأفواج";
+};
+exports.describeScope = describeScope;
+const GROUP_TYPE_LABEL = {
+    NORMAL: "عادي",
+    ELITE: "نخبة",
+    INTENSIVE: "مكثّف",
+    EVENING: "مسائي",
+};
+/**
+ * نسب الفوج كاملةً — الفوج يعرف مستواه، والمستوى يعرف طوره.
+ * تُحمَّل مرة واحدة ثم تُمرَّر، تفادياً لاستعلامٍ لكل فاتورة.
+ */
+const loadPricingTarget = async (subjectId, studyGroupId, client = client_1.prisma) => {
+    const group = await client.studyGroup.findUnique({
+        where: { id: studyGroupId },
+        select: {
+            id: true,
+            type: true,
+            levelId: true,
+            level: { select: { educationStageId: true } },
+        },
+    });
+    if (!group)
+        return null;
+    return {
+        subjectId,
+        studyGroupId: group.id,
+        levelId: group.levelId,
+        educationStageId: group.level.educationStageId,
+        groupType: group.type,
+    };
+};
+exports.loadPricingTarget = loadPricingTarget;
+const feeScopeSelect = {
+    id: true,
+    amount: true,
+    lateEnrollmentMode: true,
+    studyGroupId: true,
+    levelId: true,
+    educationStageId: true,
+    groupType: true,
+};
+/** ما يطابق نطاقُه هذه الوجهة — بغضّ النظر عن التفعيل */
+const scopeWhere = (target) => ({
+    // كل حقل نطاق: إمّا فارغ (أيّاً كان) أو مساوٍ لنسب الوجهة
+    AND: [
+        { OR: [{ studyGroupId: null }, { studyGroupId: target.studyGroupId }] },
+        { OR: [{ levelId: null }, { levelId: target.levelId }] },
+        {
+            OR: [
+                { educationStageId: null },
+                { educationStageId: target.educationStageId },
+            ],
+        },
+        { OR: [{ groupType: null }, { groupType: target.groupType }] },
+    ],
+});
+/**
+ * سعر هذه الوجهة في سنةٍ دراسية.
+ *
+ * يُرجع أخصَّ صفٍّ مطابق، أو null إن لم يوجد سعر — والفرقُ بينهما
+ * مقصود: غيابُ السعر خطأُ إعدادٍ يجب أن يظهر للإدارة لا أن يُفترض صفراً.
+ */
+const resolveTuitionFee = async (target, academicYearId, client = client_1.prisma) => {
+    const candidates = await client.tuitionFee.findMany({
+        where: {
+            academicYearId,
+            subjectId: target.subjectId,
+            isActive: true,
+            ...scopeWhere(target),
+        },
+        select: feeScopeSelect,
+    });
+    if (candidates.length === 0)
+        return null;
+    // الأخصّ يفوز — ولا تعادل ممكن: الأوزان ثنائية، وتساوي التخصيص
+    // يعني تطابق النطاق وذلك يمنعه القيد الفريد على البصمة.
+    const best = candidates
+        .map((fee) => ({ ...fee, specificity: (0, exports.scopeSpecificity)(fee) }))
+        .sort((a, b) => b.specificity - a.specificity)[0];
+    return {
+        id: best.id,
+        amount: best.amount,
+        lateEnrollmentMode: best.lateEnrollmentMode,
+        specificity: best.specificity,
+    };
+};
+exports.resolveTuitionFee = resolveTuitionFee;
+/**
+ * لماذا لم يُوجد سعر.
+ *
+ * «لا سعر» جوابٌ صحيح لا يُفيد: المستخدم يرى السعر أمامه في القائمة
+ * ويقرأ أنه غير موجود، فيظنّ الخلل في النظام. والأسبابُ الممكنة الآن
+ * ثلاثة لا أكثر — سنةٌ أخرى، أو نطاقٌ لا يشمل الفوج، أو صفٌّ معطَّل —
+ * وكلُّها تُسمّى صراحةً.
+ */
+const explainMissingFee = async (target, academicYearId, client = client_1.prisma) => {
+    const all = await client.tuitionFee.findMany({
+        where: { subjectId: target.subjectId },
+        select: {
+            ...feeScopeSelect,
+            isActive: true,
+            academicYearId: true,
+            academicYear: { select: { name: true } },
+            studyGroup: { select: { name: true } },
+            level: { select: { name: true } },
+            educationStage: { select: { name: true } },
+        },
+    });
+    if (all.length === 0) {
+        return "لا يوجد أيّ حقّ اشتراك لهذه المادة — أضِفه من المالية ← حقوق الاشتراك.";
+    }
+    const matchesScope = (fee) => (!fee.studyGroupId || fee.studyGroupId === target.studyGroupId) &&
+        (!fee.levelId || fee.levelId === target.levelId) &&
+        (!fee.educationStageId ||
+            fee.educationStageId === target.educationStageId) &&
+        (!fee.groupType || fee.groupType === target.groupType);
+    const thisYear = all.filter((fee) => fee.academicYearId === academicYearId);
+    // سعرٌ لهذا الفوج لكن في سنةٍ أخرى — الحالة الأولى بعد إنشاء سنة جديدة
+    if (thisYear.length === 0) {
+        const years = [
+            ...new Set(all.filter(matchesScope).map((fee) => fee.academicYear.name)),
+        ];
+        return years.length > 0
+            ? `التسعيرة معرَّفة لسنة ${years.join("، ")} لا للسنة المطلوبة — ` +
+                `أضِف تسعيرة لهذه السنة الدراسية.`
+            : "لا تسعيرة لهذه المادة في السنة الدراسية المطلوبة.";
+    }
+    const scopeMatches = thisYear.filter(matchesScope);
+    if (scopeMatches.length === 0) {
+        const scopes = [
+            ...new Set(thisYear.map((fee) => (0, exports.describeScope)(fee))),
+        ];
+        return (`توجد ${thisYear.length} تسعيرة لهذه المادة هذه السنة لكن لا شيء منها يشمل هذا الفوج — ` +
+            `نطاقاتها: ${scopes.join("، ")}.`);
+    }
+    if (scopeMatches.every((fee) => !fee.isActive)) {
+        return "التسعيرة المطابقة معطَّلة — فعّلها من المالية ← حقوق الاشتراك.";
+    }
+    return "لا تسعيرة مطابقة لهذه المادة وهذا الفوج في السنة المطلوبة.";
+};
+exports.explainMissingFee = explainMissingFee;
+/** طريقٌ مختصر حين لا تكون النسب محمَّلة سلفاً */
+const resolveTuitionFeeForGroup = async (subjectId, studyGroupId, academicYearId, client = client_1.prisma) => {
+    const target = await (0, exports.loadPricingTarget)(subjectId, studyGroupId, client);
+    return target ? (0, exports.resolveTuitionFee)(target, academicYearId, client) : null;
+};
+exports.resolveTuitionFeeForGroup = resolveTuitionFeeForGroup;
+//# sourceMappingURL=tuition-scope.js.map
