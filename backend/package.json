@@ -1,23 +1,26 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Ajyal School GR Backend API",
+  "main": "dist/app.js",
   "scripts": {
     "seed": "ts-node src/seeders/role.seeder.ts",
     "dev": "npm run build && nodemon src/app.ts",
     "build": "tsc",
-    "start": "npm run build && node dist/app.js",
+    "start": "node dist/app.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy"
   },
-  "keywords": [],
+  "keywords": [
+    "school",
+    "management",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.8.0",
-    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",

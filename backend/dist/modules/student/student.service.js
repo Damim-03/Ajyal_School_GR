@@ -1,13 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteStudentService = exports.updateStudentService = exports.createStudentService = exports.getStudentEnrollmentsService = exports.getStudentService = exports.listStudentsService = void 0;
+const prisma_1 = require("../../generated/prisma");
 const client_1 = require("../../core/prisma/client");
 const app_errors_1 = require("../../core/errors/app.errors");
 const error_code_enum_1 = require("../../core/enums/error-code.enum");
 const api_response_1 = require("../../core/config/api-response");
+const student_number_1 = require("../../core/utils/student-number");
 const document_types_1 = require("./document.types");
 const studentSelect = {
     id: true,
+    studentNumber: true,
     firstName: true,
     lastName: true,
     gender: true,
@@ -59,6 +62,13 @@ const listStudentsService = async (query) => {
         ...(query.gender && { gender: query.gender }),
         ...(query.search && {
             OR: [
+                /*
+                 * الرقم أوّلاً لأنّه المدخل الأسرع: ماسحُ الباركود يكتب رقم
+                 * البطاقة في حقل البحث ويضغط Enter، فيُفتح الطالب بمسحةٍ بدل
+                 * كتابة اسمه. والمطابقة تامّةٌ لا `contains` — «2026000014»
+                 * جزءٌ من لا شيء، و`contains` كانت ستُعيد معه كلَّ رقمٍ يحويه.
+                 */
+                { studentNumber: query.search },
                 { firstName: { contains: query.search } },
                 { lastName: { contains: query.search } },
                 { phone: { contains: query.search } },
@@ -168,7 +178,18 @@ const getStudentEnrollmentsService = async (id, query) => {
                             id: true,
                             name: true,
                             type: true,
-                            level: { select: { id: true, name: true } },
+                            /*
+                             * الطور مع المستوى — تطلبهما بطاقة الطالب معاً («أولى
+                             * متوسط» مستوى و«المتوسط» طور)، وهما حقلان في جدولين
+                             * فجلبُهما هنا يوفّر طلباً ثانياً لأجل سطرٍ في بطاقة.
+                             */
+                            level: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    educationStage: { select: { id: true, name: true, type: true } },
+                                },
+                            },
                         },
                     },
                     academicYear: { select: { id: true, name: true, isCurrent: true } },
@@ -183,25 +204,51 @@ exports.getStudentEnrollmentsService = getStudentEnrollmentsService;
 // --------------------------------------------------
 // Create
 // --------------------------------------------------
+/**
+ * محاولاتُ الرقم عند التزاحم.
+ *
+ * `nextStudentNumber` يقرأ الأكبر ويزيد، ومعاملتان متزامنتان قد تقرآن
+ * الأكبرَ نفسه. القاعدة تردّ الثانية بـP2002 وتُعاد المحاولة فتقرأ
+ * الرقم الذي حفظته الأولى. وثلاثٌ تكفي لموظّفَين يسجّلان معاً، والحدُّ
+ * موجودٌ لأنّ حلقةً بلا سقفٍ عند خللٍ في القاعدة أسوأ من خطأٍ صريح.
+ */
+const NUMBER_ATTEMPTS = 3;
 const createStudentService = async (body) => {
-    return client_1.prisma.student.create({
-        data: {
-            firstName: body.firstName,
-            lastName: body.lastName,
-            gender: body.gender,
-            birthDate: body.birthDate ?? null,
-            avatar: body.avatar ?? null,
-            phone: body.phone ?? null,
-            parentPhone: body.parentPhone,
-            address: body.address ?? null,
-            schoolName: body.schoolName ?? null,
-            emergencyPhone: body.emergencyPhone ?? null,
-            ...(body.registrationDate && { registrationDate: body.registrationDate }),
-            note: body.note ?? null,
-            isActive: body.isActive ?? true,
-        },
-        select: studentSelect,
-    });
+    for (let attempt = 0; attempt < NUMBER_ATTEMPTS; attempt++) {
+        try {
+            return await client_1.prisma.$transaction(async (tx) => {
+                const prefix = await (0, student_number_1.currentYearPrefix)(tx);
+                return tx.student.create({
+                    data: {
+                        studentNumber: await (0, student_number_1.nextStudentNumber)(tx, prefix),
+                        firstName: body.firstName,
+                        lastName: body.lastName,
+                        gender: body.gender,
+                        birthDate: body.birthDate ?? null,
+                        avatar: body.avatar ?? null,
+                        phone: body.phone ?? null,
+                        parentPhone: body.parentPhone,
+                        address: body.address ?? null,
+                        schoolName: body.schoolName ?? null,
+                        emergencyPhone: body.emergencyPhone ?? null,
+                        ...(body.registrationDate && { registrationDate: body.registrationDate }),
+                        note: body.note ?? null,
+                        isActive: body.isActive ?? true,
+                    },
+                    select: studentSelect,
+                });
+            });
+        }
+        catch (error) {
+            const clash = error instanceof prisma_1.Prisma.PrismaClientKnownRequestError &&
+                error.code === "P2002" &&
+                String(error.meta?.target ?? "").includes("studentNumber");
+            if (!clash || attempt === NUMBER_ATTEMPTS - 1)
+                throw error;
+        }
+    }
+    /* لا يُبلَغ: الحلقة إمّا تُرجع أو ترمي في الدورة الأخيرة */
+    throw new app_errors_1.ConflictException("Could not allocate a student number", error_code_enum_1.ErrorCodeEnum.RESOURCE_ALREADY_EXISTS);
 };
 exports.createStudentService = createStudentService;
 // --------------------------------------------------
