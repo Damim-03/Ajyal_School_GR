@@ -19,7 +19,7 @@ import { ErrorCodeEnum } from "../../core/enums/error-code.enum";
  * احتياطية وكل استعلام يجلب الصفّ كاملاً.
  */
 
-const uploadDir = path.join(process.cwd(), "uploads");
+const uploadDir = path.join(__dirname, "..", "..", "..", "uploads");
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });

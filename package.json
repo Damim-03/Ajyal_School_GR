@@ -19,6 +19,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "bugs": {
     "url": "https://github.com/Damim-03/Ajyal_School_GR/issues"
   },

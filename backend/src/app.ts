@@ -134,7 +134,7 @@ app.use(morgan("dev"));
 // في helmet مضبوط على cross-origin فوقها ليتمكّن تطبيق Tauri من عرضها.
 // ======================================================
 
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // ======================================================
 // HEALTH CHECK

@@ -110,7 +110,7 @@ app.use((0, morgan_1.default)("dev"));
 // خارج /api عمداً: هذه ملفّات لا نقاط نهاية، و`crossOriginResourcePolicy`
 // في helmet مضبوط على cross-origin فوقها ليتمكّن تطبيق Tauri من عرضها.
 // ======================================================
-app.use("/uploads", express_1.default.static(node_path_1.default.join(process.cwd(), "uploads")));
+app.use("/uploads", express_1.default.static(node_path_1.default.join(__dirname, "..", "uploads")));
 // ======================================================
 // HEALTH CHECK
 // ======================================================

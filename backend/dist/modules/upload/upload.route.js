@@ -21,7 +21,7 @@ const error_code_enum_1 = require("../../core/enums/error-code.enum");
  * قاعدة البيانات: صورةٌ واحدة بحجم ميغابايتين تكفي لإفساد كل نسخة
  * احتياطية وكل استعلام يجلب الصفّ كاملاً.
  */
-const uploadDir = node_path_1.default.join(process.cwd(), "uploads");
+const uploadDir = node_path_1.default.join(__dirname, "..", "..", "..", "uploads");
 if (!node_fs_1.default.existsSync(uploadDir)) {
     node_fs_1.default.mkdirSync(uploadDir, { recursive: true });
 }
