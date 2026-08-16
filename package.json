@@ -1,0 +1,26 @@
+{
+  "name": "ajyal-school-gr-backend",
+  "version": "1.0.0",
+  "description": "Ajyal School GR Backend API",
+  "main": "Backend/dist/app.js",
+  "scripts": {
+    "build": "cd Backend && npm install && npx prisma generate && npx prisma migrate deploy && npm run build",
+    "start": "cd Backend && node dist/app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Damim-03/Ajyal_School_GR.git"
+  },
+  "keywords": [
+    "school",
+    "management",
+    "api"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Damim-03/Ajyal_School_GR/issues"
+  },
+  "homepage": "https://github.com/Damim-03/Ajyal_School_GR#readme"
+}
