@@ -1,5 +1,5 @@
 {
-  "name": "ajyal-school-gr-backend",
+  "name": "ajyal-school-gr",
   "version": "1.0.0",
   "description": "Ajyal School GR Backend API",
   "main": "backend/dist/app.js",
