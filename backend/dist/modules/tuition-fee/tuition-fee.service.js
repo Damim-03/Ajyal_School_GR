@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteTuitionFeeService = exports.updateTuitionFeeService = exports.createTuitionFeeService = exports.getTuitionFeeService = exports.listTuitionFeesService = void 0;
-const prisma_1 = require("../../generated/prisma");
+const prisma_1 = require("../../../generated/prisma");
 const client_1 = require("../../core/prisma/client");
 const tuition_scope_1 = require("../../core/pricing/tuition-scope");
 const app_errors_1 = require("../../core/errors/app.errors");

@@ -3,7 +3,7 @@ import {
   RoundingMode,
   SettlementCountBasis,
   SettlementMethod,
-} from "../../generated/prisma";
+} from "../../../generated/prisma";
 import { distributeEvenly, roundMoney } from "./rounding";
 
 /**

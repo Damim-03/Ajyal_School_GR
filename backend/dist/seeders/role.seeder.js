@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const crypto_1 = require("crypto");
-const prisma_1 = require("../generated/prisma");
+const prisma_1 = require("../../generated/prisma");
 const client_1 = require("../core/prisma/client");
 // ======================================================
 // Seeder — Permissions + Roles + Admin User

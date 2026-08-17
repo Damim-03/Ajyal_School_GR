@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.dailyClearanceService = exports.settlementEstimateService = void 0;
-const prisma_1 = require("../../generated/prisma");
+const prisma_1 = require("../../../generated/prisma");
 const client_1 = require("../../core/prisma/client");
 const time_1 = require("../../core/utils/time");
 const settlement_service_1 = require("./settlement.service");

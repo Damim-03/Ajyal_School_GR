@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.studentEnrollmentQuerySchema = exports.putDocumentSchema = exports.documentTypeParamSchema = exports.studentQuerySchema = exports.studentIdSchema = exports.updateStudentSchema = exports.createStudentSchema = void 0;
 const zod_1 = require("zod");
-const prisma_1 = require("../../generated/prisma");
+const prisma_1 = require("../../../generated/prisma");
 // --------------------------------------------------
 // حقول مشتركة
 // --------------------------------------------------

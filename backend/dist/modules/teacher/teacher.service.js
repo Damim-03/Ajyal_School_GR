@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteTeacherService = exports.updateTeacherService = exports.createTeacherService = exports.getTeacherService = exports.listTeachersService = void 0;
-const prisma_1 = require("../../generated/prisma");
+const prisma_1 = require("../../../generated/prisma");
 const client_1 = require("../../core/prisma/client");
 const app_errors_1 = require("../../core/errors/app.errors");
 const error_code_enum_1 = require("../../core/enums/error-code.enum");

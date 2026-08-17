@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requiredFieldFor = exports.computeSettlement = void 0;
-const prisma_1 = require("../../generated/prisma");
+const prisma_1 = require("../../../generated/prisma");
 const rounding_1 = require("./rounding");
 const ZERO = new prisma_1.Prisma.Decimal(0);
 /** عدد الطلبة وفق أساس العدّ — لا يُستعمل مع PER_ATTENDED_SHARE */

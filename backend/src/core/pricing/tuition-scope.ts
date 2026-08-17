@@ -2,7 +2,7 @@ import {
   Prisma,
   StudyGroupType,
   LateEnrollmentBillingMode,
-} from "../../generated/prisma";
+} from "../../../generated/prisma";
 import { prisma } from "../prisma/client";
 
 /**

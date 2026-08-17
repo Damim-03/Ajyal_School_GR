@@ -1,4 +1,4 @@
-import { Prisma } from "../../generated/prisma";
+import { Prisma } from "../../../generated/prisma";
 
 /**
  * رقم الطالب في المؤسسة — «2026000147».

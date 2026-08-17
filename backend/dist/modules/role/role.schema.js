@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.permissionQuerySchema = exports.roleQuerySchema = exports.roleIdSchema = exports.setRolePermissionsSchema = exports.updateRoleSchema = exports.createRoleSchema = void 0;
 const zod_1 = require("zod");
-const prisma_1 = require("../../generated/prisma");
+const prisma_1 = require("../../../generated/prisma");
 // --------------------------------------------------
 // Create
 // --------------------------------------------------

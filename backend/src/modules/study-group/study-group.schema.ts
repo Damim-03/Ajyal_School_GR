@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { StudyGroupType } from "../../generated/prisma";
+import { StudyGroupType } from "../../../generated/prisma";
 
 // --------------------------------------------------
 // Create

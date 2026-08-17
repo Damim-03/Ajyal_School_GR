@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.studyGroupQuerySchema = exports.studyGroupIdSchema = exports.updateStudyGroupSchema = exports.createStudyGroupSchema = void 0;
 const zod_1 = require("zod");
-const prisma_1 = require("../../generated/prisma");
+const prisma_1 = require("../../../generated/prisma");
 // --------------------------------------------------
 // Create
 // --------------------------------------------------

@@ -1,4 +1,4 @@
-import { Prisma, InvoiceStatus } from "../../generated/prisma";
+import { Prisma, InvoiceStatus } from "../../../generated/prisma";
 import { prisma } from "../../core/prisma/client";
 import {
   NotFoundException,

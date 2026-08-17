@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { Prisma } from "../../generated/prisma";
+import { Prisma } from "../../../generated/prisma";
 import { prisma } from "../../core/prisma/client";
 import {
   NotFoundException,

@@ -1,4 +1,4 @@
-import { FinancialAuditAction, Prisma } from "../../generated/prisma";
+import { FinancialAuditAction, Prisma } from "../../../generated/prisma";
 import { prisma } from "../prisma/client";
 
 /**

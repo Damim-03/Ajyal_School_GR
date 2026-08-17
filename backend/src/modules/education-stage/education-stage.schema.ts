@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EducationStageType } from "../../generated/prisma";
+import { EducationStageType } from "../../../generated/prisma";
 
 // --------------------------------------------------
 // Create

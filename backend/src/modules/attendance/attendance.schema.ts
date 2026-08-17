@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AttendanceStatus } from "../../generated/prisma";
+import { AttendanceStatus } from "../../../generated/prisma";
 
 // --------------------------------------------------
 // Create — سجل واحد

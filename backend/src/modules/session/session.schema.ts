@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SessionStatus } from "../../generated/prisma";
+import { SessionStatus } from "../../../generated/prisma";
 
 // --------------------------------------------------
 // Create — حصة واحدة يدوياً

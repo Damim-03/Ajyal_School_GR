@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PermissionModule } from "../../generated/prisma";
+import { PermissionModule } from "../../../generated/prisma";
 
 // --------------------------------------------------
 // Create

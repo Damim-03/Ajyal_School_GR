@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sessionQuerySchema = exports.sessionIdSchema = exports.updateSessionSchema = exports.generateSessionsSchema = exports.createSessionSchema = void 0;
 const zod_1 = require("zod");
-const prisma_1 = require("../../generated/prisma");
+const prisma_1 = require("../../../generated/prisma");
 // --------------------------------------------------
 // Create — حصة واحدة يدوياً
 //

@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.cancelInvoiceSchema = exports.invoiceQuerySchema = exports.invoiceIdSchema = exports.updateInvoiceSchema = exports.generateInvoicesSchema = exports.createInvoiceSchema = void 0;
 const zod_1 = require("zod");
-const prisma_1 = require("../../generated/prisma");
+const prisma_1 = require("../../../generated/prisma");
 const monthField = zod_1.z.coerce
     .number()
     .int()

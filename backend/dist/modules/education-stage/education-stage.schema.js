@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.educationStageQuerySchema = exports.educationStageIdSchema = exports.updateEducationStageSchema = exports.createEducationStageSchema = void 0;
 const zod_1 = require("zod");
-const prisma_1 = require("../../generated/prisma");
+const prisma_1 = require("../../../generated/prisma");
 // --------------------------------------------------
 // Create
 // sortOrder اختياري — يُحسب تلقائياً (آخر ترتيب + 1)

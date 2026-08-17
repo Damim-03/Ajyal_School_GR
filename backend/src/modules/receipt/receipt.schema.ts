@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ReceiptStatus } from "../../generated/prisma";
+import { ReceiptStatus } from "../../../generated/prisma";
 
 // --------------------------------------------------
 // Params & Query

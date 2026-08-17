@@ -1,4 +1,4 @@
-import { Prisma } from "../../generated/prisma";
+import { Prisma } from "../../../generated/prisma";
 
 /**
  * أهليةُ الطالب لحصةٍ بعينها — «غير مسجَّل» ليست غياباً.

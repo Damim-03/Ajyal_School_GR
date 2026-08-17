@@ -1,4 +1,4 @@
-import { Prisma } from "../../generated/prisma";
+import { Prisma } from "../../../generated/prisma";
 import { prisma } from "../../core/prisma/client";
 import { startOfUtcDay, addUtcDays } from "../../core/utils/time";
 import { gatherSettlementFacts } from "./settlement.service";

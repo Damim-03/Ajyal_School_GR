@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { InvoiceStatus } from "../../generated/prisma";
+import { InvoiceStatus } from "../../../generated/prisma";
 
 const monthField = z.coerce
   .number()

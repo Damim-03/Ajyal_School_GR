@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.prisma = void 0;
 require("dotenv/config");
 const adapter_mariadb_1 = require("@prisma/adapter-mariadb");
-const prisma_1 = require("../../generated/prisma");
+const prisma_1 = require("../../../generated/prisma");
 const app_config_1 = require("../config/app.config");
 // --------------------------------------------------
 // مصدر واحد للاتصال: DATABASE_URL

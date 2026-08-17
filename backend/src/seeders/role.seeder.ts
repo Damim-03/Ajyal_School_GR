@@ -1,7 +1,7 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { PermissionModule } from "../generated/prisma";
+import { PermissionModule } from "../../generated/prisma";
 import { prisma } from "../core/prisma/client";
 
 // ======================================================

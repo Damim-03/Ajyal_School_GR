@@ -1,5 +1,5 @@
-import { Prisma } from "../../generated/prisma";
-import { RoundingMode } from "../../generated/prisma";
+import { Prisma } from "../../../generated/prisma";
+import { RoundingMode } from "../../../generated/prisma";
 
 /**
  * التقريب مركزيٌّ هنا.

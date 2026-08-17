@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PaymentMethod, PaymentStatus } from "../../generated/prisma";
+import { PaymentMethod, PaymentStatus } from "../../../generated/prisma";
 
 // --------------------------------------------------
 // Create
