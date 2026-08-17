@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import { StudentCardBack, StudentCardFront } from "./modules/students/StudentCard";
+import { CARD_H_MM, CARD_W_MM, StudentCardBack, StudentCardFront } from "./modules/students/StudentCard";
+import { StudentCardFlip } from "./modules/students/StudentCardFlip";
 import { useSchoolStore } from "./core/stores/school.store";
 import type { Enrollment, Student } from "./modules/students/student.api";
 
@@ -11,6 +12,7 @@ useSchoolStore.setState({
     "school.brand_color": "#0f5f8a",
     "school.address": "حي النصر، قسنطينة",
     "school.phone": "0555 12 34 56",
+    "school.email": "info@ajyal.dz",
     "school.logo_path": "",
   },
   configured: [],
@@ -33,6 +35,13 @@ const student = {
   registrationDate: "2026-08-15T00:00:00.000Z",
   note: null,
   isActive: true,
+  /* المستوى حقلٌ على الطالب — تقرؤه البطاقة قبل أن تنظر في التسجيلات */
+  levelId: "l",
+  level: {
+    id: "l",
+    name: "أولى متوسط",
+    educationStage: { id: "st", name: "التعليم المتوسط", type: "MIDDLE" },
+  },
 } as Student;
 
 const enrollments = [
@@ -73,6 +82,7 @@ createRoot(document.getElementById("root")!).render(
   <div style={{ background: "#111827", padding: 24, display: "grid", gap: 24, justifyItems: "start" }}>
     <div id="front"><StudentCardFront student={student} enrollments={enrollments} /></div>
     <div id="back"><StudentCardBack /></div>
+    <div id="flip"><StudentCardFlip student={student} enrollments={enrollments} /></div>
     <div id="front-f"><StudentCardFront student={female} enrollments={null} /></div>
     <div id="front-long"><StudentCardFront student={long} enrollments={enrollments} /></div>
     <div id="sheet" className="sheet-preview" style={{ background: "#fff" }}>
@@ -87,10 +97,10 @@ function CardSheetProbe() {
     <div className="sheet-print">
       <div className="sheet-page">
         <div style={{ display: "flex", flexWrap: "wrap", gap: "10mm", alignItems: "flex-start", paddingTop: "6mm" }}>
-          <div style={{ padding: "1mm", border: "0.2mm dashed #9ca3af", width: "calc(85.6mm + 2.4mm)", height: "calc(54mm + 2.4mm)", boxSizing: "border-box" }}>
+          <div style={{ padding: "1mm", border: "0.2mm dashed #9ca3af", width: `calc(${CARD_W_MM}mm + 2.4mm)`, height: `calc(${CARD_H_MM}mm + 2.4mm)`, boxSizing: "border-box" }}>
             <StudentCardFront student={student} enrollments={enrollments} />
           </div>
-          <div style={{ padding: "1mm", border: "0.2mm dashed #9ca3af", width: "calc(85.6mm + 2.4mm)", height: "calc(54mm + 2.4mm)", boxSizing: "border-box" }}>
+          <div style={{ padding: "1mm", border: "0.2mm dashed #9ca3af", width: `calc(${CARD_W_MM}mm + 2.4mm)`, height: `calc(${CARD_H_MM}mm + 2.4mm)`, boxSizing: "border-box" }}>
             <StudentCardBack />
           </div>
         </div>

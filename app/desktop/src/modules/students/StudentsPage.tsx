@@ -37,6 +37,7 @@ import { MOTION } from "../../motion/system";
 import { PATHS } from "../../routes/paths";
 import { useScreenExit } from "../../lib/screen-transition";
 import { StudentForm } from "./StudentForm";
+import { StudentRegisterDialog } from "./StudentRegisterDialog";
 import {
   deleteStudent,
   listStudents,
@@ -533,16 +534,31 @@ export default function StudentsPage() {
           فالظهور متحرّك والاختفاء فوري. لوحةٌ لا تُغلق عيبٌ يوقف العمل،
           وحركةُ خروجٍ ناقصة عيبٌ تجميلي.
           ================= */}
+      {/*
+        التسجيل غير التعديل: الجديد يمرّ بخطوتين — المعلومات ثمّ الوثائق —
+        لأنّ رفع الوثائق يحتاج معرّف الطالب فلا يُعرض قبل حفظه. والتعديل
+        معلوماتٌ وحدها؛ وثائقُ القائم تُدار من «ملفات الطلبة».
+      */}
       {formOpen && (
-        <StudentForm
-          key={editing?.id ?? "new"}
-          student={editing}
-          onClose={() => setFormOpen(false)}
-          onSaved={() => {
-            setFormOpen(false);
-            fetchRows();
-          }}
-        />
+        editing ? (
+          <StudentForm
+            key={editing.id}
+            student={editing}
+            onClose={() => setFormOpen(false)}
+            onSaved={() => {
+              setFormOpen(false);
+              fetchRows();
+            }}
+          />
+        ) : (
+          <StudentRegisterDialog
+            onClose={() => {
+              setFormOpen(false);
+              /* الطالب حُفظ بعد الخطوة الأولى — فالقائمة تُنعش مهما أُغلقت النافذة */
+              fetchRows();
+            }}
+          />
+        )
       )}
 
       {/* ================= تأكيد الحذف =================

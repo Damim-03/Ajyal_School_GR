@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Ban,
+  Check,
   ChevronDown,
   ChevronLeft,
   FolderOpen,
@@ -19,6 +20,7 @@ import {
 
 import { AppHeader } from "../../components/AppHeader";
 import { PrintPreview } from "../../components/print/PrintPreview";
+import { FormDialog, FormGrid, FormRow } from "../../components/shared/FormDialog";
 import {
   groupLabel,
   useAcademicYears,
@@ -593,7 +595,10 @@ function GenerateDialog({
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Awaited<ReturnType<typeof generateInvoices>> | null>(null);
 
-  const run = async () => {
+  const run = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (busy) return;
+
     setBusy(true);
     setError(null);
     try {
@@ -611,54 +616,64 @@ function GenerateDialog({
   };
 
   return (
-    <>
-      <div onClick={onClose} className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: MOTION.duration.fast }}
-        className="fixed left-1/2 top-1/2 z-50 w-full max-w-125 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#0a0f1a] p-6"
-      >
-        <h3 className="mb-1 text-lg font-black">توليد فواتير الشهر</h3>
-        <p className="mb-5 text-xs text-white/45">
-          تُنشأ فاتورة لكل تسجيل نشط بسعر حقّ الاشتراك الساري. الموجود
-          مسبقاً يُتخطّى، فإعادة التشغيل آمنة.
-        </p>
-
+    <FormDialog
+      icon={Sparkles}
+      title="توليد فواتير الشهر"
+      subtitle="تُنشأ فاتورة لكل تسجيل نشط بسعر حقّ الاشتراك الساري. الموجود مسبقاً يُتخطّى، فإعادة التشغيل آمنة."
+      tone={ACCENT}
+      width="md"
+      /* بعد التوليد لا رجعة: الإغلاق يُنعش القائمة كي تظهر الفواتير الجديدة */
+      onClose={result ? onDone : onClose}
+      onSubmit={result ? (e) => { e.preventDefault(); onDone(); } : run}
+      busy={busy}
+      submitDisabled={!result && !yearId}
+      submitLabel={result ? "تمّ" : "توليد"}
+      submitIcon={result ? <Check className="h-4.5 w-4.5" /> : <Sparkles className="h-4.5 w-4.5" />}
+      error={result ? null : error}
+    >
         {!result ? (
-          <div className="space-y-4">
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold text-white/60">السنة الدراسية</span>
-              <select value={yearId} onChange={(e) => setYearId(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none">
-                <option value="" className="bg-[#0a0f1a]">— اختر —</option>
-                {years.map((y) => <option key={y.id} value={y.id} className="bg-[#0a0f1a]">{y.name}</option>)}
-              </select>
-            </label>
+          <>
+            <FormGrid>
+              <FormRow wide>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-bold text-white/60">السنة الدراسية</span>
+                  <select value={yearId} onChange={(e) => setYearId(e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none">
+                    <option value="" className="bg-[#0a0f1a]">— اختر —</option>
+                    {years.map((y) => <option key={y.id} value={y.id} className="bg-[#0a0f1a]">{y.name}</option>)}
+                  </select>
+                </label>
+              </FormRow>
 
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-white/60">الشهر</span>
-                <select value={month} onChange={(e) => setMonth(Number(e.target.value))}
-                  className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none">
-                  {MONTHS.map((m, i) => <option key={m} value={i + 1} className="bg-[#0a0f1a]">{m}</option>)}
-                </select>
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-white/60">السنة</span>
-                <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} dir="ltr"
-                  className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none" />
-              </label>
-            </div>
+              <FormRow>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-bold text-white/60">الشهر</span>
+                  <select value={month} onChange={(e) => setMonth(Number(e.target.value))}
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none">
+                    {MONTHS.map((m, i) => <option key={m} value={i + 1} className="bg-[#0a0f1a]">{m}</option>)}
+                  </select>
+                </label>
+              </FormRow>
 
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold text-white/60">تاريخ الاستحقاق</span>
-              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} dir="ltr"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none" />
-              <span className="mt-1 block text-[11px] text-white/40">اتركه فارغاً ليكون آخر يوم في الشهر</span>
-            </label>
+              <FormRow>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-bold text-white/60">السنة</span>
+                  <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} dir="ltr"
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none" />
+                </label>
+              </FormRow>
 
-            <details className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <FormRow wide>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-bold text-white/60">تاريخ الاستحقاق</span>
+                  <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} dir="ltr"
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none" />
+                  <span className="mt-1 block text-[11px] text-white/40">اتركه فارغاً ليكون آخر يوم في الشهر</span>
+                </label>
+              </FormRow>
+            </FormGrid>
+
+            <details className="mt-4 rounded-xl border border-white/10 bg-black/20 p-3">
               <summary className="cursor-pointer text-xs font-bold text-white/60">
                 تحديد أفواج بعينها (اختياري)
               </summary>
@@ -678,21 +693,7 @@ function GenerateDialog({
                 ))}
               </div>
             </details>
-
-            {error && (
-              <div className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</div>
-            )}
-
-            <div className="flex gap-3">
-              <button onClick={run} disabled={busy || !yearId}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 font-black text-[#1a0410] transition hover:brightness-110 disabled:opacity-40"
-                style={{ background: ACCENT }}>
-                {busy ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Sparkles className="h-4.5 w-4.5" />}
-                توليد
-              </button>
-              <button onClick={onClose} className="rounded-xl bg-white/10 px-5 py-3 text-sm font-bold transition hover:bg-white/20">إلغاء</button>
-            </div>
-          </div>
+          </>
         ) : (
           <div className="space-y-4">
             <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/[0.08] px-4 py-3">
@@ -722,15 +723,8 @@ function GenerateDialog({
                 </p>
               </div>
             )}
-
-            <button onClick={onDone}
-              className="w-full rounded-xl px-5 py-3 font-black text-[#1a0410] transition hover:brightness-110"
-              style={{ background: ACCENT }}>
-              تمّ
-            </button>
           </div>
         )}
-      </motion.div>
-    </>
+    </FormDialog>
   );
 }

@@ -25,8 +25,10 @@ import { money } from "../finance/finance.api";
 import {
   BASIS_LABEL,
   METHOD_LABEL,
+  bucketByAttendance,
   getEstimate,
   policyValue,
+  type BucketSummary,
   type Estimate,
 } from "../finance/settlements.api";
 import {
@@ -196,6 +198,17 @@ export default function EstimatePage() {
   useEffect(() => { load(); }, [load]);
 
   const t = estimate?.totals;
+
+  /**
+   * التجميع بعدد الحصص — قراءة الورقة اليدوية للكشف نفسه.
+   *
+   * لا طلبَ ثانياً للخادم: المعطيات كلُّها في `estimate.students`
+   * (حضورُ كلِّ طالبٍ وحالتُه المالية)، والتجميع إعادةُ ترتيبٍ لها.
+   */
+  const buckets = useMemo(
+    () => (estimate ? bucketByAttendance(estimate) : null),
+    [estimate],
+  );
 
   /** ما يُقرأ قبل إهدار ورقة */
   const printWarning = useMemo(() => {
@@ -547,6 +560,16 @@ export default function EstimatePage() {
               </table>
             </div>
 
+            {/* ============ التجميع بعدد الحصص — ورقة الإدارة ============ */}
+            {buckets && buckets.buckets.length > 0 && (
+              <BucketTable
+                buckets={buckets}
+                sessionRate={t!.institutionSessionRate}
+                countedUnits={t!.countedUnits}
+                currency={currency}
+              />
+            )}
+
             {/* ============ الطلبة والديون ============ */}
             <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
@@ -648,6 +671,177 @@ export default function EstimatePage() {
 }
 
 // --------------------------------------------------
+// الجدول بالمجموعات
+//
+// السؤال الذي لا يجيب عنه الجدولُ بالحصص: **كم طالباً أكمل الشهر؟**
+// وهو السؤال الذي تُراجَع به الورقة اليدوية — تكتب «5 طلبة × 8 حصص ×
+// 187.5 = 7500» فيُصدَّق المبلغ بضربةٍ واحدة على الآلة، بينما تصديقُه
+// من ثمانية أسطرٍ يحتاج جمعَها كلِّها.
+//
+// والمجموع واحدٌ في الجدولين لأنّ الوحدات واحدة:
+// Σ (المحتسبون في كل حصة) = Σ (حصصُ كل محتسب).
+// --------------------------------------------------
+
+function BucketTable({
+  buckets,
+  sessionRate,
+  countedUnits,
+  currency,
+}: {
+  buckets: BucketSummary;
+  sessionRate: number;
+  countedUnits: number;
+  currency: string;
+}) {
+  const showTeacher = buckets.teacherTotal !== null;
+
+  return (
+    <div className="mb-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-white/10 px-5 py-3.5">
+        <span className="text-xs font-bold text-white/60">
+          المجموعات — نفس المبلغ مرتَّباً بالطالب لا بالحصة
+        </span>
+        <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-white/35">
+          {/* أساسُ العدّ مكتوبٌ في ترويسة الجدول الأعلى — لا يُكرَّر */}
+          <span>
+            القاعدة:{" "}
+            <span className="font-bold text-white/60">
+              سعر الحصة × عدد الحصص التي حضرها × عدد المحتسبين
+            </span>
+          </span>
+        </span>
+      </div>
+
+      {/*
+        الاختلافُ يُعلَن. يقع حين يحضر تسجيلٌ مؤرشفٌ حصةً: الخادم يعدّ
+        حضورَه في المجموع ولا يُدرجه في قائمة الطلبة، فيَنقص جدولُ
+        المجموعات عن جدول الحصص. وإخفاءُ التعارض في ورقةٍ مالية أسوأ من
+        إعلانه.
+      */}
+      {buckets.inconsistent && (
+        <p className="flex items-start gap-2 border-b border-amber-400/20 bg-amber-500/[0.07] px-5 py-2.5 text-[11px] leading-relaxed text-amber-200/85">
+          <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          مجموع وحدات المجموعات {buckets.countedUnits} ولا يساوي {countedUnits} في
+          جدول الحصص — حضورُ تسجيلٍ لم يظهر في قائمة الطلبة (مؤرشفٌ أو غير
+          نشط). المبلغ المعتمد هو مبلغ جدول الحصص.
+        </p>
+      )}
+
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-white/10 bg-white/[0.02] text-[11px] text-white/45">
+            <th style={{ width: "16%" }} className={`${headCell} border-e`}>
+              <Head title="عدد الحصص" gloss="ما حضره كلُّ طالبٍ في المجموعة" />
+            </th>
+            <th style={{ width: "18%" }} className={`${headCell} border-e`}>
+              <Head title="المحتسبون" gloss="طلبةٌ حضروا هذا العدد وسدّدوا" />
+            </th>
+            <th style={{ width: "18%" }} className={`${headCell} border-e`}>
+              <Head title="الوحدات" gloss="عدد الحصص × المحتسبون" />
+            </th>
+            <th
+              style={{ width: showTeacher ? "24%" : "48%" }}
+              className={`${headCell} border-e !text-end px-5`}
+            >
+              <Head title="قيمة المؤسسة" gloss="الوحدات × سعر الحصة" end />
+            </th>
+            {showTeacher && (
+              <th style={{ width: "24%" }} className={`${headCell} !text-end px-5`}>
+                <Head title="نصيب الأستاذ" gloss="الوحدات × قيمة الوحدة" end />
+              </th>
+            )}
+          </tr>
+        </thead>
+
+        <tbody>
+          {buckets.buckets.map((bucket) => (
+            <tr
+              key={bucket.sessions}
+              className="border-b border-white/5 transition last:border-0 hover:bg-white/[0.03]"
+            >
+              <td
+                className={`${bodyCell} border-e text-center font-black`}
+                style={{ color: ACCENT }}
+              >
+                <span dir="ltr" className="tabular-nums">{bucket.sessions}</span>
+              </td>
+              <td className={`${bodyCell} border-e text-center font-black`}>
+                <span dir="ltr" className="tabular-nums">{bucket.students}</span>
+              </td>
+              <td className={`${bodyCell} border-e text-center text-white/55`}>
+                {/* الضربُ مكتوبٌ لا مُخفىً — منه يُصدَّق الصفّ بلا حساب */}
+                <span dir="ltr" className="tabular-nums">
+                  {bucket.sessions} × {bucket.students} = {bucket.units}
+                </span>
+              </td>
+              <td className={`${bodyCell} border-e px-5 text-end font-bold text-white/70`}>
+                <span dir="ltr" className="tabular-nums">
+                  {money(bucket.institutionAmount, currency)}
+                </span>
+              </td>
+              {showTeacher && (
+                <td className={`${bodyCell} px-5 text-end font-bold`}>
+                  <span dir="ltr" className="tabular-nums">
+                    {money(bucket.teacherAmount!, currency)}
+                  </span>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+
+        <tfoot>
+          <tr className="border-t border-white/15 bg-white/[0.04]">
+            <td className="border-e border-white/10 px-4 py-3.5 text-center text-[11px] text-white/40">
+              {buckets.buckets.length} مجموعات
+            </td>
+            <td className="border-e border-white/10 px-4 py-3.5 text-center text-[11px] text-white/40">
+              {buckets.countedStudents} محتسباً
+            </td>
+            <td className="border-e border-white/10 px-4 py-3.5 text-center text-[11px] text-white/40">
+              {buckets.countedUnits} وحدة
+            </td>
+            <td className="border-e border-white/10 px-5 py-3.5 text-end font-bold text-white/60">
+              <span dir="ltr" className="tabular-nums">
+                {money(buckets.institutionTotal, currency)}
+              </span>
+              <span className="mt-0.5 block text-[10px] font-normal text-white/30">
+                حقُّ المؤسسة — سعر الحصة {sessionRate}
+              </span>
+            </td>
+            {showTeacher && (
+              <td
+                className="px-5 py-3.5 text-end text-base font-black"
+                style={{ color: ACCENT }}
+              >
+                <span dir="ltr" className="tabular-nums">
+                  {money(buckets.teacherTotal!, currency)}
+                </span>
+                <span className="mt-0.5 block text-[10px] font-normal text-white/30">
+                  مستحقّ الأستاذ — قيمة الوحدة {buckets.unitRate}
+                </span>
+              </td>
+            )}
+          </tr>
+        </tfoot>
+      </table>
+
+      {/*
+        الطرائق المسطَّحة لا نصيبَ فيها لمجموعة. المستحقُّ فيها مبلغٌ
+        شهريٌّ لا يُشتقّ من الحضور، فقيمةُ المجموعة على المؤسسة تبقى
+        صحيحة وحصّةُ الأستاذ منها لا معنى لها — فتُترك ولا تُختلق.
+      */}
+      {!showTeacher && (
+        <p className="border-t border-white/10 px-5 py-2.5 text-[11px] leading-relaxed text-white/35">
+          مستحقّ الأستاذ في هذه السياسة لا يُشتقّ من الحضور، فلا نصيبَ
+          لمجموعةٍ منه. والعمود المعروض قيمةُ الحصص على الطلبة وحدها.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// --------------------------------------------------
 // الورقة المطبوعة
 //
 // جدولان لا واحد: التقدير المالي أولاً — وهو ما يُوقَّع عليه الأستاذ —
@@ -670,6 +864,9 @@ function EstimatePrint({
   const logoWidth = Math.max(24, Math.round(logo.widthMm * 1.4));
   const t = estimate.totals;
   const defaulters = estimate.students.filter((s) => s.defaulter || s.uninvoiced);
+
+  /* دالّةٌ خالصة — تُعيد الحساب هنا فتخرج بعينِ ما تراه الشاشة */
+  const buckets = bucketByAttendance(estimate);
 
   return (
     <div className="sheet-print" dir="rtl">
@@ -738,6 +935,71 @@ function EstimatePrint({
             </tr>
           </tbody>
         </table>
+
+        {/*
+            الجدول الثاني — نفسُ المبلغ مرتَّباً بالطالب.
+            وهو الذي يُصدَّق بضربةٍ واحدة على الآلة: «5 × 8 × 187.5»،
+            فيراجعه الأستاذُ قبل أن يُمضي بلا أن يجمع ثمانية أسطر.
+        */}
+        {buckets.buckets.length > 0 && (
+          <>
+            <h3 style={{ margin: "5mm 0 2mm", fontSize: "11pt" }}>
+              المجموعات — بعدد الحصص التي حضرها الطالب
+            </h3>
+
+            <table className="sheet-print-table">
+              <thead>
+                <tr>
+                  <th style={{ width: "16%" }}>
+                    عدد الحصص<PrintGloss text="ما حضره كلُّ طالبٍ في المجموعة" />
+                  </th>
+                  <th style={{ width: "16%" }}>
+                    المحتسبون<PrintGloss text="حضروا هذا العدد وسدّدوا" />
+                  </th>
+                  <th style={{ width: "22%" }}>
+                    الوحدات<PrintGloss text="عدد الحصص × المحتسبون" />
+                  </th>
+                  <th style={{ width: "23%" }}>
+                    قيمة المؤسسة<PrintGloss text="الوحدات × سعر الحصة" />
+                  </th>
+                  <th style={{ width: "23%" }}>
+                    نصيب الأستاذ<PrintGloss text="الوحدات × قيمة الوحدة" />
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {buckets.buckets.map((bucket) => (
+                  <tr key={bucket.sessions}>
+                    <td className="c b">{bucket.sessions}</td>
+                    <td className="c b">{bucket.students}</td>
+                    <td className="c">
+                      {bucket.sessions} × {bucket.students} = {bucket.units}
+                    </td>
+                    <td className="c">{money(bucket.institutionAmount, currency)}</td>
+                    <td className="c b">
+                      {bucket.teacherAmount === null
+                        ? "—"
+                        : money(bucket.teacherAmount, currency)}
+                    </td>
+                  </tr>
+                ))}
+                <tr>
+                  <td className="c b">{buckets.countedStudents}</td>
+                  <td className="c" style={{ fontSize: "8pt" }}>
+                    محتسباً
+                  </td>
+                  <td className="c b">{buckets.countedUnits} وحدة</td>
+                  <td className="c b">{money(buckets.institutionTotal, currency)}</td>
+                  <td className="c b">
+                    {buckets.teacherTotal === null
+                      ? "—"
+                      : money(buckets.teacherTotal, currency)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </>
+        )}
 
         <p style={{ margin: "4mm 0 2mm", fontSize: "9pt", lineHeight: 1.7 }}>
           الطريقة: {METHOD_LABEL[estimate.policy.method]} ({policyValue(estimate.policy)}) ·

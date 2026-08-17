@@ -3,13 +3,8 @@ import { Loader2, Printer, Scan } from "lucide-react";
 
 import { SheetPreview } from "../../components/print/SheetPreview";
 import { useSchoolStore } from "../../core/stores/school.store";
-import {
-  CARD_H_MM,
-  CARD_W_MM,
-  StudentCardBack,
-  StudentCardFront,
-  schoolingOf,
-} from "./StudentCard";
+import { CARD_H_MM, CARD_W_MM, StudentCardBack, StudentCardFront, schoolingOf } from "./StudentCard";
+import { StudentCardFlip } from "./StudentCardFlip";
 import { getStudentEnrollments, type Enrollment, type Student } from "./student.api";
 
 /**
@@ -47,7 +42,7 @@ export function StudentCardPanel({ student }: { student: Student }) {
     };
   }, [student.id]);
 
-  const schooling = schoolingOf(enrollments);
+  const schooling = schoolingOf(student, enrollments);
 
   return (
     <div className="space-y-5">
@@ -55,7 +50,7 @@ export function StudentCardPanel({ student }: { student: Student }) {
         <div className="flex-1">
           <h3 className="text-sm font-black">بطاقة الطالب</h3>
           <p className="mt-0.5 text-[11px] text-white/40">
-            85.6 × 54 مم — مقاس بطاقة البنك. تُطبع على A4 ثمّ تُقصّ.
+            85.60 × 53.98 مم — مقاس ISO ID‑1 لبطاقات PVC. تُطبع على A4 ثمّ تُقصّ.
           </p>
         </div>
 
@@ -75,14 +70,8 @@ export function StudentCardPanel({ student }: { student: Student }) {
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap items-start gap-6">
-            <CardFace label="الوجه الأمامي">
-              <StudentCardFront student={student} enrollments={enrollments} />
-            </CardFace>
-
-            <CardFace label="الوجه الخلفي">
-              <StudentCardBack />
-            </CardFace>
+          <div className="flex justify-center py-2">
+            <StudentCardFlip student={student} enrollments={enrollments} />
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3 text-[11px] leading-relaxed text-white/45">
@@ -99,7 +88,8 @@ export function StudentCardPanel({ student }: { student: Student }) {
 
           {!schooling && (
             <p className="text-[11px] text-amber-200/70">
-              لا تسجيل لهذا الطالب بعد، فالمستوى والطور يظهران فارغين على البطاقة.
+              لا مستوى لهذا الطالب ولا تسجيل، فسطر المستوى يظهر فارغاً على
+              البطاقة. اختر مستواه من ملفّه قبل الطباعة.
             </p>
           )}
         </>
@@ -114,18 +104,6 @@ export function StudentCardPanel({ student }: { student: Student }) {
           <CardSheet student={student} enrollments={enrollments} />
         </SheetPreview>
       )}
-    </div>
-  );
-}
-
-/** إطارٌ فاتح تحت الوجه — البطاقة بيضاء ولا تُرى على خلفيةٍ داكنة بلا حدّ */
-function CardFace({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="mb-2 text-[11px] font-bold text-white/40">{label}</div>
-      <div className="inline-block rounded-[3.4mm] bg-white/10 p-[0.8mm] shadow-[0_18px_40px_-24px_rgba(0,0,0,0.9)]">
-        {children}
-      </div>
     </div>
   );
 }

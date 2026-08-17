@@ -60,6 +60,14 @@ export const createStudentSchema = z.object({
 
   emergencyPhone: phoneField.nullish(),
 
+  /*
+   * المستوى الذي أنشأته الإدارة في «البنية الدراسية» — «أولى متوسط».
+   *
+   * والطور لا يُرسل: هو `Level.educationStageId` ويُستنتج منه. النموذج
+   * يعرضه مرشّحاً للمستويات ليقصر القائمة، لا حقلاً يُحفظ.
+   */
+  levelId: z.string().trim().min(1).nullish(),
+
   registrationDate: z.coerce.date().optional(),
 
   note: z.string().trim().max(1000).nullish(),

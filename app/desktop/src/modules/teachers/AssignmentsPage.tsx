@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { AppHeader } from "../../components/AppHeader";
+import { FormDialog, FormGrid, FormRow } from "../../components/shared/FormDialog";
 import {
   activeOnly,
   findActiveFee,
@@ -24,6 +25,7 @@ import {
   type Option,
 } from "../../core/api/reference.api";
 import { useAuthStore } from "../../core/stores/auth.store";
+import { formatMoney } from "../../core/utils/money";
 import { MOTION } from "../../motion/system";
 import { PATHS } from "../../routes/paths";
 import { useScreenExit } from "../../lib/screen-transition";
@@ -518,7 +520,10 @@ function AddDialog({
     };
   }, [subjectId, groupId, yearId]);
 
-  const submit = async () => {
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (busy) return;
+
     setBusy(true);
     setError(null);
     try {
@@ -541,21 +546,22 @@ function AddDialog({
   };
 
   return (
-    <>
-      <div onClick={onClose} className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: MOTION.duration.fast }}
-        className="fixed left-1/2 top-1/2 z-50 w-full max-w-115 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#0a0f1a] p-6"
-      >
-        <h3 className="mb-1 text-lg font-black">إسناد جديد</h3>
-        <p className="mb-5 text-xs leading-relaxed text-white/45">
-          في سنة <span className="font-bold text-white/70">{yearName}</span>. لا يتكرّر
-          الإسناد نفسه، ولا يُسند إلى أستاذٍ معطَّل.
-        </p>
-
-        <div className="space-y-4">
+    <FormDialog
+      icon={Plus}
+      title="إسناد جديد"
+      subtitle={`في سنة ${yearName} — لا يتكرّر الإسناد نفسه، ولا يُسند إلى أستاذٍ معطَّل.`}
+      tone={ACCENT}
+      width="md"
+      onClose={onClose}
+      onSubmit={submit}
+      busy={busy}
+      submitDisabled={!teacherId || !subjectId || !groupId}
+      submitLabel="إضافة"
+      submitIcon={<Plus className="h-4.5 w-4.5" />}
+      error={error}
+    >
+      <FormGrid>
+        <FormRow>
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold text-white/60">الأستاذ</span>
             <select
@@ -569,7 +575,9 @@ function AddDialog({
               ))}
             </select>
           </label>
+        </FormRow>
 
+        <FormRow>
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold text-white/60">المادة</span>
             <select
@@ -583,7 +591,9 @@ function AddDialog({
               ))}
             </select>
           </label>
+        </FormRow>
 
+        <FormRow wide>
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold text-white/60">الفوج</span>
             <select
@@ -597,7 +607,11 @@ function AddDialog({
               ))}
             </select>
           </label>
+        </FormRow>
+      </FormGrid>
 
+      {/* ما يترتّب على الاختيار — سعرُه ومن يدرّسه سلفاً، يُقرأ قبل الحفظ */}
+      <div className="mt-4 space-y-4">
           {subjectId && groupId && fee !== "loading" && (
             <>
               {fee === null ? (
@@ -612,7 +626,16 @@ function AddDialog({
               ) : (
                 <p className="text-xs text-white/45">
                   حقّ الاشتراك الساري:{" "}
-                  <span className="font-bold text-emerald-300">{fee.toLocaleString("en")} دج</span>{" "}
+                  {/* من كاتب المال الواحد: `toLocaleString` كانت تُسقط
+                      المنزلتين، فيظهر «1,500 دج» هنا و«1,500.00 دج» في
+                      الفاتورة — رقمان لسعرٍ واحد */}
+                  <span
+                    className="font-bold text-emerald-300"
+                    dir="ltr"
+                    style={{ unicodeBidi: "isolate" }}
+                  >
+                    {formatMoney(fee)}
+                  </span>{" "}
                   شهرياً.
                 </p>
               )}
@@ -628,32 +651,7 @@ function AddDialog({
               )}
             </>
           )}
-
-          {error && (
-            <div className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm leading-relaxed text-rose-200">
-              {error}
-            </div>
-          )}
-
-          <div className="flex gap-3">
-            <button
-              onClick={submit}
-              disabled={busy || !teacherId || !subjectId || !groupId}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 font-black text-[#04252b] transition hover:brightness-110 disabled:opacity-40"
-              style={{ background: ACCENT }}
-            >
-              {busy ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Plus className="h-4.5 w-4.5" />}
-              إضافة
-            </button>
-            <button
-              onClick={onClose}
-              className="rounded-xl bg-white/10 px-5 py-3 text-sm font-bold transition hover:bg-white/20"
-            >
-              إلغاء
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </>
+      </div>
+    </FormDialog>
   );
 }

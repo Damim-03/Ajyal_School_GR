@@ -5,38 +5,63 @@ import { assetUrl } from "../../lib/asset-url";
 import type { Enrollment, Student } from "./student.api";
 
 /**
- * بطاقة الطالب — وجهان بمقاس ISO ID‑1 (85.6 × 54 مم).
+ * بطاقة الطالب — وجهان بمقاس ISO/IEC 7810 ID‑1 (85.60 × 53.98 مم).
  *
- * المقاس الحقيقي لا تقريبَه: البطاقة تُطبع وتُقصّ وتُغلَّف، وواحدةٌ
- * أعرضُ بمليمترين لا تدخل الجيب البلاستيكي. لذلك **كل مقاس هنا
- * بالمليمتر** — والمليمتر في CSS ثابتٌ فيزيائي (96/25.4 بكسل)، فما
- * يُعرض على الشاشة هو ما يخرج من الطابعة حرفياً.
+ * بطاقة مؤسسة خاصة لا بطاقة جامعية: لا شعار حكومي ولا اسم جمهورية —
+ * هوية أجيال وحدها، من شعارها إلى لونها. والمقاس الحقيقي لا تقريبَه:
+ * البطاقة تُطبع على PVC وتُقصّ، وواحدةٌ أعرضُ بمليمتر لا تدخل قارئ
+ * البطاقات أو الجيب البلاستيكي. لذلك **كل مقاس هنا بالمليمتر** —
+ * والمليمتر في CSS ثابتٌ فيزيائي (96/25.4 بكسل)، فما يُعرض على الشاشة
+ * هو ما يخرج من الطابعة حرفياً، لا تصميم واجهة يُحاكي بطاقة.
  *
- * ولا قيمةَ مكتوبةً في الشيفرة: الاسمان والشعار واللون والهاتف
- * والعنوان كلُّها من `school.store`، والبيانات من صفّ الطالب. تغييرُ
- * هوية المؤسسة في شاشة الإعدادات يُعيد رسم كلّ بطاقة — لا يحتاج
- * تعديلاً هنا ولا إعادةَ إصدار.
+ * ولا قيمةَ مكتوبةً في الشيفرة: اسما المؤسسة والشعار واللون والهاتف
+ * والبريد كلُّها من `school.store`، والبيانات من صفّ الطالب وتسجيله.
+ * تغييرُ هوية المؤسسة في شاشة الإعدادات يُعيد رسم كلّ بطاقة — لا يحتاج
+ * تعديلاً هنا ولا إعادةَ إصدار. وطالبٌ آخر يعني بطاقةً أخرى تلقائياً:
+ * هذان الوجهان مكوّنا عرضٍ محضان، لا يعرفان طالباً بعينه.
  *
- * والباركود Code128 يشفّر `studentNumber` وحده — لا رابطاً ولا
- * ‏JSON: الماسح يكتب ما قرأ في الحقل الذي فيه المؤشّر، فمسحةٌ في
- * خانة البحث تفتح ملفّ الطالب. ورقمٌ مطبوعٌ تحته لأنّ البطاقات
- * تنخدش، والموظّف حينها يقرأ ويكتب.
+ * والباركود Code128 يشفّر `studentNumber` وحده — لا رابطاً ولا JSON:
+ * الماسح يكتب ما قرأ في الحقل الذي فيه المؤشّر، فمسحةٌ في خانة البحث
+ * تفتح ملفّ الطالب مباشرة (Scanner → studentNumber → GET /students →
+ * ملفّ الطالب). ورقمٌ مطبوعٌ تحته أيضاً لأنّ البطاقات تنخدش، والموظّف
+ * حينها يقرأ الرقم ويكتبه يدوياً بدل إعادة تمرير بطاقةٍ لا تُقرأ.
  */
 
-/** ISO/IEC 7810 ID‑1 — مقاس بطاقة البنك ورخصة السياقة */
+/** ISO/IEC 7810 ID‑1 — مقاس بطاقة البنك ورخصة السياقة، والمرجع لبطاقات PVC */
 export const CARD_W_MM = 85.6;
-export const CARD_H_MM = 54;
+export const CARD_H_MM = 53.98;
 
 export type CardSide = "front" | "back";
 
 /**
- * المستوى والطور من تسجيلات الطالب.
+ * المستوى والطور — من حقل الطالب أوّلاً، ومن تسجيلاته ارتداداً.
  *
- * ليسا حقلين فيه: الطالب يرتبط بالمستوى عبر التسجيل ← الإسناد ←
- * الفوج. فيُرجَّح **النشط في السنة الجارية**، ثمّ أحدثُ نشط، ثمّ
- * أحدثُ ما وُجد — فبطاقةُ من انقطع تحمل آخر ما كان عليه بدل فراغ.
+ * **الحقل أوّلاً** لأنّ المستوى صفةُ الطالب، يُختار عند تسجيله من
+ * مستويات «البنية الدراسية». والاشتقاق من التسجيل كان يعطي إجاباتٍ
+ * عدّة لطالبٍ يدرس ثلاث مواد في ثلاثة أفواج، ولا يعطي شيئاً لطالبٍ
+ * سُجّل للتوّ ولم يُسنَد بعد — وهي اللحظة التي تُطبع فيها بطاقته.
+ *
+ * والارتداد يبقى للصفوف التي سبقت الحقل ولم تبلغها التعبئة الرجعية:
+ * يُرجَّح **النشط في السنة الجارية**، ثمّ أحدثُ نشط، ثمّ أحدثُ ما
+ * وُجد — فبطاقةُ من انقطع تحمل آخر ما كان عليه بدل فراغ.
+ *
+ * والفوج ليس منها: يبقى مُرجَعاً لمن يعرضه على الشاشة، ولا يُطبع على
+ * البطاقة — الطالب في فوجٍ لكل مادة، وطباعةُ واحدٍ منها اختيارٌ بلا
+ * معنى، وهو فوق ذلك يتبدّل بالنقل بينما البطاقة في جيبه.
  */
-export function schoolingOf(enrollments: Enrollment[] | null) {
+export function schoolingOf(
+  student: Pick<Student, "level">,
+  enrollments: Enrollment[] | null,
+) {
+  if (student.level) {
+    return {
+      level: student.level.name,
+      stage: student.level.educationStage?.name ?? null,
+      group: null as string | null,
+      year: null as string | null,
+    };
+  }
+
   if (!enrollments || enrollments.length === 0) return null;
 
   const pick =
@@ -44,16 +69,56 @@ export function schoolingOf(enrollments: Enrollment[] | null) {
     enrollments.find((e) => e.isActive) ??
     enrollments[0];
 
-  const level = pick.teachingAssignment.studyGroup.level;
+  const assignment = pick.teachingAssignment;
+  const level = assignment.studyGroup.level;
 
   return {
     level: level.name,
     stage: level.educationStage?.name ?? null,
-    year: pick.teachingAssignment.academicYear.name,
+    group: assignment.studyGroup.name as string | null,
+    year: assignment.academicYear.name as string | null,
   };
 }
 
-const dmy = (iso: string | null) =>
+/**
+ * كلماتٌ لا تميّز طوراً عن طور — تُطرح قبل المقارنة.
+ *
+ * «التعليم المتوسط» و«التعليم الثانوي» يشتركان في «التعليم»، فلو دخل
+ * في المقارنة لطابق كلُّ طورٍ كلَّ مستوًى وسقط الطور دائماً.
+ */
+const STAGE_NOISE = new Set(["التعليم", "تعليم", "طور", "الطور", "مرحلة", "المرحلة"]);
+
+/** «المتوسط» و«متوسط» كلمةٌ واحدة — أل التعريف لا تفرّق بينهما هنا */
+const stem = (word: string) => (word.startsWith("ال") ? word.slice(2) : word);
+
+/**
+ * سطر المستوى على البطاقة — والطور مطويٌّ فيه لا سطراً ثانياً.
+ *
+ * التسمية الجزائرية تحمل الطور داخل المستوى: «أولى متوسط» تحت طور
+ * «متوسط» أو «التعليم المتوسط». فسطرٌ مستقلٌّ للطور يستهلك واحداً من
+ * أربعة أسطر على بطاقةٍ ارتفاعها 53.98 مم ولا يضيف حرفاً جديداً.
+ *
+ * لكن التسمية بيد الإدارة لا بيد هذا الملف: مستوًى سُمّي «أولى» تحت
+ * «متوسط» يخرج مبتوراً لا يُعرف من أيّ طور. فيُضاف الطور **حين لا
+ * تجمعهما كلمة** — «متوسط · أولى» — ويُترك حين تجمعهما.
+ */
+function levelLabel(
+  schooling: { level: string; stage: string | null } | null,
+): string {
+  if (!schooling) return "—";
+  if (!schooling.stage) return schooling.level;
+
+  const inLevel = new Set(schooling.level.split(/\s+/).filter(Boolean).map(stem));
+
+  const implied = schooling.stage
+    .split(/\s+/)
+    .filter((word) => word && !STAGE_NOISE.has(word))
+    .some((word) => inLevel.has(stem(word)));
+
+  return implied ? schooling.level : `${schooling.stage} · ${schooling.level}`;
+}
+
+const dmy = (iso: string | null | undefined) =>
   iso
     ? new Date(iso).toLocaleDateString("fr-DZ", {
         year: "numeric",
@@ -71,6 +136,7 @@ function useIdentity() {
     nameEn: s["school.name_en"] || "",
     address: s["school.address"] || "",
     phone: s["school.phone"] || "",
+    email: s["school.email"] || "",
     brand: s["school.brand_color"] || "#0f5f8a",
     logo: assetUrl(s["school.logo_path"]),
   };
@@ -88,198 +154,115 @@ export function StudentCardFront({
   enrollments: Enrollment[] | null;
 }) {
   const id = useIdentity();
-  const schooling = schoolingOf(enrollments);
+  const schooling = schoolingOf(student, enrollments);
   const photo = assetUrl(student.avatar);
 
   return (
     <CardShell brand={id.brand}>
-      {/* ===== شريط الرقم على الحافّة ===== */}
-      <div
-        style={{
-          position: "absolute",
-          insetInlineStart: 0,
-          insetBlockStart: 0,
-          insetBlockEnd: 0,
-          width: "6mm",
-          background: id.brand,
-          color: "#fff",
-          display: "grid",
-          placeItems: "center",
-        }}
-      >
-        <span
-          style={{
-            /*
-             * الرقم رأسيّاً على الحافّة كما في البطاقات الرسمية —
-             * يُقرأ والبطاقةُ في المحفظة بلا إخراجها.
-             */
-            writingMode: "vertical-rl",
-            transform: "rotate(180deg)",
-            fontSize: "2.9mm",
-            fontWeight: 800,
-            letterSpacing: "0.06em",
-            fontVariantNumeric: "tabular-nums",
-            direction: "ltr",
-          }}
-        >
-          {student.studentNumber}
-        </span>
-      </div>
-
       <div
         style={{
           position: "absolute",
           inset: 0,
-          paddingInlineStart: "6mm",
           display: "flex",
           flexDirection: "column",
         }}
       >
-        {/* ===== الترويسة: الشعار واسم المركز ===== */}
+        {/*
+          ===== الترويسة: الشعار ← اسم المؤسسة/عنوان البطاقة =====
+          شعار أجيال وحده — بلا أي رمزٍ حكومي أو جامعي، فالبطاقة لمؤسسة
+          خاصة. كبيرٌ وواضحٌ على اليمين (بداية التخطيط في RTL)، والنصّ
+          يملأ الباقي: اسم المؤسسة من هويتها، ثمّ عنوان البطاقة بالعربية
+          وتحته سطرٌ ثانويٌّ صغير بالإنجليزية.
+        */}
         <header
           style={{
             display: "flex",
             alignItems: "center",
             gap: "2mm",
-            padding: "2mm 3mm 1.6mm",
-            borderBottom: `0.4mm solid ${id.brand}`,
+            padding: "0.9mm 3mm 0.8mm",
+            borderBottom: `0.35mm solid ${id.brand}`,
           }}
         >
-          <Logo src={id.logo} size="8mm" brand={id.brand} />
+          <Logo src={id.logo} size="8.6mm" brand={id.brand} />
 
-          <div style={{ minWidth: 0, flex: 1, lineHeight: 1.15 }}>
-            <div style={{ fontSize: "3.1mm", fontWeight: 900, color: id.brand }}>
+          <div style={{ flex: 1, minWidth: 0, display: "grid", gap: "0.35mm", textAlign: "center" }}>
+            <div
+              style={{
+                fontSize: "2.7mm",
+                fontWeight: 900,
+                color: id.brand,
+                lineHeight: 1.05,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {/*
+                سطرٌ واحد لا يُلتفّ: ارتفاع الترويسة محسوبٌ بدقّة، واسمٌ
+                طويل يلتفّ يكسر الحساب فيدفع الجسم خارج البطاقة. القصّ
+                بثلاث نقاط أهون من ذلك.
+              */}
               {id.nameAr}
             </div>
-            {id.nameEn && (
-              <div
-                style={{
-                  fontSize: "2.1mm",
-                  fontWeight: 700,
-                  color: "#5b6472",
-                  direction: "ltr",
-                  textAlign: "start",
-                }}
-              >
-                {id.nameEn}
-              </div>
-            )}
-          </div>
 
-          <span
-            style={{
-              fontSize: "2.2mm",
-              fontWeight: 900,
-              color: "#fff",
-              background: id.brand,
-              borderRadius: "1mm",
-              padding: "0.7mm 1.6mm",
-              whiteSpace: "nowrap",
-            }}
-          >
-            بطاقة طالب
-          </span>
+            <div style={{ fontSize: "2.3mm", fontWeight: 800, color: "#1b232f", lineHeight: 1 }}>
+              بطاقة الطالب
+            </div>
+
+            <div
+              style={{
+                fontSize: "1.5mm",
+                fontWeight: 600,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "#8a93a3",
+                lineHeight: 1,
+              }}
+            >
+              Student Identification Card
+            </div>
+          </div>
         </header>
 
-        {/* ===== الجسم: الصورة والحقول ===== */}
+        {/*
+          ===== الجسم: الصورة يميناً، الحقول وسطاً، الباركود يساراً =====
+          الباركود على الحافّة المقابلة للصورة، عمودياً كما في بطاقات
+          الطلبة الرسمية. ورقمه مطبوعٌ بجانبه مرّةً واحدةً فقط — لا
+          يتكرّر حقلاً في النموذج: هو الرقم نفسه، وتكراره يضيّع مساحةً
+          ويوهم أنّهما رقمان مختلفان.
+        */}
         <div
           style={{
             flex: 1,
             display: "grid",
-            gridTemplateColumns: "18mm minmax(0, 1fr)",
-            gap: "2.6mm",
-            padding: "2mm 3mm 0",
-            alignItems: "start",
+            gridTemplateColumns: "19mm minmax(0, 1fr) 9mm",
+            gap: "2.4mm",
+            padding: "0.9mm 3mm 0.8mm",
+            /* توسيطٌ رأسي: الحقول الخمسة أقصرُ من الجسم، والمحاذاة إلى
+               الأعلى تترك فراغاً أسفلَ البطاقة يبدو نقصاً لا تنفيساً */
+            alignItems: "center",
           }}
         >
           <Photo src={photo} gender={student.gender} brand={id.brand} />
 
-          <div style={{ display: "grid", gap: "1.1mm", minWidth: 0 }}>
-            <Field
-              label="الاسم واللقب"
-              value={`${student.firstName} ${student.lastName}`}
-              strong
-              brand={id.brand}
-            />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.6mm" }}>
-              <Field label="المستوى" value={schooling?.level ?? "—"} brand={id.brand} />
-              <Field label="الطور" value={schooling?.stage ?? "—"} brand={id.brand} />
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.6mm" }}>
-              <Field label="تاريخ الميلاد" value={dmy(student.birthDate)} ltr brand={id.brand} />
-              <Field
-                label="السنة الدراسية"
-                value={schooling?.year ?? "—"}
-                ltr
-                brand={id.brand}
-              />
-            </div>
+          {/*
+            حقلٌ في كلّ سطر، واللقب منفصلٌ عن الاسم — كما في وثائق
+            الهوية الرسمية: «محمد الأمين بن عبد الرحمان» في سطرٍ واحد
+            لا يُعرف أين ينتهي الاسم ويبدأ اللقب، والفصل يرفع اللبس عند
+            التحقّق من هوية حاملها.
+          */}
+          <div style={{ display: "grid", gap: "1.6mm", minWidth: 0 }}>
+            <Field label="اللقب" value={student.lastName} brand={id.brand} />
+            <Field label="الاسم" value={student.firstName} brand={id.brand} />
+            <Field label="تاريخ الميلاد" value={dmy(student.birthDate)} ltr brand={id.brand} />
+            <Field label="المستوى" value={levelLabel(schooling)} brand={id.brand} />
           </div>
+
+          <VerticalBarcode value={student.studentNumber} />
         </div>
 
-        {/* ===== الباركود ===== */}
-        <footer
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
-            gap: "2mm",
-            padding: "0 3mm 2mm",
-          }}
-        >
-          {/*
-            المنطقة الهادئة — 4.2 مم بياضاً على جانبَي القضبان.
-
-            ليست حشوةً جمالية: Code128 يشترط فراغاً لا يقلّ عن عشرة
-            أضعاف أنحف قضيب (0.4 مم هنا) قبل أوّل قضيب وبعد آخره، وبدونه
-            يقرأ الماسحُ حافّةَ التصميم قضيباً فيفشل أو يقرأ ناقصاً.
-            والخلفية بيضاء صراحةً لأنّ تدرّج البطاقة الخافت يمرّ من هنا،
-            والماسح يقرأ التباين لا الشكل.
-          */}
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "1mm",
-              padding: "0.8mm 4.2mm",
-            }}
-          >
-            <div style={{ width: "36mm", height: "7mm" }}>
-              <Barcode value={student.studentNumber} fit />
-            </div>
-            <div
-              style={{
-                marginTop: "0.4mm",
-                fontSize: "2.4mm",
-                fontWeight: 800,
-                letterSpacing: "0.14em",
-                fontVariantNumeric: "tabular-nums",
-                direction: "ltr",
-                textAlign: "center",
-                color: "#1b232f",
-              }}
-            >
-              {student.studentNumber}
-            </div>
-          </div>
-
-          <div
-            style={{
-              textAlign: "start",
-              fontSize: "2.1mm",
-              lineHeight: 1.35,
-              color: "#5b6472",
-            }}
-          >
-            <div>
-              التسجيل: <span style={{ direction: "ltr", unicodeBidi: "isolate" }}>{dmy(student.registrationDate)}</span>
-            </div>
-            {id.phone && (
-              <div style={{ direction: "ltr", unicodeBidi: "isolate", textAlign: "start" }}>
-                {id.phone}
-              </div>
-            )}
-          </div>
-        </footer>
+        {/* شريطٌ متموّج على الحافّة السفلى — نقشُ وثائق الهوية الرسمية */}
+        <WavyRule color={id.brand} />
       </div>
     </CardShell>
   );
@@ -291,36 +274,43 @@ export function StudentCardFront({
 
 export function StudentCardBack() {
   const id = useIdentity();
+  const contact = [id.phone, id.email, id.address].filter(Boolean);
 
   return (
-    <CardShell brand={id.brand}>
+    /*
+     * بلا علامةٍ مائية هنا: الشعار نفسُه معروضٌ كبيراً في وسط الوجه،
+     * وطبعُه مرّتين — باهتاً خلف نفسه وواضحاً فوقه — يُوسّخ الخلفية
+     * ولا يضيف شيئاً. والأمامي يبقيها لأنّ شعاره صغيرٌ في الترويسة.
+     */
+    <CardShell brand={id.brand} watermark={false}>
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           inset: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "2.2mm",
-          padding: "5mm",
-          textAlign: "center",
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '3mm 4mm 2.6mm',
+          textAlign: 'center',
         }}
       >
-        <Logo src={id.logo} size="20mm" brand={id.brand} />
+        {/* ===== الشعار كبيراً واضحاً، ثمّ الاسم باللغتين ===== */}
+        <Logo src={id.logo} size='17mm' brand={id.brand} />
 
-        <div style={{ lineHeight: 1.2 }}>
-          <div style={{ fontSize: "5mm", fontWeight: 900, color: id.brand }}>{id.nameAr}</div>
+        <div style={{ marginTop: '1.4mm', lineHeight: 1.15 }}>
+          <div style={{ fontSize: '3.2mm', fontWeight: 900, color: id.brand }}>
+            {id.nameAr}
+          </div>
           {id.nameEn && (
             <div
               style={{
-                marginTop: "1mm",
-                fontSize: "3mm",
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: "#5b6472",
-                direction: "ltr",
+                marginTop: '0.5mm',
+                fontSize: '2mm',
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: '#8a93a3',
+                direction: 'ltr',
               }}
             >
               {id.nameEn}
@@ -328,22 +318,41 @@ export function StudentCardBack() {
           )}
         </div>
 
-        {(id.address || id.phone) && (
-          <div
-            style={{
-              borderTop: `0.3mm solid ${id.brand}55`,
-              paddingTop: "1.6mm",
-              fontSize: "2.3mm",
-              lineHeight: 1.45,
-              color: "#5b6472",
-            }}
-          >
-            {id.address && <div>{id.address}</div>}
-            {id.phone && (
-              <div style={{ direction: "ltr", unicodeBidi: "isolate" }}>{id.phone}</div>
-            )}
-          </div>
-        )}
+        <div
+          style={{
+            width: '32mm',
+            height: '0.3mm',
+            background: `${id.brand}33`,
+            margin: '2mm 0',
+          }}
+        />
+
+        {/* ===== تنبيه الفقدان وملكية البطاقة ===== */}
+        <div style={{ fontSize: '1.9mm', lineHeight: 1.5, color: '#3a4250' }}>
+          <p style={{ fontWeight: 700 }}>في حالة العثور على هذه البطاقة</p>
+          <p>يرجى إعادتها إلى إدارة المؤسسة. وهي ملكٌ لها، لا يستعملها غير صاحبها.</p>
+        </div>
+
+        {/*
+          حفظ الحقوق والتواصل —  يلصقهما بالقاع مهما
+          قصُر ما فوقهما، فلا يطفوان في وسط البياض.
+        */}
+        <div
+          style={{
+            marginTop: 'auto',
+            paddingTop: '1.4mm',
+            fontSize: '1.6mm',
+            lineHeight: 1.45,
+            color: '#8a93a3',
+          }}
+        >
+          <div>© جميع الحقوق محفوظة</div>
+          {contact.length > 0 && (
+            <div style={{ direction: 'ltr', unicodeBidi: 'isolate' }}>
+              {contact.join('  ·  ')}
+            </div>
+          )}
+        </div>
       </div>
     </CardShell>
   );
@@ -356,11 +365,23 @@ export function StudentCardBack() {
 /**
  * جسم البطاقة.
  *
- * `overflow: hidden` مع `borderRadius` يقصّ شريطَ الرقم عند الزوايا
- * فيتبع انحناءها، و`position: relative` هو ما ينسب إليه الشريط
- * والمحتوى معاً.
+ * خلفيةٌ بيضاءُ نظيفة لا تدرّجات صاخبة ولا زخارف: بطاقةٌ تُطبع على
+ * PVC، والتدرّج الوحيد هنا خافتٌ جداً (شفافيته أقل من عُشر) ليكسر
+ * برودة الأبيض المطلق بلا ابتلاع حبرٍ ولا تعتيم نصٍّ — بخلاف بطاقات
+ * البنوك بتدرّجاتها القوية، وهذا مقصودٌ: بطاقة طالبٍ لا بطاقة دفع.
  */
-function CardShell({ brand, children }: { brand: string; children: React.ReactNode }) {
+function CardShell({
+  brand,
+  watermark = true,
+  children,
+}: {
+  brand: string;
+  /** يُطفأ حين يحمل الوجهُ الشعارَ ظاهراً — لا يُطبع الشعار خلف نفسه */
+  watermark?: boolean;
+  children: React.ReactNode;
+}) {
+  const logo = useSchoolStore((s) => assetUrl(s.settings["school.logo_path"]));
+
   return (
     <div
       className="student-card"
@@ -368,22 +389,45 @@ function CardShell({ brand, children }: { brand: string; children: React.ReactNo
         position: "relative",
         width: `${CARD_W_MM}mm`,
         height: `${CARD_H_MM}mm`,
-        borderRadius: "3mm",
+        borderRadius: "2.6mm",
         overflow: "hidden",
         background: "#fff",
         color: "#1b232f",
-        border: `0.3mm solid ${brand}66`,
-        /*
-         * تدرّجٌ خافت لا لون: البطاقة تُطبع، والخلفية المشبعة تبتلع
-         * الحبر وتُخرج نصّاً رمادياً على لونٍ داكن. والقيمة بالمئة من
-         * لون الهوية فتتبعه إن تغيّر.
-         */
-        backgroundImage: `radial-gradient(120% 90% at 100% 0%, ${brand}14, transparent 60%)`,
+        border: `0.3mm solid ${brand}55`,
+        backgroundImage: `radial-gradient(120% 90% at 100% 0%, ${brand}0d, transparent 60%)`,
         fontFamily: '"Tahoma","Arial",sans-serif',
         printColorAdjust: "exact",
         WebkitPrintColorAdjust: "exact",
       }}
     >
+      {/*
+        علامة مائية — شعار المؤسسة كبيراً في المنتصف خلف كل المحتوى،
+        على نمط الزخارف الأمنية في الوثائق الرسمية (نقشٌ خافتٌ يملأ
+        البطاقة) لكن بشعار أجيال بدل نقشٍ زخرفي عام. شفافيتها منخفضة
+        جداً عمداً — العلامة المائية زينةٌ لا معلومة، وأولويةُ الطباعة
+        وضوحُ النصّ فوقها لا بروزُها هي.
+      */}
+      {watermark && logo && (
+        <img
+          src={logo}
+          alt=""
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            width: "68%",
+            height: "68%",
+            transform: "translate(-50%, -50%)",
+            objectFit: "contain",
+            opacity: 0.07,
+            pointerEvents: "none",
+            printColorAdjust: "exact",
+            WebkitPrintColorAdjust: "exact",
+          }}
+        />
+      )}
+
       {children}
     </div>
   );
@@ -422,7 +466,7 @@ function Logo({ src, size, brand }: { src?: string; size: string; brand: string 
   );
 }
 
-/** صورة الطالب — وبديلُها ظلُّ الجنس نفسُه المستعمل في كل الشاشات */
+/** صورة الطالب — نسبة 3:4 (Portrait) وبديلُها ظلُّ الجنس نفسُه المستعمل في كل الشاشات */
 function Photo({
   src,
   gender,
@@ -435,12 +479,13 @@ function Photo({
   return (
     <div
       style={{
-        width: "18mm",
-        height: "22mm",
-        borderRadius: "1.2mm",
+        /* 3:4 صورةً شخصية — نسبة صور الهوية الرسمية */
+        width: "19mm",
+        height: "25.3mm",
+        borderRadius: "1mm",
         overflow: "hidden",
         border: `0.3mm solid ${brand}66`,
-        background: `${brand}1a`,
+        background: `${brand}14`,
         display: "grid",
         placeItems: "center",
       }}
@@ -452,7 +497,7 @@ function Photo({
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
         />
       ) : (
-        <span style={{ width: "12mm", height: "12mm", display: "block" }}>
+        <span style={{ width: "10mm", height: "10mm", display: "block" }}>
           <GenderGlyph gender={gender} fill={`${brand}80`} />
         </span>
       )}
@@ -460,54 +505,156 @@ function Photo({
   );
 }
 
+/**
+ * الباركود عمودياً على حافّة البطاقة، مقابلَ الصورة.
+ *
+ * التدوير بـ`transform` لا يغيّر المساحة التي يحجزها العنصر في
+ * التخطيط، فالمحتوى المدوَّر مثبَّتٌ مطلقاً داخل عمودٍ عرضُه 9 مم
+ * يمتدّ بارتفاع الجسم: العمود هو ما يحجز المكان، والمدوَّر يتوسّطه.
+ *
+ * وخلفيةٌ بيضاءُ صريحة تحته تحجب العلامة المائية — الماسح يقرأ
+ * التباين، وشعارٌ باهتٌ يعبر القضبان يكفي لإفساد القراءة. والرقم
+ * مطبوعٌ بجانبه لأنّ البطاقات تنخدش، فيقرؤه الموظّف ويكتبه يدوياً.
+ */
+function VerticalBarcode({ value }: { value: string }) {
+  return (
+    <div
+      style={{
+        position: "relative",
+        alignSelf: "stretch",
+        background: "#fff",
+        borderRadius: "1mm",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%) rotate(-90deg)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "0.4mm",
+        }}
+      >
+        <div style={{ width: "27mm", height: "5.2mm" }}>
+          <Barcode value={value} fit />
+        </div>
+        <div
+          style={{
+            fontSize: "2.1mm",
+            fontWeight: 800,
+            letterSpacing: "0.12em",
+            fontVariantNumeric: "tabular-nums",
+            direction: "ltr",
+            whiteSpace: "nowrap",
+            color: "#1b232f",
+          }}
+        >
+          {value}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * شريطٌ متموّج يمتدّ بعرض البطاقة — نقشُ الأمان المتموّج نفسُه الذي في
+ * وثائق الهوية الرسمية، بلون هوية المؤسسة لا بأخضرَ ثابت.
+ *
+ * بلاطةٌ مكرّرة خلفيةً لا `<pattern>` داخل SVG ممدود: الأخير يحتاج
+ * `preserveAspectRatio="none"` ليملأ العرض، فيمطّ البلاطة أفقياً
+ * بنسبةٍ تفوق الرأسية أضعافاً — تخرج الموجة خطاً شبه مستقيم مسطّح لا
+ * موجة. والبلاطة هنا 4×2 مم بمقياسٍ موحّد على المحورين (0.5 مم لكل
+ * وحدة)، تتكرّر بعرض البطاقة كاملاً محتفظةً بشكلها مهما اتّسع.
+ *
+ * وموجتان متعاكستان لا واحدة: تشابكهما يعطي النقش المتداخل نفسه،
+ * والموجةُ المفردة تبدو خطاً مزخرفاً لا نقشَ أمان.
+ */
+function WavyRule({ color }: { color: string }) {
+  const tile =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 4">` +
+    `<g fill="none" stroke="${color}" stroke-width="0.45">` +
+    `<path d="M0,2 Q2,0.55 4,2 T8,2"/>` +
+    `<path d="M0,2 Q2,3.45 4,2 T8,2"/>` +
+    `</g></svg>`;
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "2mm",
+        /* عنصرُ مرونةٍ لا يُضغط: بلا هذا يقلّصه الحاوي إلى خيطٍ بلا موجة */
+        flexShrink: 0,
+        backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(tile)}")`,
+        backgroundRepeat: "repeat-x",
+        backgroundSize: "4mm 2mm",
+        opacity: 0.75,
+        printColorAdjust: "exact",
+        WebkitPrintColorAdjust: "exact",
+      }}
+    />
+  );
+}
+
+/**
+ * حقلٌ في سطرٍ واحد — «اللقب: السايح».
+ *
+ * المعرّف والقيمة متجاوران لا مكدَّسان: التكديس يضاعف عدد الأسطر،
+ * والبطاقة تحمل أربعة حقول لا حقلين. والمعرّف لا ينكمش (`flexShrink: 0`)
+ * فالقيمة وحدها تُقصّ عند الطول — معرّفٌ مقصوص لا يُفهم أصلاً.
+ */
 function Field({
   label,
   value,
   ltr,
-  strong,
   brand,
 }: {
   label: string;
   value: string;
   ltr?: boolean;
-  strong?: boolean;
   brand: string;
 }) {
   return (
-    <div style={{ minWidth: 0 }}>
-      {/*
-        2.1 مم ≈ ستّ نقاط — أدنى ما يُقرأ مطبوعاً بلا عناء. وأصغرُ منه
-        يخرج من طابعةٍ نافثة للحبر مشوَّشاً على ورقٍ عادي.
-      */}
-      <div style={{ fontSize: "2.1mm", fontWeight: 700, color: brand, opacity: 0.8 }}>
-        {label}
-      </div>
-      <div
+    <div style={{ display: "flex", alignItems: "baseline", gap: "1.1mm", minWidth: 0 }}>
+      <span
         style={{
-          fontSize: strong ? "3.2mm" : "2.7mm",
-          fontWeight: strong ? 900 : 700,
-          lineHeight: 1.2,
+          fontSize: "2mm",
+          fontWeight: 600,
+          color: brand,
+          opacity: 0.85,
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+        }}
+      >
+        {label}:
+      </span>
+      <span
+        style={{
+          fontSize: "2.3mm",
+          fontWeight: 600,
+          lineHeight: 1.3,
+          color: "#1b232f",
+          minWidth: 0,
           direction: ltr ? "ltr" : undefined,
           unicodeBidi: ltr ? "isolate" : undefined,
           textAlign: "start",
-          overflow: "hidden",
           /*
-           * الاسم يأخذ سطرين، وبقيةُ الحقول سطراً واحداً بحذفٍ عند
-           * الطول. والفرقُ مقصود: «أولى متوسط» مقصوصاً يبقى مفهوماً،
-           * واسمٌ مقصوص يجعل البطاقة لشخصٍ آخر. والسطر الثاني يسعه
-           * الفراغ الذي يفصل الحقول عن الباركود.
+           * سطران للقيمة عند الطول لا قصٌّ بثلاث نقاط: «بن عبد القادر
+           * الزهراني» مقصوصاً يجعل البطاقة لشخصٍ آخر، والالتفافُ يحفظ
+           * الاسم كاملاً. والحدُّ سطران كي لا يزحف الحقل على ما تحته.
            */
-          ...(strong
-            ? {
-                display: "-webkit-box",
-                WebkitBoxOrient: "vertical" as const,
-                WebkitLineClamp: 2,
-              }
-            : { textOverflow: "ellipsis", whiteSpace: "nowrap" }),
+          display: "-webkit-box",
+          WebkitBoxOrient: "vertical" as const,
+          WebkitLineClamp: 2,
+          overflow: "hidden",
         }}
       >
         {value}
-      </div>
+      </span>
     </div>
   );
 }
+

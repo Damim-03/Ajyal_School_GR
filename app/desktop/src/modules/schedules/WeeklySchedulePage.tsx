@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { AppHeader } from "../../components/AppHeader";
+import { FormDialog } from "../../components/shared/FormDialog";
 import {
   createLessonSlot,
   fullName,
@@ -673,8 +674,9 @@ function AddDialog({
     return { id: slot.id, created: true };
   };
 
-  const submit = async () => {
-    if (!chosen) return;
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!chosen || busy) return;
 
     setBusy(true);
     setError(null);
@@ -696,27 +698,22 @@ function AddDialog({
   };
 
   return (
-    <>
-      <div onClick={onClose} className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: MOTION.duration.fast }}
-        className="fixed left-1/2 top-1/2 z-50 w-full max-w-130 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#0a0f1a] p-6"
-      >
-        <h3 className="mb-1 text-lg font-black">
-          إضافة إلى {DAYS.find((d) => d.key === day)?.label}
-        </h3>
-        <p className="mb-5 text-xs leading-relaxed text-white/45">
-          <span className="font-bold" style={{ color: ACCENT }}>
-            {bandTime}
-          </span>
-          <br />
-          أساتذةٌ كثيرون في هذا المجال ولا تعارض بينهم. وإنّما يُرفض
-          الإسناد إن كان الأستاذ نفسُه أو الفوج أو القاعة مشغولاً في هذا
-          الوقت.
-        </p>
-
+    <FormDialog
+      icon={Plus}
+      title={`إضافة إلى ${DAYS.find((d) => d.key === day)?.label} · ${bandTime}`}
+      subtitle="أساتذةٌ كثيرون في هذا المجال ولا تعارض بينهم — وإنّما يُرفض الإسناد إن كان الأستاذ نفسُه أو الفوج أو القاعة مشغولاً في هذا الوقت."
+      tone={ACCENT}
+      width="md"
+      onClose={onClose}
+      onSubmit={submit}
+      busy={busy}
+      submitDisabled={!assignmentId}
+      submitLabel={
+        targetKey ? `إضافة في ${target.startTime} – ${target.endTime}` : "إضافة"
+      }
+      submitIcon={<Plus className="h-4.5 w-4.5" />}
+      error={error}
+    >
         <div className="space-y-4">
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold text-white/60">
@@ -743,6 +740,7 @@ function AddDialog({
                   return (
                     <button
                       key={a.id}
+                      type="button"
                       onClick={() => setAssignmentId(a.id)}
                       className="w-full rounded-lg border px-3 py-2 text-right transition"
                       style={
@@ -797,6 +795,7 @@ function AddDialog({
                 <span className="font-black">{durationLabel(suggestion.current)}</span>.
               </p>
               <button
+                type="button"
                 onClick={() => setTargetKey(suggestion.to.key)}
                 className="mt-2 flex items-center gap-2 rounded-lg bg-amber-400/20 px-3 py-1.5 text-xs font-black text-amber-100 transition hover:bg-amber-400/30"
               >
@@ -819,6 +818,7 @@ function AddDialog({
                 </span>
               </span>
               <button
+                type="button"
                 onClick={() => setTargetKey(null)}
                 className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-bold transition hover:bg-white/20"
               >
@@ -826,41 +826,7 @@ function AddDialog({
               </button>
             </div>
           )}
-
-          {error && (
-            <div className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm leading-relaxed text-rose-200">
-              {error}
-            </div>
-          )}
-
-          <div className="flex gap-3">
-            <button
-              onClick={submit}
-              disabled={busy || !assignmentId}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 font-black text-[#0e0a2e] transition hover:brightness-110 disabled:opacity-40"
-              style={{ background: ACCENT }}
-            >
-              {busy ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Plus className="h-4.5 w-4.5" />}
-              {targetKey ? (
-                <>
-                  إضافة في{" "}
-                  <span dir="ltr">
-                    {target.startTime} – {target.endTime}
-                  </span>
-                </>
-              ) : (
-                "إضافة"
-              )}
-            </button>
-            <button
-              onClick={onClose}
-              className="rounded-xl bg-white/10 px-5 py-3 text-sm font-bold transition hover:bg-white/20"
-            >
-              إلغاء
-            </button>
-          </div>
         </div>
-      </motion.div>
-    </>
+    </FormDialog>
   );
 }

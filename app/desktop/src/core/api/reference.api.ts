@@ -47,8 +47,46 @@ export const activeOnly = <T extends Option>(rows: T[] | undefined) =>
 export const useSubjects = () =>
   useQuery({ queryKey: ["ref", "subjects"], queryFn: () => list("/settings/subjects"), ...LONG });
 
+/**
+ * المستوى يحمل طورَه.
+ *
+ * الخادم يُرجعه أصلاً في `levelSelect`، والواجهة كانت تُهمله فتضطرّ
+ * كلُّ شاشةٍ تحتاج الطور إلى طلبٍ ثانٍ لجدول الأطوار. وترتيبُ الخادم
+ * `stage.sortOrder` ثمّ `level.sortOrder`، فالقائمة تصل مرتّبةً:
+ * ابتدائي ثمّ متوسط ثمّ ثانوي، وداخل كلٍّ أولى فثانية فثالثة.
+ */
+export interface LevelOption extends Option {
+  educationStage: { id: string; name: string; type: string };
+}
+
 export const useLevels = () =>
-  useQuery({ queryKey: ["ref", "levels"], queryFn: () => list("/settings/levels"), ...LONG });
+  useQuery({
+    queryKey: ["ref", "levels"],
+    queryFn: () => list<LevelOption>("/settings/levels"),
+    ...LONG,
+  });
+
+/**
+ * الأطوار المستخلَصة من المستويات — لا طلبَ ثانٍ لجدول الأطوار.
+ *
+ * وفائدةٌ فوق توفير الطلب: الطور الفارغ (أنشأته الإدارة ولم تضع تحته
+ * مستوًى بعد) لا يظهر في القائمة. واختيارُه كان سيُفرغ قائمة المستويات
+ * أمام الموظّف بلا سببٍ ظاهر.
+ */
+export const stagesOf = (levels: LevelOption[] | undefined) => {
+  const seen = new Map<string, { id: string; name: string }>();
+
+  for (const level of levels ?? []) {
+    if (level.educationStage && !seen.has(level.educationStage.id)) {
+      seen.set(level.educationStage.id, {
+        id: level.educationStage.id,
+        name: level.educationStage.name,
+      });
+    }
+  }
+
+  return [...seen.values()];
+};
 
 /**
  * الفوج لا يُعرَّف باسمه وحده.

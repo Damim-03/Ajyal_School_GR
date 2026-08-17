@@ -1,5 +1,6 @@
 import { LAYER } from "./layers";
 import { useCallback, useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import { backdropVariants, dialogVariants } from "./variants";
 import { useEnvironment } from "../components/ambient/environment.store";
@@ -83,7 +84,24 @@ export function MotionDialog({
     [onClose],
   );
 
-  return (
+  /*
+   * إلى `document.body` لا في مكان استدعائها — والسبب عطبٌ حقيقي لا ترتيب:
+   *
+   * نافذةٌ تُفتح من داخل نموذج (زرّ «من الماسح» في حقول الطالب) كانت
+   * تضع `<form>` داخل `<form>`. وReact لا يستدعي `onSubmit` الداخلي حينها
+   * — قِيس: يصل حدثُ الإرسال إلى العنصر و`defaultPrevented` يبقى false —
+   * فيُرسل المتصفّح النموذجَ إرسالاً أصلياً ويُعيد تحميل الصفحة. فبدا
+   * زرّ «امسح الآن» لا يفعل شيئاً، وهو في الحقيقة كان يُفرغ الاستمارة
+   * نصفَ الممتلئة ويُعيد التطبيق إلى أوّله.
+   *
+   * والبوّابة تُخرج النافذة من شجرة الـDOM إلى `body`، فلا تعشيش. وشجرةُ
+   * React تبقى كما هي — فالسياق والأحداث تعبر البوّابة كأنّها في محلّها.
+   *
+   * وتنفع في غير ذلك: `overflow: hidden` أو `transform` على أيّ سلفٍ
+   * يقصّ `position: fixed` أو يجعله نسبياً إليه، وهو ما يكسر نافذةً
+   * تُفتح من داخل لوحٍ متمرّر.
+   */
+  return createPortal(
     <motion.div
       variants={backdropVariants}
       initial="initial"
@@ -110,6 +128,7 @@ export function MotionDialog({
       >
         {children}
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body,
   );
 }

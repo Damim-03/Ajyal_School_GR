@@ -1,4 +1,5 @@
 mod printing;
+mod scanner;
 #[cfg(windows)]
 pub mod usbprint;
 
@@ -12,6 +13,8 @@ pub fn run() {
       printing::list_usb_printers,
       printing::print_usb,
       printing::thermal_ready,
+      scanner::list_scanners,
+      scanner::scan_page,
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {

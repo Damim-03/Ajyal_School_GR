@@ -49,6 +49,13 @@ exports.createStudentSchema = zod_1.z.object({
     address: zod_1.z.string().trim().max(200).nullish(),
     schoolName: zod_1.z.string().trim().max(100).nullish(),
     emergencyPhone: phoneField.nullish(),
+    /*
+     * المستوى الذي أنشأته الإدارة في «البنية الدراسية» — «أولى متوسط».
+     *
+     * والطور لا يُرسل: هو `Level.educationStageId` ويُستنتج منه. النموذج
+     * يعرضه مرشّحاً للمستويات ليقصر القائمة، لا حقلاً يُحفظ.
+     */
+    levelId: zod_1.z.string().trim().min(1).nullish(),
     registrationDate: zod_1.z.coerce.date().optional(),
     note: zod_1.z.string().trim().max(1000).nullish(),
     isActive: zod_1.z.boolean().optional(),

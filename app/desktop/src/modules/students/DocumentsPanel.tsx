@@ -1,14 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  CheckCircle2,
-  Circle,
-  Download,
-  FileText,
-  Loader2,
-  Trash2,
-  Upload,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { CheckCircle2, Circle, Eye, FileText, Loader2, Trash2 } from "lucide-react";
 
+import { ImageIntake } from "../../components/shared/ImageIntake";
+import { ImageViewer } from "../../components/shared/ImageViewer";
 import { assetUrl } from "../../lib/asset-url";
 import {
   deleteStudentDocument,
@@ -41,8 +35,6 @@ export function DocumentsPanel({
   const [loading, setLoading] = useState(true);
   const [busyType, setBusyType] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const inputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const apply = (next: StudentFile) => {
     setFile(next);
@@ -150,8 +142,6 @@ export function DocumentsPanel({
             key={entry.key}
             entry={entry}
             busy={busyType === entry.key}
-            inputRef={(el) => (inputs.current[entry.key] = el)}
-            onPick={() => inputs.current[entry.key]?.click()}
             onFile={(f) => attach(entry.key, f)}
             onRemove={() => remove(entry.key)}
           />
@@ -164,20 +154,38 @@ export function DocumentsPanel({
 function DocumentSlot({
   entry,
   busy,
-  inputRef,
-  onPick,
   onFile,
   onRemove,
 }: {
   entry: CatalogueEntry;
   busy: boolean;
-  inputRef: (el: HTMLInputElement | null) => void;
-  onPick: () => void;
   onFile: (file: File) => void;
   onRemove: () => void;
 }) {
+  const [viewing, setViewing] = useState(false);
+
   const present = !!entry.document;
   const url = assetUrl(entry.document?.filePath);
+
+  /*
+   * سطرُ العارض: اسم الملف ومن رفعه ومتى.
+   *
+   * هو ما يُسأل عنه عند التحقّق من وثيقة — «من رفع هذه ومتى؟» — وكان
+   * مطويّاً في قاعدة البيانات لا يظهر في أيّ شاشة.
+   */
+  const subtitle = present
+    ? [
+        entry.document!.fileName ?? "ملف مرفوع",
+        entry.document!.uploadedBy?.username,
+        new Date(entry.document!.createdAt).toLocaleDateString("fr-DZ", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }),
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : undefined;
 
   return (
     <div
@@ -217,44 +225,31 @@ function DocumentSlot({
         </div>
       </div>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) onFile(f);
-          e.target.value = "";
-        }}
-      />
-
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onPick}
-          disabled={busy}
-          className="flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1.5 text-[11px] font-bold transition hover:bg-white/20 disabled:opacity-50"
+      <div className="flex flex-wrap items-center gap-2">
+        {/*
+          نسبةٌ حرّة لا 3:4: الوثائق مقاساتُها شتّى — شهادة ميلاد A4،
+          وبطاقةٌ صغيرة، وصفحةُ دفترٍ عائلي. والإطار المفروض كان سيقصّ
+          ختماً أو توقيعاً من حافّة الورقة.
+        */}
+        <ImageIntake
+          aspect="a4"
+          editorTitle={entry.label}
+          busy={busy}
+          onFile={onFile}
         >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Upload className="h-3.5 w-3.5" />
-          )}
           {present ? "استبدال" : "رفع"}
-        </button>
+        </ImageIntake>
 
         {present && (
           <>
-            <a
-              href={url}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => setViewing(true)}
               className="flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1.5 text-[11px] font-bold transition hover:bg-white/20"
             >
-              <Download className="h-3.5 w-3.5" />
+              <Eye className="h-3.5 w-3.5" />
               عرض
-            </a>
+            </button>
 
             <button
               type="button"
@@ -268,6 +263,15 @@ function DocumentSlot({
           </>
         )}
       </div>
+
+      {viewing && url && (
+        <ImageViewer
+          src={url}
+          title={entry.label}
+          subtitle={subtitle}
+          onClose={() => setViewing(false)}
+        />
+      )}
     </div>
   );
 }

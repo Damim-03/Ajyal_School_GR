@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "motion/react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -13,7 +12,7 @@ import {
 
 import { AppHeader } from "../../components/AppHeader";
 import { Avatar } from "../../components/shared/Avatar";
-import { MOTION } from "../../motion/system";
+import { FormDialog } from "../../components/shared/FormDialog";
 import { PATHS } from "../../routes/paths";
 import { useScreenExit } from "../../lib/screen-transition";
 import { DocumentsPanel } from "./DocumentsPanel";
@@ -271,50 +270,19 @@ export default function StudentFilesPage() {
 
       {/* ================= لوحة الوثائق ================= */}
       {openStudent && (
-        <div className="fixed inset-0 z-40">
-          <div
-            onClick={() => {
-              setOpenStudent(null);
-              fetchRows();
-            }}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          />
-
-          <motion.div
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            transition={{ duration: MOTION.duration.normal, ease: MOTION.easing.enter }}
-            className="absolute inset-y-0 start-0 z-50 flex w-full max-w-150 flex-col border-e border-white/10 bg-[#0a0f1a]"
-          >
-            <header className="flex items-center gap-3 border-b border-white/10 px-6 py-5">
-              <Avatar
-                src={openStudent.avatar}
-                name={`${openStudent.firstName} ${openStudent.lastName}`}
-                gender={openStudent.gender}
-                size={44}
-              />
-              <div className="min-w-0 flex-1">
-                <h2 className="truncate text-lg font-black">
-                  {openStudent.firstName} {openStudent.lastName}
-                </h2>
-                <p className="text-xs text-white/50">وثائق الملف</p>
-              </div>
-              <button
-                onClick={() => {
-                  setOpenStudent(null);
-                  fetchRows();
-                }}
-                className="grid h-9 w-9 place-items-center rounded-full bg-white/10 transition hover:bg-white/20"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </header>
-
-            <div className="flex-1 overflow-y-auto px-6 py-5">
-              <DocumentsPanel studentId={openStudent.id} />
-            </div>
-          </motion.div>
-        </div>
+        <FormDialog
+          icon={FolderCheck}
+          title={`${openStudent.firstName} ${openStudent.lastName}`}
+          subtitle="وثائق الملف — ارفع أو استبدل، والاكتمال يُحسب فور الرفع"
+          tone={ACCENT}
+          onClose={() => {
+            setOpenStudent(null);
+            /* الإغلاق يُنعش الجدول — عمودُ الاكتمال تغيّر بما رُفع هنا */
+            fetchRows();
+          }}
+        >
+          <DocumentsPanel studentId={openStudent.id} />
+        </FormDialog>
       )}
     </div>
   );

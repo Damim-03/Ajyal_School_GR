@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { Barcode } from "../../components/print/Barcode";
 import { logoSpec } from "../../components/print/logo";
+import { formatAmount } from "../../core/utils/money";
 import { useSchoolStore } from "../../core/stores/school.store";
 import { MONTHS, METHOD_LABEL, type Invoice, type Payment } from "./finance.api";
 
@@ -45,11 +46,23 @@ const dateOf = (iso: string) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
-/** «2 500.00 دج» — فاصل آلاف مسافة، ورقمان بعد الفاصلة دائماً */
-const amount = (n: number) => {
-  const [int, dec] = n.toFixed(2).split(".");
-  return `${int.replace(/\B(?=(\d{3})+(?!\d))/g, " ")}.${dec}`;
-};
+/**
+ * المبلغ من كاتب المال الواحد (`core/utils/money`) لا من نسخةٍ هنا.
+ *
+ * كانت هنا نسخةٌ محلّية تفصل الآلاف **بمسافة**، وهي التي أخرجت
+ * «500.00 1» في خانة المبلغ بدل «1,500.00». والسبب ثنائيّ:
+ *
+ *   1. المسافة محرفٌ محايد بين رقمين، وفي سياقٍ عربيّ (RTL) يأخذ اتجاه
+ *      الفقرة — فتُصفّ مجموعتا الأرقام من اليمين إلى اليسار ويسبق
+ *      «500.00» الآحادَ «1». والخطأ يظهر في الآلاف وحدها، فرقمٌ من
+ *      ثلاث خانات يُختبر ويبدو سليماً.
+ *   2. الخانة نفسُها كانت بلا `dir="ltr"` بخلاف خانة الشهر بجانبها.
+ *
+ * و`money.ts` قد حسم هذا سلفاً بالفاصلة لا المسافة، ووثّق السبب: الورقة
+ * تُطبع وتُصوَّر، والمسافة تنكسر عند التفاف السطر فيصير «11 625» رقمين.
+ * فهذه النسخة السادسة أُسقطت وبقي كاتبٌ واحد.
+ */
+const amount = formatAmount;
 
 function useIdentity() {
   const s = useSchoolStore((x) => x.settings);
@@ -83,6 +96,25 @@ function Money({ value }: { value: number }) {
       style={{ unicodeBidi: "isolate" }}
     >
       {amount(value)} {id.currency}
+    </span>
+  );
+}
+
+/**
+ * مبلغٌ بلا عملة — لخانات الجدول.
+ *
+ * معزولٌ اتجاهياً كأخيه: الفاصلة تجعل «1,500.00» رقماً واحداً في نظر
+ * الاتجاه فلا ينقلب، لكنّ العزل صريحٌ لا متروكٌ لخاصيةٍ في محرفٍ —
+ * ورقةٌ أُتلفت مرّةً بسبب هذا تكفي.
+ */
+function Amount({ value }: { value: number }) {
+  return (
+    <span
+      dir="ltr"
+      className="inline-block tabular-nums"
+      style={{ unicodeBidi: "isolate" }}
+    >
+      {amount(value)}
     </span>
   );
 }
@@ -282,7 +314,9 @@ export function InvoiceDoc({ invoice }: { invoice: Invoice }) {
             <td className={`${TD} tabular-nums`} dir="ltr">
               {pad(invoice.month)}/{invoice.year}
             </td>
-            <td className={`${TD} font-bold tabular-nums`}>{amount(invoice.amount)}</td>
+            <td className={`${TD} font-bold tabular-nums`}>
+              <Amount value={invoice.amount} />
+            </td>
           </tr>
         </tbody>
       </table>
@@ -376,14 +410,16 @@ export function ReceiptDoc({ payment }: { payment: Payment }) {
                 {pi.invoice.studentEnrollment.teachingAssignment.subject.name}
                 {pi.invoice.remaining > 0 && (
                   <div className="font-normal" style={{ fontSize: rcp(0.85) }}>
-                    متبقٍّ {amount(pi.invoice.remaining)}
+                    متبقٍّ <Amount value={pi.invoice.remaining} />
                   </div>
                 )}
               </td>
               <td className={`${TD} tabular-nums`} dir="ltr">
                 {pad(pi.invoice.month)}/{pi.invoice.year}
               </td>
-              <td className={`${TD} font-bold tabular-nums`}>{amount(pi.paidAmount)}</td>
+              <td className={`${TD} font-bold tabular-nums`}>
+                <Amount value={pi.paidAmount} />
+              </td>
             </tr>
           ))}
 

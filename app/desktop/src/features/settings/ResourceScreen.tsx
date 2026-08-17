@@ -15,6 +15,7 @@ import {
 import { AppHeader } from "../../components/AppHeader";
 import { DateField } from "../../components/DateField";
 import { Avatar } from "../../components/shared/Avatar";
+import { FormDialog, FormGrid, FormRow } from "../../components/shared/FormDialog";
 import { apiClient } from "../../core/api/client";
 import { useAuthStore } from "../../core/stores/auth.store";
 import { useSchoolStore } from "../../core/stores/school.store";
@@ -534,51 +535,27 @@ function ResourceForm({
   const explanation = spec.explain?.(form) ?? null;
 
   return (
-    <div className="fixed inset-0 z-40">
-      <div onClick={onClose} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-      {/*
-        نافذةٌ في الوسط لا درجٌ جانبي.
-        الدرج عرضُه 28rem فيصفّ الحقول عموداً واحداً طويلاً، ونماذجُ
-        هذا النظام تبلغ خمسةَ عشرَ حقلاً — فيبقى نصفُها تحت خطّ الرؤية
-        ومعها لوحةُ الشرح التي لا تُقرأ إن لم تُرَ. والوسطُ يتّسع
-        لعمودين فيُرى النموذج كلُّه دفعةً واحدة.
-      */}
-      <motion.form
-        onSubmit={submit}
-        initial={{ opacity: 0, scale: 0.96, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: MOTION.duration.normal, ease: MOTION.easing.enter }}
-        className="absolute inset-x-4 top-1/2 z-50 mx-auto flex max-h-[90vh] w-auto max-w-4xl -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-white/12 bg-[#0a0f1a] shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
-      >
-        <header
-          className="flex items-center gap-3 border-b border-white/10 px-7 py-5"
-          style={{ background: `linear-gradient(90deg, ${spec.tone}14, transparent)` }}
-        >
-          <span className="grid h-11 w-11 place-items-center rounded-xl" style={{ background: `${spec.tone}1f` }}>
-            <spec.icon className="h-5.5 w-5.5" style={{ color: spec.tone }} />
-          </span>
-          <div className="flex-1">
-            <h2 className="text-lg font-black leading-tight">
-              {editing ? `تعديل ${spec.singular}` : `${spec.singular} جديد`}
-            </h2>
-            <p className="mt-0.5 text-[11px] text-white/40">{spec.desc}</p>
-          </div>
-          <button type="button" onClick={onClose}
-            className="grid h-9 w-9 place-items-center rounded-full bg-white/10 transition hover:bg-white/20">
-            <X className="h-4 w-4" />
-          </button>
-        </header>
+    <FormDialog
+      icon={spec.icon}
+      title={editing ? `تعديل ${spec.singular}` : `${spec.singular} جديد`}
+      subtitle={spec.desc}
+      tone={spec.tone}
+      onClose={onClose}
+      onSubmit={submit}
+      busy={busy}
+      submitLabel={editing ? "حفظ" : "إضافة"}
+      submitIcon={<Save className="h-4.5 w-4.5" />}
+      error={error}
+    >
+      <FormGrid>
+        {visible.map((f) => (
+          <FormRow key={f.key} wide={f.wide || f.kind === "switch"}>
+            <Field spec={f} value={form[f.key]} onChange={(v) => set(f.key, v)} refs={refs} tone={spec.tone} />
+          </FormRow>
+        ))}
+      </FormGrid>
 
-        <div className="flex-1 overflow-y-auto px-7 py-6">
-          <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
-            {visible.map((f) => (
-              <div key={f.key} className={f.wide || f.kind === "switch" ? "sm:col-span-2" : ""}>
-                <Field spec={f} value={form[f.key]} onChange={(v) => set(f.key, v)} refs={refs} tone={spec.tone} />
-              </div>
-            ))}
-          </div>
-
-          {explanation && (
+      {explanation && (
             <div
               className="mt-5 rounded-2xl border p-5"
               style={{ borderColor: `${spec.tone}33`, background: `${spec.tone}0a` }}
@@ -646,28 +623,9 @@ function ResourceForm({
                   ))}
                 </ul>
               )}
-            </div>
-          )}
-
-          {error && (
-            <div className="mt-5 whitespace-pre-line rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm leading-relaxed text-rose-200">
-              {error}
-            </div>
-          )}
         </div>
-
-        <footer className="flex gap-3 border-t border-white/10 px-6 py-4">
-          <button type="submit" disabled={busy}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 font-black text-[#04121c] transition hover:brightness-110 disabled:opacity-40"
-            style={{ background: spec.tone }}>
-            {busy ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Save className="h-4.5 w-4.5" />}
-            {editing ? "حفظ" : "إضافة"}
-          </button>
-          <button type="button" onClick={onClose}
-            className="rounded-xl bg-white/10 px-5 py-3 text-sm font-bold transition hover:bg-white/20">إلغاء</button>
-        </footer>
-      </motion.form>
-    </div>
+      )}
+    </FormDialog>
   );
 }
 

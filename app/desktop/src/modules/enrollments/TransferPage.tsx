@@ -12,9 +12,9 @@ import {
 } from "lucide-react";
 
 import { AppHeader } from "../../components/AppHeader";
+import { FormDialog } from "../../components/shared/FormDialog";
 import { useAcademicYears } from "../../core/api/reference.api";
 import { useAuthStore } from "../../core/stores/auth.store";
-import { MOTION } from "../../motion/system";
 import { PATHS } from "../../routes/paths";
 import { useScreenExit } from "../../lib/screen-transition";
 import { listStudents, type Student } from "../students/student.api";
@@ -366,8 +366,9 @@ function TransferDialog({
     [targets, targetId],
   );
 
-  const submit = async () => {
-    if (!target) return;
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!target || busy) return;
 
     setBusy(true);
     setError(null);
@@ -388,20 +389,20 @@ function TransferDialog({
   };
 
   return (
-    <>
-      <div onClick={onClose} className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: MOTION.duration.fast }}
-        className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#0a0f1a] p-6"
-      >
-        <h3 className="mb-1 text-lg font-black">نقل بين الأفواج</h3>
-        <p className="mb-5 text-xs text-white/45">
-          <span className="font-bold text-white/80">{fullName(row.student)}</span>{" "}
-          — {row.teachingAssignment.subject.name}
-        </p>
-
+    <FormDialog
+      icon={ArrowRightLeft}
+      title="نقل بين الأفواج"
+      subtitle={`${fullName(row.student)} — ${row.teachingAssignment.subject.name}`}
+      tone={ACCENT}
+      width="md"
+      onClose={onClose}
+      onSubmit={submit}
+      busy={busy}
+      submitDisabled={!target}
+      submitLabel="انقل"
+      submitIcon={<ArrowRightLeft className="h-4.5 w-4.5" />}
+      error={error}
+    >
         <div className="mb-5 flex items-center gap-3 rounded-xl border border-white/10 bg-black/25 p-3.5">
           <div className="min-w-0 flex-1 text-center">
             <p className="text-[10px] text-white/40">من</p>
@@ -449,36 +450,7 @@ function TransferDialog({
           الإسناد القديم يُعطَّل ولا يُحذف: فواتيره وحضورُه تبقى معلَّقةً به، فلا
           يضيع تاريخ الطالب في الفوج الذي غادره.
         </p>
-
-        {error && (
-          <div className="mt-4 rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm leading-relaxed text-rose-200">
-            {error}
-          </div>
-        )}
-
-        <div className="mt-5 flex gap-3">
-          <button
-            onClick={submit}
-            disabled={busy || !target}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 font-black text-[#160a2e] transition hover:brightness-110 disabled:opacity-40"
-            style={{ background: ACCENT }}
-          >
-            {busy ? (
-              <Loader2 className="h-4.5 w-4.5 animate-spin" />
-            ) : (
-              <ArrowRightLeft className="h-4.5 w-4.5" />
-            )}
-            انقل
-          </button>
-          <button
-            onClick={onClose}
-            className="rounded-xl bg-white/10 px-5 py-3 text-sm font-bold transition hover:bg-white/20"
-          >
-            إلغاء
-          </button>
-        </div>
-      </motion.div>
-    </>
+    </FormDialog>
   );
 }
 

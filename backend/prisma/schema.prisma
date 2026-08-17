@@ -153,6 +153,7 @@ model Level {
   educationStage EducationStage @relation(fields: [educationStageId], references: [id])
   studyGroups    StudyGroup[]
   tuitionFees    TuitionFee[]
+  students       Student[]
 
   @@unique([educationStageId, name])
   @@index([educationStageId])
@@ -394,13 +395,30 @@ model Student {
   registrationDate DateTime  @default(now())
   isActive         Boolean   @default(true)
   note             String?
+
+  /// المستوى الدراسي للطالب — «أولى متوسط»، يُختار عند التسجيل.
+  ///
+  /// حقلٌ عليه لا اشتقاقٌ من تسجيلاته: المستوى صفةُ الطالب نفسِه، بينما
+  /// التسجيل يربطه بمادةٍ عند أستاذٍ في فوج. والاشتقاق كان يعطي ثلاث
+  /// إجابات لطالبٍ في ثلاث مواد، ولا يعطي شيئاً لطالبٍ سُجّل للتوّ ولم
+  /// يُسنَد بعد — وهي اللحظة التي تُطبع فيها بطاقته.
+  ///
+  /// والطور لا يُخزَّن معه: `Level.educationStageId` يحمله، وتخزينه
+  /// مرّتين يفتح باب التناقض. النموذج يعرض الطور مرشّحاً للمستويات فقط.
+  ///
+  /// واختياريٌّ لأنّ الصفوف القائمة سبقت الحقل، ولأنّ التسجيل قد يبدأ
+  /// قبل استقرار المستوى — والبطاقة عندها ترتدّ إلى مستوى أفواجه.
+  levelId          String?
+
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
+  level       Level?              @relation(fields: [levelId], references: [id])
   enrollments StudentEnrollment[]
   documents   StudentDocument[]
 
   @@index([lastName])
+  @@index([levelId])
 }
 
 // ------------------------------------------------------

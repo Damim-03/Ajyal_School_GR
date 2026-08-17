@@ -16,6 +16,7 @@ import {
 
 import { AppHeader } from "../../components/AppHeader";
 import { Avatar } from "../../components/shared/Avatar";
+import { FormDialog, FormGrid, FormRow } from "../../components/shared/FormDialog";
 import { useAuthStore } from "../../core/stores/auth.store";
 import { MOTION } from "../../motion/system";
 import { PATHS } from "../../routes/paths";
@@ -484,7 +485,10 @@ function TeacherDialog({
   const set = <K extends keyof TeacherBody>(key: K, value: TeacherBody[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const submit = async () => {
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (busy) return;
+
     setBusy(true);
     setError(null);
 
@@ -524,26 +528,28 @@ function TeacherDialog({
     Boolean(form.hireDate);
 
   return (
-    <>
-      <div onClick={onClose} className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: MOTION.duration.fast }}
-        className="fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-full max-w-145 -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-white/10 bg-[#0a0f1a] p-6"
-      >
-        <h3 className="mb-1 flex items-center gap-2 text-lg font-black">
-          <UserRound className="h-5 w-5" style={{ color: ACCENT }} />
-          {teacher ? "تعديل الأستاذ" : "أستاذ جديد"}
-        </h3>
-        <p className="mb-5 text-xs text-white/45">
-          الاسم واللقب وتاريخ التوظيف إلزامية، وما عداها يُكمَّل لاحقاً.
-        </p>
-
-        <div className="grid grid-cols-2 gap-3">
+    <FormDialog
+      icon={UserRound}
+      title={teacher ? "تعديل الأستاذ" : "أستاذ جديد"}
+      subtitle="الاسم واللقب وتاريخ التوظيف إلزامية، وما عداها يُكمَّل لاحقاً."
+      tone={ACCENT}
+      onClose={onClose}
+      onSubmit={submit}
+      busy={busy}
+      submitDisabled={!valid}
+      submitLabel={teacher ? "حفظ" : "إضافة"}
+      submitIcon={<Plus className="h-4.5 w-4.5" />}
+      error={error}
+    >
+      <FormGrid>
+        <FormRow>
           <Input label="الاسم" required value={form.firstName} onChange={(v) => set("firstName", v)} />
+        </FormRow>
+        <FormRow>
           <Input label="اللقب" required value={form.lastName} onChange={(v) => set("lastName", v)} />
+        </FormRow>
 
+        <FormRow>
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold text-white/60">الجنس</span>
             <select
@@ -555,7 +561,9 @@ function TeacherDialog({
               <option value="FEMALE" className="bg-[#0a0f1a]">أنثى</option>
             </select>
           </label>
+        </FormRow>
 
+        <FormRow>
           <Input
             label="تاريخ التوظيف"
             required
@@ -563,27 +571,39 @@ function TeacherDialog({
             value={form.hireDate}
             onChange={(v) => set("hireDate", v)}
           />
+        </FormRow>
 
+        <FormRow>
           <Input label="الهاتف" value={form.phone ?? ""} onChange={(v) => set("phone", v)} ltr />
+        </FormRow>
+        <FormRow>
           <Input label="البريد" value={form.email ?? ""} onChange={(v) => set("email", v)} ltr />
+        </FormRow>
 
+        <FormRow>
           <Input
             label="تاريخ الميلاد"
             type="date"
             value={form.birthDate ?? ""}
             onChange={(v) => set("birthDate", v)}
           />
+        </FormRow>
+        <FormRow>
           <Input
             label="التخصّص"
             value={form.specialization ?? ""}
             onChange={(v) => set("specialization", v)}
           />
+        </FormRow>
 
+        <FormRow>
           <Input
             label="المؤهّل"
             value={form.qualification ?? ""}
             onChange={(v) => set("qualification", v)}
           />
+        </FormRow>
+        <FormRow>
           <Input
             label="الراتب"
             type="number"
@@ -592,44 +612,22 @@ function TeacherDialog({
             ltr
             hint="اختياري — لا يظهر في القائمة"
           />
+        </FormRow>
 
-          <label className="col-span-2 block">
+        <FormRow wide>
+          <label className="block">
             <span className="mb-1.5 block text-xs font-bold text-white/60">العنوان</span>
             <textarea
               value={form.address ?? ""}
               onChange={(e) => set("address", e.target.value)}
               rows={2}
               maxLength={200}
-              className={fieldClass}
+              className={`${fieldClass} resize-none`}
             />
           </label>
-        </div>
-
-        {error && (
-          <div className="mt-4 rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm leading-relaxed text-rose-200">
-            {error}
-          </div>
-        )}
-
-        <div className="mt-5 flex gap-3">
-          <button
-            onClick={submit}
-            disabled={busy || !valid}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 font-black text-[#041f1c] transition hover:brightness-110 disabled:opacity-40"
-            style={{ background: ACCENT }}
-          >
-            {busy ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Plus className="h-4.5 w-4.5" />}
-            {teacher ? "حفظ" : "إضافة"}
-          </button>
-          <button
-            onClick={onClose}
-            className="rounded-xl bg-white/10 px-5 py-3 text-sm font-bold transition hover:bg-white/20"
-          >
-            إلغاء
-          </button>
-        </div>
-      </motion.div>
-    </>
+        </FormRow>
+      </FormGrid>
+    </FormDialog>
   );
 }
 

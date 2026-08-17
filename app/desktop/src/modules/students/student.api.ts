@@ -27,6 +27,18 @@ export interface Student {
   registrationDate: string;
   note: string | null;
   isActive: boolean;
+  /**
+   * المستوى الدراسي — يُختار عند التسجيل من مستويات «البنية الدراسية».
+   *
+   * صفةُ الطالب نفسِه لا اشتقاقٌ من تسجيلاته، ومنه تقرأ البطاقة سطرَ
+   * المستوى. والطور داخله (`educationStage`) لا حقلاً مستقلاً.
+   */
+  levelId: string | null;
+  level: {
+    id: string;
+    name: string;
+    educationStage: { id: string; name: string; type: string };
+  } | null;
   _count?: { enrollments: number };
   /** أنواع الوثائق الموجودة — يحسب منها الاكتمال بلا طلب لكل طالب */
   documentTypes?: string[];
@@ -73,6 +85,8 @@ export interface StudentInput {
   address?: string | null;
   schoolName?: string | null;
   emergencyPhone?: string | null;
+  /** معرّف المستوى وحده — الطور مشتقٌّ منه ولا يُرسل */
+  levelId?: string | null;
   registrationDate?: string;
   note?: string | null;
   isActive?: boolean;

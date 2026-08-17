@@ -24,8 +24,20 @@ const studentSelect = {
     registrationDate: true,
     note: true,
     isActive: true,
+    levelId: true,
     createdAt: true,
     updatedAt: true,
+    /*
+     * المستوى ومعه طورُه — تطلبهما البطاقة وشاشة الطالب معاً، والطور
+     * حقلٌ في جدولٍ ثالث فجلبُه هنا يوفّر طلباً لأجل سطر.
+     */
+    level: {
+        select: {
+            id: true,
+            name: true,
+            educationStage: { select: { id: true, name: true, type: true } },
+        },
+    },
 };
 // --------------------------------------------------
 // Helpers
@@ -40,23 +52,66 @@ const findOrThrow = async (id) => {
     }
     return student;
 };
+/**
+ * المستوى المُسنَد موجودٌ ونشط.
+ *
+ * والمعطَّل يُرفض للجديد ولا يُرفض للقائم: مستوًى أُوقف بعد أن سُجّل
+ * فيه طلبة يبقى مستواهم كما كان — الرفض هنا يمنع **اختياره**، لا
+ * يُبطل ما مضى.
+ */
+const ensureLevelExists = async (levelId) => {
+    const level = await client_1.prisma.level.findUnique({
+        where: { id: levelId },
+        select: { id: true, isActive: true },
+    });
+    if (!level) {
+        throw new app_errors_1.NotFoundException("Level not found", error_code_enum_1.ErrorCodeEnum.LEVEL_NOT_FOUND);
+    }
+    if (!level.isActive) {
+        throw new app_errors_1.ConflictException("Cannot assign a deactivated level", error_code_enum_1.ErrorCodeEnum.RESOURCE_ALREADY_EXISTS);
+    }
+};
 // --------------------------------------------------
 // List
 // --------------------------------------------------
 const listStudentsService = async (query) => {
     const { skip, take, page, limit } = (0, api_response_1.getPagination)(query.page, query.limit);
-    /*
-     * شروط الإسناد التدريسي المرتبط بتسجيلات الطالب.
-     * المستوى يمرّ عبر الفوج: TeachingAssignment ← StudyGroup ← Level.
-     */
+    /* شروط الإسناد التدريسي المرتبط بتسجيلات الطالب */
     const assignmentFilter = {
         ...(query.subjectId && { subjectId: query.subjectId }),
         ...(query.studyGroupId && { studyGroupId: query.studyGroupId }),
         ...(query.teacherId && { teacherId: query.teacherId }),
         ...(query.academicYearId && { academicYearId: query.academicYearId }),
-        ...(query.levelId && { studyGroup: { levelId: query.levelId } }),
     };
     const hasEnrollmentFilter = Object.keys(assignmentFilter).length > 0;
+    /*
+     * فلتر المستوى — على الطالب أو على أفواجه.
+     *
+     * صار للطالب عمود `levelId` يُختار عند تسجيله، وكان الفلتر يمرّ عبر
+     * الفوج وحده (تسجيل ← إسناد ← فوج ← مستوى). فلو بقي كذلك لغاب عن
+     * القائمة كلُّ طالبٍ سُجّل ولم يُسنَد بعد — وهم بالضبط من يُبحث عنهم
+     * لإسنادهم. والعكس أيضاً: صفٌّ لم تبلغه التعبئة الرجعية يبقى ظاهراً
+     * بمستوى أفواجه. فالشرطان بـOR لا أحدهما.
+     */
+    const levelFilter = query.levelId
+        ? {
+            OR: [
+                { levelId: query.levelId },
+                {
+                    enrollments: {
+                        some: {
+                            ...(query.includeInactiveEnrollments !== true && {
+                                isActive: true,
+                            }),
+                            teachingAssignment: {
+                                studyGroup: { levelId: query.levelId },
+                            },
+                        },
+                    },
+                },
+            ],
+        }
+        : undefined;
     const where = {
         ...(query.isActive !== undefined && { isActive: query.isActive }),
         ...(query.gender && { gender: query.gender }),
@@ -90,6 +145,14 @@ const listStudentsService = async (query) => {
         }),
     };
     /*
+     * الشروط المركّبة تُجمَع في `AND` لا تُسنَد إلى `where` مباشرة:
+     * فلتر المستوى واكتمالُ الملف كلاهما يحتاج `AND`، وإسنادُ الثاني
+     * يمحو الأوّل صامتاً. و`OR` محجوزٌ للبحث النصّي أعلاه.
+     */
+    const and = [];
+    if (levelFilter)
+        and.push(levelFilter);
+    /*
      * فلتر اكتمال الملف.
      *
      * «مكتمل» = يملك كلّ الأنواع المطلوبة، فيُترجَم إلى شرطٍ لكلّ نوع
@@ -101,10 +164,12 @@ const listStudentsService = async (query) => {
             documents: { some: { type } },
         }));
         if (query.documentsComplete)
-            where.AND = hasAllRequired;
+            and.push(...hasAllRequired);
         else
             where.NOT = { AND: hasAllRequired };
     }
+    if (and.length > 0)
+        where.AND = and;
     const [students, total] = await Promise.all([
         client_1.prisma.student.findMany({
             where,
@@ -214,6 +279,9 @@ exports.getStudentEnrollmentsService = getStudentEnrollmentsService;
  */
 const NUMBER_ATTEMPTS = 3;
 const createStudentService = async (body) => {
+    /* خارج الحلقة والمعاملة: فحصُ قراءةٍ لا يتغيّر بإعادة المحاولة */
+    if (body.levelId)
+        await ensureLevelExists(body.levelId);
     for (let attempt = 0; attempt < NUMBER_ATTEMPTS; attempt++) {
         try {
             return await client_1.prisma.$transaction(async (tx) => {
@@ -231,6 +299,7 @@ const createStudentService = async (body) => {
                         address: body.address ?? null,
                         schoolName: body.schoolName ?? null,
                         emergencyPhone: body.emergencyPhone ?? null,
+                        levelId: body.levelId ?? null,
                         ...(body.registrationDate && { registrationDate: body.registrationDate }),
                         note: body.note ?? null,
                         isActive: body.isActive ?? true,
@@ -256,9 +325,13 @@ exports.createStudentService = createStudentService;
 // --------------------------------------------------
 const updateStudentService = async (id, body) => {
     await findOrThrow(id);
+    /* `null` صريحٌ يمسح المستوى — الفحص للقيمة الفعلية وحدها */
+    if (body.levelId)
+        await ensureLevelExists(body.levelId);
     return client_1.prisma.student.update({
         where: { id },
         data: {
+            ...(body.levelId !== undefined && { levelId: body.levelId ?? null }),
             ...(body.firstName !== undefined && { firstName: body.firstName }),
             ...(body.lastName !== undefined && { lastName: body.lastName }),
             ...(body.gender !== undefined && { gender: body.gender }),

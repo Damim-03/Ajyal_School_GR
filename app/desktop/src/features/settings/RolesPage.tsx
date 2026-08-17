@@ -8,14 +8,15 @@ import {
   Plus,
   Save,
   Shield,
+  ShieldPlus,
   Trash2,
   X,
 } from "lucide-react";
 
 import { AppHeader } from "../../components/AppHeader";
+import { FormDialog, FormGrid, FormRow } from "../../components/shared/FormDialog";
 import { apiClient } from "../../core/api/client";
 import { useAuthStore } from "../../core/stores/auth.store";
-import { MOTION } from "../../motion/system";
 import { PATHS } from "../../routes/paths";
 import { useScreenExit } from "../../lib/screen-transition";
 
@@ -485,7 +486,10 @@ function NewRoleDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const submit = async () => {
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (busy) return;
+
     setBusy(true);
     setError(null);
 
@@ -504,20 +508,22 @@ function NewRoleDialog({
   };
 
   return (
-    <>
-      <div onClick={onClose} className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: MOTION.duration.fast }}
-        className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#0a0f1a] p-6"
-      >
-        <h3 className="mb-1 text-lg font-black">دور جديد</h3>
-        <p className="mb-5 text-xs text-white/45">
-          يُنشأ بلا صلاحيات — تُمنح من المصفوفة بعد الإنشاء.
-        </p>
-
-        <div className="space-y-4">
+    <FormDialog
+      icon={ShieldPlus}
+      title="دور جديد"
+      subtitle="يُنشأ بلا صلاحيات — تُمنح من المصفوفة بعد الإنشاء."
+      tone={ACCENT}
+      width="md"
+      onClose={onClose}
+      onSubmit={submit}
+      busy={busy}
+      submitDisabled={name.trim().length < 2}
+      submitLabel="أنشئ"
+      submitIcon={<Check className="h-4.5 w-4.5" />}
+      error={error}
+    >
+      <FormGrid>
+        <FormRow>
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold text-white/60">الاسم</span>
             <input
@@ -527,7 +533,9 @@ function NewRoleDialog({
               className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none"
             />
           </label>
+        </FormRow>
 
+        <FormRow>
           <label className="block">
             <span className="mb-1.5 block text-xs font-bold text-white/60">الوصف</span>
             <input
@@ -536,32 +544,8 @@ function NewRoleDialog({
               className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none"
             />
           </label>
-
-          {error && (
-            <div className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-              {error}
-            </div>
-          )}
-
-          <div className="flex gap-3">
-            <button
-              onClick={submit}
-              disabled={busy || name.trim().length < 2}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 font-black text-[#2b0410] transition hover:brightness-110 disabled:opacity-40"
-              style={{ background: ACCENT }}
-            >
-              {busy ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Check className="h-4.5 w-4.5" />}
-              أنشئ
-            </button>
-            <button
-              onClick={onClose}
-              className="rounded-xl bg-white/10 px-5 py-3 text-sm font-bold transition hover:bg-white/20"
-            >
-              إلغاء
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </>
+        </FormRow>
+      </FormGrid>
+    </FormDialog>
   );
 }

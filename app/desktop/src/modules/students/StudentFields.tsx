@@ -1,7 +1,15 @@
-import { useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Camera, Loader2, Trash2 } from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import { Loader2, Trash2 } from "lucide-react";
 
 import { Avatar } from "../../components/shared/Avatar";
+import { ImageIntake } from "../../components/shared/ImageIntake";
+import { activeOnly, stagesOf, useLevels } from "../../core/api/reference.api";
 import { uploadImage, type Student, type StudentInput } from "./student.api";
 
 const ACCENT = "#7dd3fc";
@@ -23,14 +31,26 @@ export function StudentFields({
   submitLabel,
   submitIcon,
   footerExtra,
+  formId,
+  onValidityChange,
 }: {
   student?: Student | null;
   onSubmit: (payload: StudentInput) => void;
   busy: boolean;
   error: string | null;
-  submitLabel: string;
+  submitLabel?: string;
   submitIcon?: ReactNode;
   footerExtra?: ReactNode;
+  /**
+   * معرّفٌ يربط زرَّ حفظٍ **خارج** هذه الحقول بنموذجها.
+   *
+   * تمرّره النافذةُ المركزية لأنّ زرَّها ملتصقٌ بقاعها لا بآخر الحقول،
+   * ووجودُه يُخفي الذيل المحلّي — وإلّا ظهر زرّا حفظٍ في نافذةٍ واحدة.
+   * ويبقى غائباً في المعالج حيث الزرّ في مجرى الصفحة طبيعياً.
+   */
+  formId?: string;
+  /** يُبلِّغ النافذةَ متى يصلح الحفظ — زرُّها خارج هذه الحقول فلا يرى تمامها */
+  onValidityChange?: (valid: boolean) => void;
 }) {
   const [form, setForm] = useState<StudentInput>({
     firstName: student?.firstName ?? "",
@@ -43,6 +63,7 @@ export function StudentFields({
     address: student?.address ?? "",
     schoolName: student?.schoolName ?? "",
     emergencyPhone: student?.emergencyPhone ?? "",
+    levelId: student?.levelId ?? null,
     note: student?.note ?? "",
     isActive: student?.isActive ?? true,
   });
@@ -50,7 +71,52 @@ export function StudentFields({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const fileRef = useRef<HTMLInputElement>(null);
+  /*
+   * ===== الطور والمستوى — من «البنية الدراسية» لا من قائمة مكتوبة =====
+   *
+   * الإدارة تُنشئ الأطوار والمستويات مرّةً في السنة، وهذه القائمة هي
+   * إيّاها: مستوًى جديد يظهر هنا فور إنشائه، ومستوًى عُطّل يختفي —
+   * بلا تعديلٍ في هذا الملف.
+   *
+   * والطور مرشّحٌ لا حقلٌ يُحفظ: المرسَل `levelId` وحده، والطور
+   * مقروءٌ من المستوى نفسِه (`Level.educationStageId`). فلا يُحفظ
+   * طورٌ يناقض مستواه لأنّ لا محلَّ يُحفظ فيه.
+   */
+  const { data: levels, isLoading: levelsLoading } = useLevels();
+
+  /*
+   * المعطَّل لا يُختار للجديد — إلّا مستوى هذا الطالب نفسِه.
+   *
+   * مستوًى يُعطَّل بعد أن سُجّل فيه طلبة يبقى مستواهم كما كان. ولو
+   * حُذف من القائمة لظهر الحقل فارغاً أمام محرِّر ملفّه بينما القيمة
+   * محفوظة، فيحفظ ظانّاً أنّه لم يمسّه — والخادم يردّه بـ«مستوى
+   * معطَّل» عن حقلٍ لم يلمسه أصلاً.
+   */
+  const active = useMemo(() => {
+    const rows = activeOnly(levels);
+    const own = (levels ?? []).find((l) => l.id === student?.levelId);
+    return own && !rows.some((l) => l.id === own.id) ? [...rows, own] : rows;
+  }, [levels, student?.levelId]);
+
+  const stages = useMemo(() => stagesOf(active), [active]);
+
+  /*
+   * الطور المعروض يتبع المستوى المحفوظ — لا حالةً مستقلّة تُهيَّأ مرّة.
+   * الاشتقاق يعني أنّ فتح ملفّ طالبٍ في «ثانية ثانوي» يُظهر «ثانوي»
+   * مختاراً بلا مزامنة، وأنّ الحالتين لا تفترقان أصلاً.
+   */
+  const [stageId, setStageId] = useState<string>(
+    () => student?.level?.educationStage.id ?? "",
+  );
+
+  const stageOfSelected = active.find((l) => l.id === form.levelId)
+    ?.educationStage.id;
+
+  const currentStage = stageOfSelected ?? stageId;
+
+  const levelsInStage = currentStage
+    ? active.filter((l) => l.educationStage?.id === currentStage)
+    : [];
 
   const set = <K extends keyof StudentInput>(key: K, value: StudentInput[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -92,6 +158,7 @@ export function StudentFields({
       address: clean(form.address),
       schoolName: clean(form.schoolName),
       emergencyPhone: clean(form.emergencyPhone),
+      levelId: form.levelId || null,
       note: clean(form.note),
       isActive: form.isActive,
     });
@@ -100,38 +167,31 @@ export function StudentFields({
   const invalid =
     !form.firstName.trim() || !form.lastName.trim() || !form.parentPhone.trim();
 
+  useEffect(() => {
+    onValidityChange?.(!invalid);
+  }, [invalid, onValidityChange]);
+
   return (
-    <form onSubmit={submit} className="space-y-5">
+    <form id={formId} onSubmit={submit} className="space-y-5">
       {/* ===== الصورة ===== */}
       <div className="flex items-center gap-4">
         <Avatar src={form.avatar} name={fullName} gender={form.gender} size={72} />
 
         <div className="flex flex-col gap-2">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) pickPhoto(file);
-              e.target.value = "";
-            }}
-          />
-
-          <button
-            type="button"
-            disabled={uploading}
-            onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-bold transition hover:bg-white/20 disabled:opacity-50"
+          {/*
+            نسبة 3:4 مفروضة لا مقترحة: خانة الصورة على البطاقة
+            19 × 25.3 مم، وصورةٌ بنسبةٍ أخرى إمّا تُمطّ أو يُقتصّ منها
+            آلياً — والقصّ الآلي يقطع الذقن أو أعلى الرأس. فالقصّ يجري
+            هنا وبعينِ من يرى الوجه.
+          */}
+          <ImageIntake
+            aspect="3:4"
+            editorTitle="صورة الطالب"
+            busy={uploading}
+            onFile={pickPhoto}
           >
-            {uploading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Camera className="h-3.5 w-3.5" />
-            )}
             {form.avatar ? "تغيير الصورة" : "إضافة صورة"}
-          </button>
+          </ImageIntake>
 
           {form.avatar && (
             <button
@@ -183,6 +243,53 @@ export function StudentFields({
           <input type="date" dir="ltr" value={form.birthDate ?? ""} onChange={(e) => set("birthDate", e.target.value)} className={inputClass} />
         </Field>
 
+        {/*
+          ===== الطور ثمّ المستوى =====
+          مرتّبان كما يفكّر الموظّف: «متوسط» ثمّ «أولى متوسط». والمستوى
+          مقفلٌ حتى يُختار الطور — قائمةٌ بكل مستويات المؤسسة مجتمعةً
+          تُطيل البحث وتُغري بمستوى الطور الخطأ.
+        */}
+        <Field label="الطور" hint="من البنية الدراسية">
+          <select
+            value={currentStage}
+            disabled={levelsLoading || stages.length === 0}
+            onChange={(e) => {
+              setStageId(e.target.value);
+              /* تبديل الطور يُسقط مستوى الطور السابق — وإلّا بقي
+                 «أولى متوسط» محفوظاً تحت «ثانوي» في الحقل التالي */
+              set("levelId", null);
+            }}
+            className={inputClass}
+          >
+            <option value="">
+              {levelsLoading ? "جارٍ التحميل…" : "— اختر الطور —"}
+            </option>
+            {stages.map((stage) => (
+              <option key={stage.id} value={stage.id}>
+                {stage.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="المستوى" hint="يظهر على بطاقة الطالب">
+          <select
+            value={form.levelId ?? ""}
+            disabled={!currentStage}
+            onChange={(e) => set("levelId", e.target.value || null)}
+            className={inputClass}
+          >
+            <option value="">
+              {currentStage ? "— اختر المستوى —" : "اختر الطور أوّلاً"}
+            </option>
+            {levelsInStage.map((level) => (
+              <option key={level.id} value={level.id}>
+                {level.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+
         <Field label="هاتف ولي الأمر" required hint="وسيلة التواصل الأساسية">
           <input dir="ltr" value={form.parentPhone} onChange={(e) => set("parentPhone", e.target.value)} className={inputClass} />
         </Field>
@@ -222,25 +329,28 @@ export function StudentFields({
         <span className="text-sm font-bold">طالب نشط</span>
       </label>
 
-      {error && (
+      {/* الخطأ تعرضه النافذة في ذيلها حين تملك الزرّ — فلا يُطبع مرّتين */}
+      {error && !formId && (
         <div className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
           {error}
         </div>
       )}
 
-      <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={busy || invalid}
-          className="flex items-center gap-2 rounded-xl px-5 py-3 font-black text-[#04121c] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-          style={{ background: ACCENT }}
-        >
-          {busy ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : submitIcon}
-          {submitLabel}
-        </button>
+      {!formId && (
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={busy || invalid}
+            className="flex items-center gap-2 rounded-xl px-5 py-3 font-black text-[#04121c] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ background: ACCENT }}
+          >
+            {busy ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : submitIcon}
+            {submitLabel}
+          </button>
 
-        {footerExtra}
-      </div>
+          {footerExtra}
+        </div>
+      )}
     </form>
   );
 }
