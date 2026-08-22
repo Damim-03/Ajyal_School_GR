@@ -19,10 +19,40 @@ if (!config.DATABASE_URL) {
 
 const databaseUrl = new URL(config.DATABASE_URL);
 
-const adapter = new PrismaMariaDb(config.DATABASE_URL, {
-  // اسم قاعدة البيانات المستعمل في الاستعلامات المولَّدة
-  database: decodeURIComponent(databaseUrl.pathname.slice(1)),
-});
+const databaseName = decodeURIComponent(databaseUrl.pathname.slice(1));
+
+/*
+ * تجمّعٌ صغيرٌ معمّر — لا الافتراضيّ الواسع المتجدّد.
+ *
+ * الاستضافة المشتركة تحدّ المستخدمَ بـ`max_connections_per_hour`
+ * (500 هنا)، وهو عدّادُ اتصالاتٍ **جديدة** لا اتصالاتٍ متزامنة.
+ * والافتراضيّ يفتح عشرة ويُسرّح الخاملَ بعد ثلاثين دقيقة ثمّ يعيد
+ * فتحه — دورانٌ يستهلك الحصّة بلا عملٍ يُنجَز.
+ *
+ * فخمسةٌ تكفي حملَ مدرسةٍ واحدة، و`idleTimeout: 0` يُبقيها حيّةً
+ * ما دامت العملية حيّة، فيصير مجموعُ ما تفتحه العمليةُ خمسةً لا
+ * خمسةً كلَّ نصف ساعة.
+ *
+ * وإن قطع الخادمُ اتصالاً خاملاً من طرفه (wait_timeout)، فالتجمّع
+ * يتحقّق قبل الإعارة ويستبدله — فالمقايضة استبدالٌ عند الحاجة بدل
+ * تسريحٍ دوريٍّ مضمون.
+ */
+const adapter = new PrismaMariaDb(
+  {
+    host: databaseUrl.hostname,
+    port: databaseUrl.port ? Number(databaseUrl.port) : 3306,
+    user: decodeURIComponent(databaseUrl.username),
+    password: decodeURIComponent(databaseUrl.password),
+    database: databaseName,
+
+    connectionLimit: 5,
+    idleTimeout: 0,
+  },
+  {
+    // اسم قاعدة البيانات المستعمل في الاستعلامات المولَّدة
+    database: databaseName,
+  },
+);
 
 export const prisma =
   global.__prisma ??
