@@ -8,6 +8,8 @@ import {
   cancelSettlementController,
   settlementEstimateController,
   dailyClearanceController,
+  attachSettlementDocumentController,
+  removeSettlementDocumentController,
 } from "./settlement.controller";
 import { asyncHandler } from "../../core/middleware/async-handler.middleware";
 import { authMiddleware } from "../../core/middleware/auth.middleware";
@@ -23,6 +25,8 @@ import {
   cancelSettlementSchema,
   settlementIdSchema,
   settlementQuerySchema,
+  attachDocumentSchema,
+  documentIdSchema,
   estimateQuerySchema,
   dailyClearanceQuerySchema,
 } from "./settlement.schema";
@@ -93,6 +97,22 @@ router.patch(
   validateParams(settlementIdSchema),
   validate(cancelSettlementSchema),
   asyncHandler(cancelSettlementController),
+);
+
+/* الأوراق الموقَّعة — تُلحق بعد المسح، وتُنزع إن مُسحت خطأً */
+router.post(
+  "/:id/documents",
+  requirePermission("settlement.document"),
+  validateParams(settlementIdSchema),
+  validate(attachDocumentSchema),
+  asyncHandler(attachSettlementDocumentController),
+);
+
+router.delete(
+  "/documents/:documentId",
+  requirePermission("settlement.document"),
+  validateParams(documentIdSchema),
+  asyncHandler(removeSettlementDocumentController),
 );
 
 export default router;

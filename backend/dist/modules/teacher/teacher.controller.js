@@ -1,8 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteTeacherController = exports.updateTeacherController = exports.createTeacherController = exports.getTeacherController = exports.listTeachersController = void 0;
+exports.getTeacherStatementController = exports.deleteTeacherController = exports.updateTeacherController = exports.createTeacherController = exports.getTeacherController = exports.listTeachersController = void 0;
 const api_response_1 = require("../../core/config/api-response");
 const teacher_service_1 = require("./teacher.service");
+const teacher_statement_service_1 = require("./teacher-statement.service");
 const listTeachersController = async (req, res) => {
     const query = req.query;
     const { teachers, pagination } = await (0, teacher_service_1.listTeachersService)(query);
@@ -29,4 +30,10 @@ const deleteTeacherController = async (req, res) => {
     return api_response_1.ApiResponse.success(res, null, "Teacher deleted");
 };
 exports.deleteTeacherController = deleteTeacherController;
+// GET /api/teachers/:id/statement
+const getTeacherStatementController = async (req, res) => {
+    const statement = await (0, teacher_statement_service_1.getTeacherStatementService)(req.params.id, req.query.academicYearId);
+    return api_response_1.ApiResponse.success(res, statement, "Statement retrieved");
+};
+exports.getTeacherStatementController = getTeacherStatementController;
 //# sourceMappingURL=teacher.controller.js.map

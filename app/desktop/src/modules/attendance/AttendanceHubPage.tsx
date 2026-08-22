@@ -1,12 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import {
+  Archive,
   ArrowRight,
   BadgeDollarSign,
   CalendarClock,
   ClipboardCheck,
-  ClipboardList,
+  GraduationCap,
   Info,
+  UserRoundCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -37,6 +39,16 @@ interface Card {
   tone: string;
 }
 
+/*
+ * الترتيب هو مسارُ الورقة في المؤسسة لا ترتيبَ إنشائها:
+ *
+ *   يُدوَّن الحضور ← تُحصَّل الحقوق ← يُقدَّر مستحقّ الأستاذ ←
+ *   يُقرأ حسابُ كلٍّ من الأستاذ والطالب ← يُحفظ ما دُفع في الأرشيف.
+ *
+ * وكشفُ التخليص اليومي حُذف: الكشف التقديري يجيب سؤاله كلَّه — أيُّ
+ * الحصص أُنجزت وكم استحقّ عليها الأستاذ — وبقاؤه بطاقةً «قيد الإنجاز»
+ * وعدٌ لا يُنتظر.
+ */
 const CARDS: Card[] = [
   {
     key: "daily",
@@ -55,20 +67,36 @@ const CARDS: Card[] = [
     tone: "#86efac",
   },
   {
-    key: "clearance",
-    label: "كشف التخليص اليومي",
-    desc: "حصص اليوم مع كل أستاذ، وأيُّها استُوفيت ورقة حضوره وأيُّها بقيت.",
-    icon: ClipboardList,
-    to: null,
-    tone: "#93c5fd",
-  },
-  {
     key: "expected",
     label: "الكشف التقديري للحصص",
     desc: "مستحقّ الأستاذ عن كشفٍ بعينه، ومعه حضور كل طالب ومَن بقي عليه دَين.",
     icon: CalendarClock,
     to: PATHS.attendanceExpected,
     tone: "#93c5fd",
+  },
+  {
+    key: "teacher-account",
+    label: "كشف حساب الأستاذ",
+    desc: "سنةُ الأستاذ كاملةً: كشوفُه شهراً شهراً، وما استحقّه وما قُبض له، وما بقي مؤجَّلاً.",
+    icon: UserRoundCheck,
+    to: PATHS.attendanceTeacherAccount,
+    tone: "#c4b5fd",
+  },
+  {
+    key: "student-account",
+    label: "كشف حساب الطالب",
+    desc: "سنةُ الطالب كاملةً: كشفُ كل شهر بحضوره وغيابه، وحقُّه وما سدَّده ورقمُ إيصاله.",
+    icon: GraduationCap,
+    to: PATHS.attendanceStudentAccount,
+    tone: "#7dd3fc",
+  },
+  {
+    key: "archive",
+    label: "أرشيف تخليص الأساتذة",
+    desc: "ما دُفع لكل أستاذ: الدفعة وكشوفُها، ولقطةُ الكشفين لحظة الدفع، والورقة الموقَّعة ممسوحةً.",
+    icon: Archive,
+    to: PATHS.settlementArchive,
+    tone: "#fda4af",
   },
 ];
 

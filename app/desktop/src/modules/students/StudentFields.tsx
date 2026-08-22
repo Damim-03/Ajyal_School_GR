@@ -57,6 +57,7 @@ export function StudentFields({
     lastName: student?.lastName ?? "",
     gender: student?.gender ?? "MALE",
     birthDate: iso(student?.birthDate),
+    birthPlace: student?.birthPlace ?? "",
     avatar: student?.avatar ?? null,
     phone: student?.phone ?? "",
     parentPhone: student?.parentPhone ?? "",
@@ -152,6 +153,7 @@ export function StudentFields({
       lastName: form.lastName.trim(),
       gender: form.gender,
       birthDate: clean(form.birthDate),
+      birthPlace: clean(form.birthPlace),
       avatar: form.avatar || null,
       phone: clean(form.phone),
       parentPhone: (form.parentPhone ?? "").trim(),
@@ -241,6 +243,16 @@ export function StudentFields({
 
         <Field label="تاريخ الميلاد">
           <input type="date" dir="ltr" value={form.birthDate ?? ""} onChange={(e) => set("birthDate", e.target.value)} className={inputClass} />
+        </Field>
+
+        {/* مسقطُ الرأس — تكتبه شهادة التمدرس: «المولود(ة) في … بـ…» */}
+        <Field label="مكان الميلاد" hint="تكتبه شهادة التمدرس">
+          <input
+            value={form.birthPlace ?? ""}
+            onChange={(e) => set("birthPlace", e.target.value)}
+            placeholder="الجزائر"
+            className={inputClass}
+          />
         </Field>
 
         {/*

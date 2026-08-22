@@ -18,6 +18,8 @@ export interface Student {
   lastName: string;
   gender: Gender;
   birthDate: string | null;
+  /** مسقطُ الرأس — تكتبه شهادة التمدرس */
+  birthPlace: string | null;
   avatar: string | null;
   phone: string | null;
   parentPhone: string;
@@ -25,6 +27,10 @@ export interface Student {
   schoolName: string | null;
   emergencyPhone: string | null;
   registrationDate: string;
+  /** حقوقُ التسجيل — مبلغٌ يُدفع مرّةً عند الالتحاق، غيرُ الحقّ الشهري */
+  registrationFeePaid: boolean;
+  registrationFeeAmount: number | null;
+  registrationFeePaidAt: string | null;
   note: string | null;
   isActive: boolean;
   /**
@@ -56,6 +62,8 @@ export interface StudentQuery {
   page?: number;
   limit?: number;
   search?: string;
+  /** رقمُ التسجيل وحده — مطابقةُ جزءٍ منه، ولا يمسّ الهاتف */
+  studentNumber?: string;
   gender?: Gender;
   isActive?: boolean;
   /* الفلاتر التي تمرّ عبر التسجيل */
@@ -75,10 +83,15 @@ export interface Pagination {
 }
 
 export interface StudentInput {
+  /* حقوق التسجيل — تُرسل عند التسجيل أو تُعدَّل بعده */
+  registrationFeePaid?: boolean;
+  registrationFeeAmount?: number | null;
+  registrationFeePaidAt?: string | null;
   firstName: string;
   lastName: string;
   gender: Gender;
   birthDate?: string | null;
+  birthPlace?: string | null;
   avatar?: string | null;
   phone?: string | null;
   parentPhone: string;
@@ -293,4 +306,75 @@ export const deleteStudentDocument = async (studentId: string, type: string) => 
     `/students/${studentId}/documents/${type}`,
   );
   return data.data as StudentFile;
+};
+
+// --------------------------------------------------
+// كشف حساب الطالب
+// --------------------------------------------------
+
+/**
+ * سطرٌ لكلّ (مادة × كشف شهر) — لا لكلّ شهر.
+ *
+ * المسجَّل في مادّتين له سطران في الشهر الواحد بأستاذين وحقّين. وجمعُهما
+ * في سطرٍ واحد يُخفي أيَّ المادّتين لم تُسدَّد، وهو أوّلُ ما يُسأل عنه.
+ */
+export interface StatementRow {
+  sheetId: string;
+  sheetCode: string;
+  sheetNumber: number;
+  sheetLabel: string | null;
+  month: number | null;
+  year: number | null;
+  firstSession: string | null;
+  lastSession: string | null;
+  subject: { id: string; name: string };
+  teacher: { id: string; firstName: string; lastName: string };
+  studyGroup: { id: string; name: string };
+  completedSessions: number;
+  attended: number;
+  absent: number;
+  invoice: {
+    id: string;
+    invoiceNumber: string;
+    total: number;
+    paid: number;
+    remaining: number;
+    status: string;
+  } | null;
+  receipts: { receiptNumber: string; paidAmount: number; paymentDate: string }[];
+}
+
+export interface StudentStatement {
+  student: {
+    id: string;
+    studentNumber: string;
+    firstName: string;
+    lastName: string;
+    birthDate: string | null;
+    phone: string | null;
+    parentPhone: string;
+    level: { id: string; name: string } | null;
+  };
+  academicYear: { id: string; name: string; startDate: string; endDate: string };
+  rows: StatementRow[];
+  totals: {
+    sheets: number;
+    completedSessions: number;
+    attended: number;
+    absent: number;
+    due: number;
+    paid: number;
+    remaining: number;
+  };
+}
+
+export const getStudentStatement = async (
+  studentId: string,
+  academicYearId: string,
+) => {
+  const { data } = await apiClient.get(`/students/${studentId}/statement`, {
+    params: { academicYearId },
+  });
+
+  return data.data as StudentStatement;
 };

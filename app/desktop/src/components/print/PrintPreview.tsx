@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import { AlertTriangle, Loader2, Printer, RefreshCw, X, Zap } from "lucide-react";
 
 import { MOTION } from "../../motion/system";
+import { LAYER } from "../../motion/layers";
 import { useSchoolStore } from "../../core/stores/school.store";
 import {
   canPrintDirectly,
@@ -74,7 +76,33 @@ export interface PrintDoc {
   onPrinted?: () => Promise<void> | void;
 }
 
-export function PrintPreview({ doc, onClose }: { doc: PrintDoc; onClose: () => void }) {
+/**
+ * `auto` — تخرج الورقة بلا معاينة.
+ *
+ * ليس وضعاً ثانياً للطباعة بل نفسُ الطريق يُطوى عرضُه: النافذة تُركَّب
+ * كاملةً وتُرسم ورقتُها ويُقاس مقاسُها كما هي، ثمّ تُخفى بشفافيةٍ صفر
+ * وتُطلق الطباعة من نفسها وتُغلق. فكلُّ ما في المعاينة من فروع —
+ * الحراري الفوريّ، ورفضُ الحراري عبر السائق، والطابعة المحفوظة لكل
+ * ورق، وحوارُ النظام في المتصفّح — يعمل هنا حرفياً بلا نسخةٍ ثانية
+ * تتخلّف عن أصلها.
+ *
+ * والإخفاء بالشفافية لا بـ`visibility` ولا بالإزاحة: التنقيط يقيس
+ * العنصر ويستنسخ أنماطه المحسوبة، فالمخفيّ يخرج فارغاً. والصنف
+ * يُبطَل في وسط الطباعة كي لا تخرج ورقةٌ بيضاء من حوار النظام.
+ *
+ * وحين تفشل الطباعة تظهر النافذةُ كاملةً برسالتها: الصمت في العمل
+ * الناجح، لا في الخطأ — من ظنّ إيصاله خرج ولم يخرج لا يكتشفها إلّا
+ * حين يسأل الوليُّ عنها.
+ */
+export function PrintPreview({
+  doc,
+  onClose,
+  auto = false,
+}: {
+  doc: PrintDoc;
+  onClose: () => void;
+  auto?: boolean;
+}) {
   const settings = useSchoolStore((s) => s.settings);
   const brand = settings["school.brand_color"] || "#7dd3fc";
 
@@ -83,6 +111,18 @@ export function PrintPreview({ doc, onClose }: { doc: PrintDoc; onClose: () => v
   const [scale, setScale] = useState<TextScale>(readScale);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+
+  /*
+   * التركيزُ ينتقل إلى المعاينة حين تُفتح.
+   *
+   * وإلّا بقي على الزرّ الذي فتحها في النافذة تحتها، فيذهب `Escape`
+   * إليها هي — تُغلق نافذةُ التسجيل وتبقى المعاينة معلَّقةً فوق فراغ.
+   */
+  const shellRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    shellRef.current?.focus({ preventScroll: true });
+  }, []);
 
   useEffect(() => savePaper(paper), [paper]);
   useEffect(() => saveScale(scale), [scale]);
@@ -210,7 +250,7 @@ export function PrintPreview({ doc, onClose }: { doc: PrintDoc; onClose: () => v
     };
   };
 
-  const print = async () => {
+  const print = async (): Promise<boolean> => {
     setFailure(null);
 
     if (!canPrintDirectly()) {
@@ -223,7 +263,7 @@ export function PrintPreview({ doc, onClose }: { doc: PrintDoc; onClose: () => v
       await new Promise((r) => setTimeout(r, 80));
       window.print();
       await doc.onPrinted?.();
-      return;
+      return true;
     }
 
     setBusy(true);
@@ -268,15 +308,72 @@ export function PrintPreview({ doc, onClose }: { doc: PrintDoc; onClose: () => v
       }
 
       await doc.onPrinted?.();
+
+      return true;
     } catch (err: any) {
       setFailure(typeof err === "string" ? err : (err?.message ?? "تعذّرت الطباعة"));
+
+      return false;
     } finally {
       setBusy(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50">
+  /*
+   * الإطلاق الذاتي — بعد أن تُعرف الطابعة لا قبلها.
+   *
+   * `loadingPrinters` هو الشرط: الطباعة المباشرة تحتاج اسم الطابعة،
+   * وإطلاقُها قبل وصول القائمة يرسل إلى اسمٍ فارغ فتفشل بلا سبب ظاهر.
+   * و`fired` يمنع تكرارها — التركيبُ يعيد تشغيل الأثر ولا تعيد الورقة.
+   */
+  const fired = useRef(false);
+
+  useEffect(() => {
+    if (!auto || fired.current || loadingPrinters) return;
+
+    fired.current = true;
+
+    void (async () => {
+      if (await print()) onClose();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auto, loadingPrinters]);
+
+  /*
+   * البوّابةُ والطبقةُ وعزلُ المفاتيح — ثلاثتُها لأنّها تُفتح فوق نافذة.
+   *
+   * كانت `fixed` داخل شجرة مُستدعيها. وذلك يعمل حين يكون المُستدعي
+   * صفحةً، ويعطب حين يكون **نافذةً**: لوحُ `MotionDialog` يُحرَّك بـ
+   * `transform`، والمحوَّلُ يجعل `position: fixed` نسبياً إليه ويقصّه
+   * بـ`overflow-hidden`. فتخرج المعاينة محبوسةً في اللوح لا ملءَ الشاشة.
+   *
+   * والطبقة `dialogNested` لا `z-50`: خمسون دون الحوار (60)، فلو خرجت
+   * من اللوح لرسمت **تحته**.
+   *
+   * و`Escape` يقف هنا: الحدث يصعد في شجرة React ولو عبر البوّابة، فكان
+   * يبلغ لوحَ النافذة تحتها فيُغلقها — تُغلق واحدةٌ فتُغلق الأخرى معها.
+   * فيُلتقط هنا ويُوقَف: يُغلق الأعلى وحده.
+   */
+  return createPortal(
+    <div
+      ref={shellRef}
+      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (e.key !== "Escape") return;
+        e.stopPropagation();
+        onClose();
+      }}
+      style={{ zIndex: LAYER.dialogNested }}
+      /*
+       * `text-white` صراحةً — البوّابة على `body` لا داخل الشاشة.
+       *
+       * لونُ النصّ يُوضع على غلاف الشاشة، وما خرج منه ورث رماديَّ
+       * الصفحة: بهتت الترويسةُ وأسماءُ الطابعات وعناوينُ الخيارات على
+       * أرضٍ داكنة حتّى كادت لا تُقرأ. وكلُّ ما يُرسم في بوّابةٍ يلزمه
+       * أن يحمل لونَه معه.
+       */
+      className={`fixed inset-0 text-white${auto && !failure ? " print-silent" : ""}`}
+    >
       {/* الحجاب لا يُطبع — خارج .print-area */}
       <div onClick={onClose} className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
 
@@ -527,6 +624,7 @@ export function PrintPreview({ doc, onClose }: { doc: PrintDoc; onClose: () => v
           </span>
         </footer>
       </motion.div>
-    </div>
+    </div>,
+    document.body,
   );
 }

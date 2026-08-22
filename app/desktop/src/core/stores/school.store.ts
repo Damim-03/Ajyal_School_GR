@@ -29,6 +29,14 @@ const DEFAULTS: SchoolSettings = {
   "school.logo_size": "56",
   "school.logo_contrast": "100",
   "school.logo_clarity": "100",
+  /*
+   * حقوقُ التسجيل — مبلغٌ يُقبض مرّةً عند التحاق الطالب.
+   *
+   * وفارغُه يعني «لا مبلغَ مقرَّر»: المؤسسة تكتبه في الإعدادات مرّةً
+   * فيُملأ في كلّ تسجيل، ومن تركه فارغاً كتبه بيده في كلّ مرّة —
+   * وصفرٌ مكتوبٌ افتراضاً كان سيُثبَّت في الوصول بلا قصد.
+   */
+  "school.registration_fee": "",
   "school.receipt_note": "",
   "school.receipt_thanks": "شكراً لثقتكم",
   "school.currency": "دج",

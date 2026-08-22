@@ -242,7 +242,14 @@ export interface Assignment {
   id: string;
   isActive: boolean;
   teacher: { id: string; firstName: string; lastName: string; isActive: boolean };
-  subject: { id: string; name: string; code: string | null };
+  subject: {
+    id: string;
+    name: string;
+    code: string | null;
+    /** لونُ المادة وصورتُها — تُعرضان في مربّعات شاشة إسناد الطلبة */
+    color: string | null;
+    imagePath: string | null;
+  };
   studyGroup: {
     id: string;
     name: string;

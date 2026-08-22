@@ -44,6 +44,8 @@ exports.sheetIdSchema = zod_1.z.object({
 exports.sheetQuerySchema = zod_1.z.object({
     page: zod_1.z.coerce.number().int().min(1).default(1),
     limit: zod_1.z.coerce.number().int().min(1).max(100).default(50),
+    /** رمزُ الورقة الممسوح — يُفرد كشفاً واحداً */
+    code: zod_1.z.string().trim().min(1).max(20).optional(),
     teachingAssignmentId: zod_1.z.string().trim().min(1).optional(),
     academicYearId: zod_1.z.string().trim().min(1).optional(),
     subjectId: zod_1.z.string().trim().min(1).optional(),

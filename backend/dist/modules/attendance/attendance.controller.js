@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clearSessionAttendanceController = exports.updateAttendanceController = exports.bulkAttendanceController = exports.createAttendanceController = exports.getAttendanceController = exports.listAttendanceController = void 0;
+exports.clearSessionAttendanceController = exports.deleteAttendanceController = exports.updateAttendanceController = exports.bulkAttendanceController = exports.createAttendanceController = exports.getAttendanceController = exports.listAttendanceController = void 0;
 const api_response_1 = require("../../core/config/api-response");
 const attendance_service_1 = require("./attendance.service");
 const listAttendanceController = async (req, res) => {
@@ -30,6 +30,12 @@ const updateAttendanceController = async (req, res) => {
     return api_response_1.ApiResponse.success(res, { attendance }, "Attendance updated");
 };
 exports.updateAttendanceController = updateAttendanceController;
+// DELETE /api/attendance/:id
+const deleteAttendanceController = async (req, res) => {
+    const result = await (0, attendance_service_1.deleteAttendanceService)(req.params.id);
+    return api_response_1.ApiResponse.success(res, result, "Attendance cleared");
+};
+exports.deleteAttendanceController = deleteAttendanceController;
 // DELETE /api/attendance/session/:sessionId
 const clearSessionAttendanceController = async (req, res) => {
     const result = await (0, attendance_service_1.clearSessionAttendanceService)(req.params.sessionId);

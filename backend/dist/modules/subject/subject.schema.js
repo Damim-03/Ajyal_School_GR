@@ -28,6 +28,8 @@ exports.createSubjectSchema = zod_1.z.object({
         .trim()
         .regex(/^#[0-9A-Fa-f]{6}$/, "Color must be a hex value like #3B82F6")
         .nullish(),
+    /** صورةُ المادة — مسارٌ من /api/uploads، تُعرض في مربّعها */
+    imagePath: zod_1.z.string().trim().max(255).nullish(),
     isActive: zod_1.z.boolean().optional(),
 });
 // --------------------------------------------------

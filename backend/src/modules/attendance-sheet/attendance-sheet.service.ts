@@ -1,5 +1,6 @@
 import { Prisma } from "../../../generated/prisma";
 import { prisma } from "../../core/prisma/client";
+import { runPendingTransfersService } from "../enrollment/enrollment.service";
 import {
   NotFoundException,
   ConflictException,
@@ -8,6 +9,7 @@ import {
 import { ErrorCodeEnum } from "../../core/enums/error-code.enum";
 import { getPagination, buildPagination } from "../../core/config/api-response";
 import { formatTime } from "../../core/utils/time";
+import { uniqueDocumentNumber } from "../../core/utils/document-number";
 import {
   CreateSheetInput,
   UpdateSheetInput,
@@ -24,6 +26,7 @@ import {
 
 const sheetSelect = {
   id: true,
+  code: true,
   teachingAssignmentId: true,
   academicYearId: true,
   number: true,
@@ -155,6 +158,11 @@ export const listSheetsService = async (query: SheetQueryInput) => {
   };
 
   const where: Prisma.AttendanceSheetWhereInput = {
+    /*
+     * الرمز يُفرد صفّاً واحداً — وهو مدخلُ الباركود: يُمسح فيُعرف
+     * الكشف بلا معرفة إسناده ولا سنته.
+     */
+    ...(query.code && { code: query.code }),
     ...(query.teachingAssignmentId && {
       teachingAssignmentId: query.teachingAssignmentId,
     }),
@@ -248,8 +256,26 @@ export const createSheetService = async (body: CreateSheetInput) => {
     body.sessionCount ?? assignment.academicYear.sessionsPerMonth;
 
   const sheet = await prisma.$transaction(async (tx) => {
+    /*
+     * الرمز يُفحص **داخل** المعاملة التي تحفظ الصف — لا قبلها: بين
+     * الفحص والحفظ متّسعٌ لكشفٍ آخر يأخذ الرقم نفسه. وقيد التفرّد في
+     * القاعدة حارسٌ أخير خلفه.
+     */
+    const code = await uniqueDocumentNumber(
+      async (candidate) =>
+        (await tx.attendanceSheet.count({ where: { code: candidate } })) > 0,
+    );
+
+    if (!code) {
+      throw new ConflictException(
+        "Could not allocate a sheet code",
+        ErrorCodeEnum.RESOURCE_ALREADY_EXISTS,
+      );
+    }
+
     const created = await tx.attendanceSheet.create({
       data: {
+        code,
         teachingAssignmentId: body.teachingAssignmentId,
         academicYearId: assignment.academicYearId,
         number,
@@ -285,7 +311,24 @@ export const createSheetService = async (body: CreateSheetInput) => {
     return created;
   });
 
-  return getSheetService(sheet.id);
+  /*
+   * فتحُ كشفٍ جديد هو حدُّ الشهر — وعنده تسري النقولُ المؤجَّلة.
+   *
+   * ولا يقع داخل المعاملة: النقلُ يمسّ فوجاً آخر بفواتيره وحضوره،
+   * وربطُه بمعاملة إنشاء الكشف يجعل تعثُّرَ نقلِ طالبٍ واحد يُسقط
+   * الكشفَ كلَّه. فيُنفَّذ بعده، وما تعثّر منه يبقى معلَّقاً بملاحظته
+   * ظاهرةً لمن يُصلحه.
+   */
+  const pending = await runPendingTransfersService(
+    body.teachingAssignmentId,
+    sheet.id,
+  );
+
+  const full = await getSheetService(sheet.id);
+
+  return pending.moved > 0 || pending.failed.length > 0
+    ? { ...full, pendingTransfers: pending }
+    : full;
 };
 
 // --------------------------------------------------

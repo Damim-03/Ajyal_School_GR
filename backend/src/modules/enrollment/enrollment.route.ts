@@ -5,6 +5,7 @@ import {
   createEnrollmentController,
   updateEnrollmentController,
   transferEnrollmentController,
+  cancelPendingTransferController,
   deleteEnrollmentController,
 } from "./enrollment.controller";
 import { asyncHandler } from "../../core/middleware/async-handler.middleware";
@@ -71,6 +72,20 @@ router.patch(
   validateParams(enrollmentIdSchema),
   validate(transferEnrollmentSchema),
   asyncHandler(transferEnrollmentController),
+);
+
+/*
+ * إلغاءُ نقلٍ مؤجَّل — قرارٌ يُراجَع قبل أن يسري.
+ *
+ * وبدونه يصير التأجيلُ فخّاً: قرارٌ كُتب اليوم ويُنفَّذ من نفسه بعد
+ * أسابيع، ولا سبيل إلى الرجوع فيه إلّا بنقلٍ مضادٍّ بعد وقوعه —
+ * وذاك يترك في السجلّ نقلتين لم تقع إحداهما.
+ */
+router.patch(
+  "/:id/transfer/cancel",
+  requirePermission("enrollment.update"),
+  validateParams(enrollmentIdSchema),
+  asyncHandler(cancelPendingTransferController),
 );
 
 router.delete(

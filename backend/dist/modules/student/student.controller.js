@@ -1,8 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteDocumentController = exports.putDocumentController = exports.getDocumentsController = exports.deleteStudentController = exports.updateStudentController = exports.createStudentController = exports.getStudentEnrollmentsController = exports.getStudentController = exports.listStudentsController = void 0;
+exports.getStudentStatementController = exports.deleteDocumentController = exports.putDocumentController = exports.getDocumentsController = exports.deleteStudentController = exports.updateStudentController = exports.createStudentController = exports.getStudentEnrollmentsController = exports.getStudentController = exports.listStudentsController = void 0;
 const api_response_1 = require("../../core/config/api-response");
 const student_service_1 = require("./student.service");
+const student_statement_service_1 = require("./student-statement.service");
 const document_service_1 = require("./document.service");
 const listStudentsController = async (req, res) => {
     const query = req.query;
@@ -58,4 +59,10 @@ const deleteDocumentController = async (req, res) => {
     return api_response_1.ApiResponse.success(res, file, "Document removed");
 };
 exports.deleteDocumentController = deleteDocumentController;
+// GET /api/students/:id/statement
+const getStudentStatementController = async (req, res) => {
+    const statement = await (0, student_statement_service_1.getStudentStatementService)(req.params.id, req.query.academicYearId);
+    return api_response_1.ApiResponse.success(res, statement, "Statement retrieved");
+};
+exports.getStudentStatementController = getStudentStatementController;
 //# sourceMappingURL=student.controller.js.map

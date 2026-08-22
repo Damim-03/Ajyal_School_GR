@@ -6,6 +6,7 @@ import {
   createEnrollmentService,
   updateEnrollmentService,
   transferEnrollmentService,
+  cancelPendingTransferService,
   deleteEnrollmentService,
 } from "./enrollment.service";
 import {
@@ -75,6 +76,16 @@ export const transferEnrollmentController = async (
   );
 
   return ApiResponse.success(res, result, "Enrollment transferred");
+};
+
+// PATCH /api/enrollments/:id/transfer/cancel
+export const cancelPendingTransferController = async (
+  req: Request,
+  res: Response,
+) => {
+  const enrollment = await cancelPendingTransferService(req.params.id as string);
+
+  return ApiResponse.success(res, { enrollment }, "Pending transfer cancelled");
 };
 
 export const deleteEnrollmentController = async (

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getMeController = exports.logoutController = exports.refreshTokenController = exports.loginController = void 0;
+exports.listProfilesController = exports.getMeController = exports.logoutController = exports.refreshTokenController = exports.loginController = void 0;
 const auth_service_1 = require("./auth.service");
 const http_config_1 = require("../../core/config/http.config");
 const app_errors_1 = require("../../core/errors/app.errors");
@@ -80,4 +80,18 @@ const getMeController = async (req, res) => {
     });
 };
 exports.getMeController = getMeController;
+/**
+ * GET /api/auth/profiles — عامّ.
+ *
+ * لا `asyncHandler` حول منطقٍ إضافي: القراءةُ واحدة، والخطأ يبلغ
+ * معالجَ الأخطاء العامّ كما في بقيّة المسارات.
+ */
+const listProfilesController = async (_req, res) => {
+    const profiles = await (0, auth_service_1.listProfilesService)();
+    res.status(http_config_1.HTTPSTATUS.OK).json({
+        success: true,
+        data: { profiles },
+    });
+};
+exports.listProfilesController = listProfilesController;
 //# sourceMappingURL=auth.controller.js.map

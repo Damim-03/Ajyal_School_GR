@@ -3,6 +3,7 @@ import {
   listStudentsController,
   getStudentController,
   getStudentEnrollmentsController,
+  getStudentStatementController,
   createStudentController,
   updateStudentController,
   deleteStudentController,
@@ -26,6 +27,7 @@ import {
   studentIdSchema,
   studentQuerySchema,
   studentEnrollmentQuerySchema,
+  studentStatementQuerySchema,
   documentTypeParamSchema,
   putDocumentSchema,
 } from "./student.schema";
@@ -53,6 +55,22 @@ router.get(
   validateParams(studentIdSchema),
   validateQuery(studentEnrollmentQuerySchema),
   asyncHandler(getStudentEnrollmentsController),
+);
+
+// --------------------------------------------------
+// GET /api/students/:id/statement
+//
+// كشفُ حساب الطالب: سطرٌ لكلّ (مادة × كشف شهر) بحضوره وحقّه وإيصاله.
+// الصلاحية `student.view` — الورقة تُقرأ في شبّاك الاستقبال حيث يسأل
+// الوليّ، لا في المالية وحدها.
+// --------------------------------------------------
+
+router.get(
+  "/:id/statement",
+  requirePermission("student.view"),
+  validateParams(studentIdSchema),
+  validateQuery(studentStatementQuerySchema),
+  asyncHandler(getStudentStatementController),
 );
 
 /*

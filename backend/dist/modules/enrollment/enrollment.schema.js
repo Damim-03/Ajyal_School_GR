@@ -48,6 +48,14 @@ exports.transferEnrollmentSchema = zod_1.z.object({
         .trim()
         .min(1, "Target teaching assignment is required"),
     enrolledAt: zod_1.z.coerce.date().optional(),
+    /**
+     * تأجيلُ السريان إلى أوّل كشفٍ جديد بدل النقل الآن.
+     *
+     * الطالب يبقى في فوجه القديم إلى آخر حصةٍ في الكشف الجاري ويُفوتَر
+     * شهرَه كاملاً هناك، ثمّ يُنقل من نفسه حين يُفتح الكشف التالي —
+     * فلا يُقسَّم شهرٌ بين فوجين ولا يُختلف في حسابه.
+     */
+    defer: zod_1.z.boolean().default(false),
 });
 // --------------------------------------------------
 // Params & Query

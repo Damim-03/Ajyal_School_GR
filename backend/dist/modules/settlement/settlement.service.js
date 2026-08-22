@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cancelSettlementService = exports.paySettlementService = exports.confirmSettlementService = exports.getSettlementService = exports.listSettlementsService = exports.computeSettlementService = exports.gatherSettlementFacts = void 0;
+exports.cancelSettlementService = exports.paySettlementService = exports.confirmSettlementService = exports.removeSettlementDocumentService = exports.attachSettlementDocumentService = exports.getSettlementService = exports.listSettlementsService = exports.computeSettlementService = exports.gatherSettlementFacts = void 0;
 const prisma_1 = require("../../../generated/prisma");
 const client_1 = require("../../core/prisma/client");
 const app_errors_1 = require("../../core/errors/app.errors");
@@ -583,6 +583,22 @@ const getSettlementService = async (id) => {
         select: {
             ...settlementSelect,
             lines: { select: lineSelect, orderBy: { lessonNumber: "asc" } },
+            /* الأرشيف: الورقة الموقَّعة ممسوحةً، والكشفان مجمَّدين */
+            documents: {
+                select: {
+                    id: true,
+                    filePath: true,
+                    fileName: true,
+                    pageNumber: true,
+                    note: true,
+                    createdAt: true,
+                    uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+                },
+                orderBy: { pageNumber: "asc" },
+            },
+            snapshot: {
+                select: { id: true, dailySheet: true, monthlyFees: true, createdAt: true },
+            },
         },
     });
     if (!settlement) {
@@ -591,9 +607,71 @@ const getSettlementService = async (id) => {
     return {
         ...toResponse(settlement),
         lines: settlement.lines.map(toLineResponse),
+        documents: settlement.documents,
+        snapshot: settlement.snapshot,
     };
 };
 exports.getSettlementService = getSettlementService;
+// --------------------------------------------------
+// الأوراق الموقَّعة — أرشيفُ الإقرار
+//
+// الملفّ نفسه يُرفع عبر `/api/uploads` كما ترفع وثائقُ الطالب، وهذا
+// يربط مسارَه بالتخليص. والفصلُ مقصود: الرفع خدمةٌ واحدة في النظام
+// كلِّه، لا واحدةٌ لكل صاحب وثيقة.
+// --------------------------------------------------
+const attachSettlementDocumentService = async (settlementId, body, userId) => {
+    await findOrThrow(settlementId);
+    /*
+     * الصفحة تُملأ أو تُضاف.
+     *
+     * إن جاء رقمُها استُبدلت: إعادةُ مسح الصفحة الثانية تحلّ محلّ
+     * الأولى ولا تُراكم — وإلّا اجتمعت في الأرشيف ثلاثُ صورٍ لصفحةٍ
+     * واحدة ولا يُعرف أيُّها الأخيرة.
+     *
+     * وإن لم يجئ فهي **تالية** ما وُجد: الورقة تعود من الأستاذ فتُمسح
+     * صفحاتُها واحدةً بعد أخرى، ولا يُطلب من الماسح أن يعدّ.
+     */
+    const pageNumber = body.pageNumber ??
+        ((await client_1.prisma.settlementDocument.aggregate({
+            where: { settlementId },
+            _max: { pageNumber: true },
+        }))._max.pageNumber ?? 0) + 1;
+    await client_1.prisma.settlementDocument.deleteMany({
+        where: { settlementId, pageNumber },
+    });
+    return client_1.prisma.settlementDocument.create({
+        data: {
+            settlementId,
+            filePath: body.filePath,
+            fileName: body.fileName ?? null,
+            pageNumber,
+            note: body.note ?? null,
+            uploadedById: userId,
+        },
+        select: {
+            id: true,
+            filePath: true,
+            fileName: true,
+            pageNumber: true,
+            note: true,
+            createdAt: true,
+            uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+        },
+    });
+};
+exports.attachSettlementDocumentService = attachSettlementDocumentService;
+const removeSettlementDocumentService = async (documentId) => {
+    const document = await client_1.prisma.settlementDocument.findUnique({
+        where: { id: documentId },
+        select: { id: true },
+    });
+    if (!document) {
+        throw new app_errors_1.NotFoundException("Settlement document not found", error_code_enum_1.ErrorCodeEnum.RESOURCE_NOT_FOUND);
+    }
+    await client_1.prisma.settlementDocument.delete({ where: { id: documentId } });
+    return { id: documentId };
+};
+exports.removeSettlementDocumentService = removeSettlementDocumentService;
 // --------------------------------------------------
 // Confirm — التجميد
 //

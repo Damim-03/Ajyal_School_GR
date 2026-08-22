@@ -7,6 +7,8 @@ import {
   confirmSettlementService,
   paySettlementService,
   cancelSettlementService,
+  attachSettlementDocumentService,
+  removeSettlementDocumentService,
 } from "./settlement.service";
 import {
   settlementEstimateService,
@@ -17,6 +19,7 @@ import {
   ConfirmSettlementInput,
   CancelSettlementInput,
   SettlementQueryInput,
+  AttachDocumentInput,
   EstimateQueryInput,
   DailyClearanceQueryInput,
 } from "./settlement.schema";
@@ -88,6 +91,34 @@ export const cancelSettlementController = async (
   );
 
   return ApiResponse.success(res, { settlement }, "Settlement cancelled");
+};
+
+// --------------------------------------------------
+// الأوراق الموقَّعة
+// --------------------------------------------------
+
+export const attachSettlementDocumentController = async (
+  req: Request,
+  res: Response,
+) => {
+  const document = await attachSettlementDocumentService(
+    req.params.id as string,
+    req.body as AttachDocumentInput,
+    req.user!.userId,
+  );
+
+  return ApiResponse.created(res, { document }, "Document attached");
+};
+
+export const removeSettlementDocumentController = async (
+  req: Request,
+  res: Response,
+) => {
+  const removed = await removeSettlementDocumentService(
+    req.params.documentId as string,
+  );
+
+  return ApiResponse.success(res, removed, "Document removed");
 };
 
 // --------------------------------------------------

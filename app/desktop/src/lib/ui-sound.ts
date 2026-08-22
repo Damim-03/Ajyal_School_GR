@@ -1,26 +1,109 @@
 /**
- * أصوات التفاعل — واجهة صامتة.
- * انظر التعليق في lib/sound.ts.
+ * أصوات التفاعل — نيّةٌ لا ملفّ.
+ *
+ * المكوّن يقول «تنقّل» أو «رجوع»، ولا يعرف أيَّ نغمةٍ تُشغَّل ولا بأيّ
+ * شدّة. وهذه الطبقةُ هي التي تعرف. وفائدتُها أنّ ضبطَ النغمة أو شدّتها
+ * يقع هنا مرّةً فيسري على خمسةٍ وعشرين موضعَ استدعاءٍ في التطبيق — ولو
+ * نادى كلُّ موضعٍ `sfx` باسم ملفٍّ وشدّةٍ من عنده لتفاوتت الشاشاتُ في
+ * أصواتها، ولوجب تعديلُها واحدةً واحدة.
+ *
+ * **والشدّاتُ متدرّجةٌ بحسب الجسامة**، لا رقماً واحداً للجميع: التنقّل
+ * يقع مئاتِ المرّات في الجلسة فهو أخفتُها، والخطأ يقع مرّةً ويجب أن
+ * يُنتبه له فهو أعلاها. وتسويتُها تجعل الواجهة تُطنّ على كلّ ضغطة.
+ *
+ * **ورُفعت كلُّها نحوَ الثمانين بالمئة** بعد أن لم تكد تُسمع. والتدرّجُ
+ * محفوظٌ كما هو — النسبةُ بين الأخفت والأعلى لم تتغيّر، وإنّما ارتفع
+ * السُّلَّم كلُّه. فعيّناتُ PS5 مسجّلةٌ لسمّاعات تلفازٍ في غرفة، لا
+ * لسمّاعات حاسوبٍ على مكتب، وضربُها في الثلث كان يُذهبها.
  */
 
+import { sfx, warmupSfx, type SfxName } from "./sound";
+
 /* الأسماء مطابقة لنظام SKK حرفياً */
-const INTENT = {
-  focus: "",
-  navigate: "",
-  confirm: "",
-  back: "",
-  openLayer: "",
-  closeLayer: "",
-  success: "",
-  error: "",
-} as const;
+const INTENT: Record<UiSoundIntent, { name: SfxName; volume: number }> = {
+  /** انتقالُ التركيز بين عناصر لوحٍ واحد — أخفتُها، وأكثرُها تكراراً */
+  focus: { name: "focus", volume: 0.55 },
+  /** الانتقال بين البلاطات أو الأقسام — نقلةٌ أكبر فصوتٌ أوضح */
+  navigate: { name: "changePanel", volume: 0.72 },
+  /** الدخول إلى ما وقع عليه الاختيار */
+  confirm: { name: "enter", volume: 0.9 },
+  back: { name: "cancel", volume: 0.78 },
+  /** انفتاحُ لوحٍ أو منسدلٍ فوق الشاشة — لا شاشةٌ جديدة */
+  openLayer: { name: "openMenu", volume: 0.7 },
+  closeLayer: { name: "closeDialog", volume: 0.62 },
+  /** تمَّ ما طُلب — إقرارٌ هادئ لا احتفال */
+  success: { name: "success", volume: 0.88 },
+  /** الأعلى: ما لم يقع يجب أن يُنتبه له، ولا يُقرأ الخبرُ إلّا إن نُظر */
+  error: { name: "error", volume: 0.95 },
 
-export type UiSoundIntent = keyof typeof INTENT;
+  /*
+   * الإشعارات — أخفتُ من الأفعال عمداً.
+   *
+   * الفعلُ صوتُ ما فعله المستخدم، والإشعارُ صوتُ ما وقع من غير طلبه.
+   * فلو تساويا لزاحم ما يُخبِر ما يُستجاب له، وقطع الإشعارُ انتباهَ
+   * من هو في وسط عمل. وهي مسموعةٌ مع ذلك — الغرضُ ألّا تُهيمن لا
+   * ألّا تُسمع.
+   */
+  notifyInfo: { name: "notify", volume: 0.72 },
+  notifyAction: { name: "notifyAction", volume: 0.8 },
+  notifyError: { name: "error", volume: 0.9 },
+  notifySuccess: { name: "success", volume: 0.78 },
+  notifyTrophy: { name: "trophy", volume: 0.85 },
+  /* الترحيبُ يقع مرّةً في الجلسة، فيُسمح له بما لا يُسمح للمتكرّر */
+  notifyWelcome: { name: "notification", volume: 0.92 },
+};
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
+export type UiSoundIntent =
+  | "focus"
+  | "navigate"
+  | "confirm"
+  | "back"
+  | "openLayer"
+  | "closeLayer"
+  | "success"
+  | "error"
+  | "notifyInfo"
+  | "notifyAction"
+  | "notifyError"
+  | "notifySuccess"
+  | "notifyTrophy"
+  | "notifyWelcome";
 
-export function uiSound(_intent: UiSoundIntent, _enabled = true) {}
+/**
+ * `enabled` يُمرَّر من الشاشة حين يكون لها تفضيلٌ خاصّ — شاشةٌ صامتةٌ
+ * عمداً كالطباعة. والصمتُ العامّ يُضبط بـ`setSoundVolume(0)` لا هنا.
+ */
+export function uiSound(intent: UiSoundIntent, enabled = true) {
+  if (!enabled) return;
 
-export function warmUiSounds() {}
+  const spec = INTENT[intent];
+  if (!spec) return;
+
+  sfx(spec.name, spec.volume);
+}
+
+/**
+ * تهيئةُ ما يُسمع أوّلاً — **وهي شرطُ أن يقع الصوتُ مع صورته**.
+ *
+ * الفكُّ يقع مرّةً لكلّ نغمة، وأوّلُ طلبٍ لغير المفكوكة **يجلبها ثمّ
+ * يُشغّلها**: `play` يرى المخزنَ فارغاً فيُطلق الجلبَ ويعود، ثمّ يُشغّل
+ * في `then`. فالتأخيرُ ليس ثابتاً ولا معلوماً — هو زمنُ شبكةٍ وفكٍّ،
+ * ويقع **مرّةً واحدة لكلّ نغمة في الجلسة**: أي أنّ أوّلَ إشعارٍ يراه
+ * المستخدم هو بالضبط الذي يسمع صوتَه متأخّراً عن بطاقته.
+ *
+ * وهذه الدالّةُ كانت مصدَّرةً ولا يناديها أحد — فلم يكن شيءٌ يُهيَّأ
+ * أصلاً. صارت تُنادى من `App` عند الإقلاع.
+ *
+ * ونغماتُ الإشعار منها: البطاقةُ تظهر بلا ضغطةٍ سبقتها، فليس للمستخدم
+ * ما يُعلّق عليه التأخير — بخلاف نغمة زرٍّ ضغطه بنفسه.
+ */
+export function warmUiSounds() {
+  warmupSfx(
+    /* التفاعلُ المباشر — أوّلُ ما يُلمس في أيّ جلسة */
+    "focus", "changePanel", "enter", "cancel",
+    /* الإشعارات — تقع من غير طلبٍ فلا شيء يستر تأخّرها */
+    "notify", "notifyAction", "success", "error", "notification",
+  );
+}
 
 export const UI_SOUND_INTENTS = Object.keys(INTENT) as UiSoundIntent[];

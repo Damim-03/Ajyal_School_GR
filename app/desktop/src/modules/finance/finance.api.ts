@@ -158,6 +158,9 @@ export const listPayments = async (query: {
   limit?: number;
   search?: string;
   studentId?: string;
+  /** اسمُ الطالب أو لقبه، ورقمُه في المؤسسة — لا معرّفه الداخلي */
+  studentName?: string;
+  studentNumber?: string;
   paymentMethod?: PaymentMethod;
   status?: "ACTIVE" | "CANCELLED";
   dateFrom?: string;

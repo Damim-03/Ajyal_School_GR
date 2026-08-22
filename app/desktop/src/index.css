@@ -1120,13 +1120,49 @@ body {
   }
 }
 
+/*
+ * الطباعة الصامتة — نافذةُ المعاينة مركَّبةٌ ولا تُرى.
+ *
+ * كشفُ الحقوق يطبع إيصاله فور تأكيد الدفع بلا معاينة، والمعاينة
+ * تكفي في شاشة المالية. فالنافذة تُركَّب كما هي — لأنّ التنقيط يقيس
+ * ورقتَها ويستنسخ أنماطها — ثمّ تُخفى بالشفافية وحدها: `visibility`
+ * أو `display` يُخرجان الإيصال فارغاً، والشفافيةُ تُبقي التخطيط
+ * كاملاً.
+ *
+ * وتُبطَل في وسط الطباعة: حوار النظام (في المتصفّح أو عند تعذّر
+ * الطريق المباشر) يطبع ما يراه، فورقةٌ شفّافةٌ تخرج بيضاء.
+ */
+.print-silent {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ================= الطباعة: عزل الإيصال فقط ================= */
 @media print {
+  .print-silent {
+    opacity: 1 !important;
+  }
   html,
   body {
     background: #fff !important;
     height: auto !important;
   }
+
+  /*
+    جذرُ التطبيق لا يشغل مكاناً حين تُطبع ورقة.
+
+    `visibility: hidden` أدناه يُخفي ولا يُلغي المساحة، فكان المستندُ
+    يبقى بطول الشاشة خلف المعاينة — جدولُ خمسين طالباً، أو كشفٌ طويل —
+    فيقسّمه المتصفّح أوراقاً: الأولى فيها الورقة، وما بعدها فراغٌ يخرج
+    ورقاً أبيض من الطابعة (خمساً أو ستّاً على A4).
+
+    والمعاينتان — الإيصال والكشف — تُرسمان في بوّابةٍ على `body` خارج
+    الجذر، فحذفُه لا يمسّهما، ويصير طولُ المستند طولَ الورق وحده.
+  */
+  #root {
+    display: none !important;
+  }
+
   body * {
     visibility: hidden !important;
   }
@@ -1210,6 +1246,19 @@ body {
    * وهي نفسها التي كان يعطيها هامشُ 6mm. القياس أثبت أنّ المحتوى
    * يشغل 188.6mm منها.
    */
+  /*
+    صفحةٌ مسمّاةٌ واحدة — والعموديُّ يُبدّل مقاسَها لا اسمَها.
+
+    جُرّبت صفحةٌ ثانية (`sheet-portrait`) يُسنَدها العنصرُ بصنفٍ زائد،
+    فخرجت الشهادةُ مُدارةً على الورق: `.sheet-print` **مطلقُ الموضع**
+    في وسط الطباعة، وإسنادُ صفحةٍ مسمّاةٍ إلى عنصرٍ خارج التدفّق لا
+    يُضمن في المحرّك — فتقع الورقةُ على `sheet` الأفقية، ويُدير
+    المحرّكُ محتواها ليُدخله ورقةً عمودية.
+   
+    فالمقاسُ يُبدَّل بورقة أنماطٍ تُحقن عند فتح المعاينة العمودية
+    (انظر `SheetPreview`)، وهي تعيد تعريف `@page sheet` نفسها — لا
+    اسمَ ثانياً ولا إسنادَ يُخطئ.
+  */
   @page sheet {
     size: A4 landscape;
     margin: 0;
@@ -1307,7 +1356,13 @@ body {
     color: #000;
     font-family: inherit;
   }
-  .sheet-preview .sheet-page {
+  .sheet-preview .sheet-portrait .sheet-page,
+  .sheet-preview .sheet-portrait .sheet-measure-page {
+    width: 210mm;
+    height: 297mm;
+  }
+  .sheet-preview .sheet-page,
+  .sheet-preview .sheet-measure-page {
     width: 297mm;
     height: 210mm;
     background: #fff;
@@ -1316,8 +1371,320 @@ body {
   }
 }
 
+/*
+  ورقةُ القياس — تُرسم لتُقاس ثمّ تُطرح.
+
+  ارتفاعُ الصفّ لا يُعرف قبل رسمه (ملاحظةٌ تلتفّ سطرين تضاعفه)، فتُرسم
+  الصفوف كلُّها مرّةً بمقاس الورقة الحقيقي وتُقاس. وهي خارج التدفّق
+  وبلا ارتفاع، فلا تُزيح شيئاً ولا تُرى ولا تُطبع — و`visibility` لا
+  `display: none` لأنّ المخفيَّ بالثانية لا مقاس له أصلاً.
+*/
+.sheet-measure {
+  position: absolute;
+  top: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media print {
+  .sheet-measure {
+    display: none !important;
+  }
+}
+
+
+/* ================= شهادة التمدرس ================= */
+/*
+  وثيقةٌ لا كشف: تُقرأ سطراً سطراً وتُختم وتُقدَّم لجهةٍ أخرى. فقياساتُها
+  بالمليمتر كالكشوف، وبنيتُها ثلاثةُ أقسام يفصل بينها خطٌّ رفيع —
+  ترويسةُ الدولة والمؤسسة، ثمّ المتن، ثمّ الذيل — فتُقرأ في نظرة.
+*/
 @media screen, print {
-  .sheet-page {
+  /*
+    `.sheet-page.cert` بصنفين لا بصنف: القاعدة العامّة
+    `.sheet-page { padding: 6mm }` تأتي بعدها في الملفّ وتساويها في
+    الأولوية، فتغلبها بالترتيب. وقِيس أنّ الحشوة كانت تخرج ستّةً لا
+    ثمانية قبل هذا التقييد.
+  */
+  .sheet-page.cert {
+    display: flex;
+    flex-direction: column;
+    /*
+      ثمانيةٌ عن حافّة الورق — والطابعةُ تترك أربعةً أو خمسةً لا تطبع
+      فيها. فما دونها يُقصّ، وما قاربها يخرج مضغوطاً على الحافّة.
+    */
+    padding: 8mm;
+    font-size: 3.6mm;
+    line-height: 1.9;
+  }
+
+  /* الإطار: يُبعد الكلامَ عن الحافّة ويكشف ميلَ الورقة إن مالت */
+  .cert-frame {
+    flex: 1;
+    /* لا يتجاوز الورقةَ مهما طال محتواه — `min-height: 0` يكسر الفيض */
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border: 0.5mm solid #000;
+    border-radius: 2mm;
+    padding: 6mm 8mm;
+  }
+
+  /* الترويسة: الشعار في الطرفين والجمهورية في الوسط */
+  .cert-head {
+    display: grid;
+    grid-template-columns: 30mm 1fr 30mm;
+    align-items: center;
+    gap: 6mm;
+  }
+  .cert-logo {
+    display: block;
+    width: 30mm;
+    max-height: 30mm;
+    object-fit: contain;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .cert-state {
+    text-align: center;
+  }
+  .cert-state-ar {
+    font-size: 5mm;
+    font-weight: 800;
+    letter-spacing: 0.2mm;
+  }
+  .cert-state-fr {
+    margin-top: 1mm;
+    font-size: 3.4mm;
+    font-weight: 600;
+  }
+  /* الجهةُ المُصدِرة — دون الدولة قدراً فدونها حجماً */
+  .cert-state-school {
+    margin-top: 2mm;
+    padding-top: 1.5mm;
+    border-top: 0.2mm solid #000;
+    font-size: 4.2mm;
+    font-weight: 800;
+  }
+  .cert-state-school-en {
+    font-size: 3mm;
+    font-weight: 600;
+  }
+
+  /* الخطُّ الفاصل — رفيعٌ أسود يفرّق الأقسام */
+  .cert-rule {
+    border: 0;
+    border-top: 0.4mm solid #000;
+    margin: 4mm 0;
+  }
+
+  .cert-body {
+    flex: 1;
+  }
+
+  .cert-title {
+    margin: 2mm 0 6mm;
+    text-align: center;
+    font-size: 8mm;
+    font-weight: 900;
+    letter-spacing: 0.4mm;
+    text-decoration: underline;
+    text-underline-offset: 2mm;
+  }
+
+  /* سطورُ البيان: تسميةٌ ثابتة العرض ثمّ القيمة على خطٍّ منقّط */
+  .cert-lines {
+    margin: 0 0 4mm;
+  }
+  .cert-line {
+    display: flex;
+    align-items: baseline;
+    gap: 3mm;
+    margin-bottom: 2.5mm;
+  }
+  .cert-line dt {
+    flex: none;
+    width: 42mm;
+    font-weight: 700;
+  }
+  /*
+    لا خطَّ تحت القيمة.
+
+    كان منقّطاً يُحاكي الاستمارةَ التي تُملأ بالقلم، وهذه تُملأ
+    بالطباعة — فالخطُّ تحت كلامٍ مطبوعٍ زينةٌ تُشوّش القراءة ولا
+    تُفيد. والمسافةُ بين السطور تكفي للفصل.
+  */
+  .cert-line dd {
+    margin: 0;
+    flex: 1;
+    padding-bottom: 0.8mm;
+  }
+
+  /* رقمُ التسجيل في مربّعه — الباركود كبيرٌ ليُقرأ بسرعة */
+  /*
+    مربّعُ رقم التسجيل — صغيرٌ يكفي للقراءة لا يزيد.
+
+    كان تسعين مليمتراً بارتفاع سبعةَ عشرَ، فطغى على الوثيقة وصارت
+    الشهادةُ بطاقةَ باركود. وعشرةُ أرقام في Code128 نحوُ مئةٍ وعشر
+    وحدات، فأربعةٌ وخمسون مليمتراً تعطي نصفَ مليمترٍ للوحدة — وحدُّ
+    القارئات 0.19. فالتصغيرُ لا يمسّ القراءة ويردّ للورقة توازنَها.
+  */
+  .cert-code {
+    margin: 4mm auto;
+    width: 62mm;
+    border: 0.4mm solid #000;
+    border-radius: 1.5mm;
+    padding: 2mm 4mm 1.5mm;
+    text-align: center;
+  }
+  .cert-code-label {
+    display: block;
+    margin-bottom: 1mm;
+    font-size: 2.8mm;
+    font-weight: 700;
+  }
+  .cert-code svg {
+    display: block;
+    width: 100%;
+    height: 11mm;
+    /* لا فراغَ تحت الأعمدة: الرقمُ جزءٌ من الرمز لا سطرٌ بعده */
+    margin-bottom: 0;
+  }
+  .cert-code-text {
+    display: block;
+    margin-top: 0;
+    line-height: 1.2;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 3.4mm;
+    font-weight: 700;
+    letter-spacing: 0.4mm;
+  }
+
+  /* المواد في مربّعها — كلُّ مادةٍ في سطر */
+  .cert-subjects {
+    margin: 4mm 0;
+    border: 0.4mm solid #000;
+    border-radius: 1.5mm;
+    padding: 3mm 4mm;
+  }
+  .cert-subjects-label {
+    display: block;
+    margin-bottom: 2mm;
+    font-weight: 800;
+    padding-bottom: 1mm;
+  }
+  /*
+    أعمدةُ المواد تتبع عددَها — والورقةُ واحدةٌ لا تُقسَّم.
+
+    الشهادةُ وثيقةٌ من ورقةٍ واحدة، فلا تُقسَّم كالكشوف. وقِيس أنّ
+    عموداً واحداً يسع خمساً، وعمودين يسعان ثمانياً، وثلاثةً بلا سطر
+    الفوج والأستاذ تسع اثنتي عشرة. فتُضبط الأعمدة على ما يلزم لا على
+    عددٍ مكتوب، ويُطوى سطرُ التفصيل حين يضيق المكان — والمادةُ نفسُها
+    هي المقصودة، وتفصيلُها في كشوف الحضور.
+  */
+  .cert-subjects-list {
+    margin: 0;
+    padding-inline-start: 6mm;
+  }
+  .cert-subjects-list li {
+    margin-bottom: 1mm;
+    display: flex;
+    align-items: baseline;
+    gap: 3mm;
+  }
+  .cert-subjects-list.cols-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 6mm;
+  }
+  .cert-subjects-list.cols-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    column-gap: 5mm;
+  }
+
+  .cert-subject-name {
+    font-weight: 700;
+  }
+  .cert-subjects-empty {
+    margin: 0;
+    text-align: center;
+  }
+
+  .cert-oath {
+    margin: 4mm 0 0;
+    font-weight: 600;
+  }
+
+  /* الإمضاء أسفل اليسار — عرفُ المراسلة الإدارية */
+  .cert-sign {
+    margin-top: 8mm;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    width: 62mm;
+    margin-inline-start: auto;
+    text-align: center;
+  }
+  .cert-sign-role {
+    font-weight: 700;
+  }
+  .cert-sign-line {
+    display: block;
+    width: 100%;
+    /*
+      اثنا عشرَ تكفي لإمضاءٍ وختم — وكانت ستّةَ عشرَ، وهي أربعةٌ زائدة
+      تُخرج الوثيقةَ عن ورقتها حين تكثر المواد.
+    */
+    margin-top: 12mm;
+    border-top: 0.3mm solid #000;
+  }
+
+  /* الذيل: التاريخ يميناً، والمؤسسة وسطاً، وباركود الشهادة يساراً */
+  .cert-foot {
+    display: grid;
+    grid-template-columns: 45mm 1fr 45mm;
+    align-items: end;
+    gap: 4mm;
+    font-size: 3mm;
+  }
+  .cert-foot-side {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.5;
+  }
+  .cert-foot-center {
+    text-align: center;
+  }
+  .cert-foot-name {
+    font-size: 4mm;
+    font-weight: 800;
+  }
+  .cert-foot-name-en {
+    font-size: 3.2mm;
+    font-weight: 600;
+  }
+  .cert-foot-code {
+    align-items: flex-start;
+    text-align: start;
+  }
+  .cert-foot-code svg {
+    display: block;
+    width: 45mm;
+    height: 8mm;
+  }
+  /* والرقمُ تحت أعمدته مباشرةً هنا أيضاً */
+  .cert-foot-code span {
+    line-height: 1.2;
+    letter-spacing: 0.3mm;
+  }
+}
+
+@media screen, print {
+  .sheet-page,
+  .sheet-measure-page {
     padding: 6mm;
   }
 
@@ -1349,6 +1716,49 @@ body {
   .sheet-print-printed {
     font-size: 2.9mm;
     font-weight: 600;
+  }
+
+  /*
+    رمزُ الكشف — تحت سطر التحرير.
+
+    الكشوف تتشابه على الطاولة: المؤسسة والسنة والعنوان واحدة، والفرق
+    مادةٌ وفوجٌ ورقمُ شهر في سطرٍ صغير. فورقةٌ تُسلَّم لأستاذٍ وتعود بعد
+    أسبوع تُخلط بغيرها، ويُبحث عن كشفها في الشاشة بخمسة مرشِّحات.
+    والباركود يفتحه بمسحةٍ واحدة.
+
+    والمقاس محسوبٌ لا مُجرَّب: الرمز ثلاث عشرة خانة تُشفَّر في **123
+    وحدة** Code128 (قِيس)، فـ45mm تعطي **0.366mm للوحدة** — وهي كثافةُ
+    باركود المتاجر نفسها (‏EAN‑13 عند 100% = 0.33mm)، يقرؤها أيُّ ماسحٍ
+    من أوّل مرّة، وتسعُ ثماني نقاطٍ على طابعةٍ 600dpi.
+
+    وكان 85mm فطغى على الترويسة: ربعُ عرض الورقة لرمزٍ لا يُقرأ بالعين.
+    والتصغير هنا لا يُنقص القراءة لأنّ الرمز رقميٌّ قصير — بخلاف
+    المعرّف الذي كان يحتاج 310 وحدة فيضيق بها العرض نفسه.
+
+    والارتفاع 9mm: يكفي لعبور الشعاع ولو مالت الورقة، ولا يزاحم
+    السطور فوقه.
+  */
+  .sheet-print-code {
+    display: block;
+    width: 45mm;
+    margin-top: 1.2mm;
+  }
+  .sheet-print-code svg {
+    display: block;
+    width: 100%;
+    height: 9mm;
+  }
+  .sheet-print-code-text {
+    display: block;
+    direction: ltr;
+    text-align: center;
+    font-size: 2.2mm;
+    font-weight: 700;
+    letter-spacing: 0.35mm;
+  }
+  /* في الجهة اليسرى يُحاذى إلى نهاية العمود كأخواته */
+  .sheet-print-side-end .sheet-print-code {
+    margin-inline-start: auto;
   }
   /* المنطقة اليسرى تُحاذي حافّتها */
   .sheet-print-side-end {
@@ -1423,16 +1833,47 @@ body {
       والتظليل يستهلك حبراً ويُغيّر شكلها بلا داعٍ.
     */
   }
+  /*
+    التاريخ سطرٌ واحد لا ينكسر.
+
+    القاعدة العامّة تكسر أيَّ نصٍّ حيث وقع (`overflow-wrap: anywhere`)،
+    وهي صحيحةٌ للأسماء والملاحظات وخاطئةٌ تماماً للتاريخ: «25/08/2026»
+    كانت تخرج «25/08/202» وتحته «6» — رقمٌ مقطوع لا تاريخ. فتُستثنى،
+    ومقاسُ خطّها يأتي من المكوّن محسوباً على عرض الخانة (عددُ الحصص
+    يقرّره)، فيضيق الخطُّ بدل أن ينكسر السطر.
+  */
   .sheet-print-table th.sheet-print-date {
     font-size: 2.7mm;
     font-weight: 700;
     direction: ltr;
+    white-space: nowrap;
+    word-break: normal;
+    overflow-wrap: normal;
+    /*
+      ارتفاعٌ يكفي لتاريخٍ يُكتب بالقلم.
+
+      الورقة تخرج فارغةً لتُملأ، فخانةُ التاريخ الخالية كانت تنكمش إلى
+      سُمك حشوتها — سطرٌ لا يُكتب فيه. والمكتوبةُ تبلغ هذا الارتفاع
+      أصلاً، فلا يتغيّر شكل الورقة الممتلئة.
+    */
+    height: 5.5mm;
   }
   .sheet-print-table td.c {
     text-align: center;
   }
   .sheet-print-table td.b {
     font-weight: 900;
+  }
+  /*
+    اسم الطالب — وسطُ خانته وأثخنُ قليلاً.
+
+    هو العمود الذي تقع عليه العين أوّلاً حين تُقرأ الورقة، والبقيةُ
+    حروفٌ ورموزٌ تُقرأ بعده. و800 لا 900: أثخنُ من الجدول (700) وأخفُّ
+    من المجاميع، فيتقدّم بلا أن ينافسها.
+  */
+  .sheet-print-table td.n {
+    text-align: center;
+    font-weight: 800;
   }
   .sheet-print-table tr {
     break-inside: avoid;
@@ -1602,6 +2043,25 @@ body {
  */
 @keyframes skk-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
 
+/*
+ * وضوحُ البطل عند دخول الرئيسية (motion/home-entrance §14).
+ *
+ * **حركةٌ لا انتقال، وبلا `fill-mode` عمداً.** والفرقُ هو الغرضُ كلُّه:
+ * الحركةُ بلا ملءٍ تُعيد الخاصّيةَ إلى قيمتها الأصلية حين تنتهي، أي
+ * تُرفع `filter` من العنصر رفعاً. أمّا الانتقالُ (أو الحركةُ بـ`both`)
+ * فيترك `blur(0px)` مكتوبةً إلى الأبد — ومرشّحٌ هويّةٌ يبقى مرشّحاً:
+ * يفرض على المتصفّح رسمَ الشجرة في نسيجٍ مستقلّ ثم تمريرَها في كلّ
+ * إطار. والبطلُ يتحرّك كثيراً بعد ذلك (الضغط، والامتداد، والإطلاق
+ * بمقياس 1.06)، فكانت كلُّ إطاراتِ تلك الحركات ستمرّ في تمريرةٍ لا
+ * تفعل شيئاً.
+ *
+ * ولماذا لا يقودها `motion` كبقيّة قنوات البطل: لأنّه يحتفظ بآخر قيمةٍ
+ * حرّكها ويُعيد كتابتها فوق `style` في كلّ عرضٍ تالٍ — فما ملكه مرّةً
+ * لا يتخلّى عنه. قِستُ ذلك: مُحيت القيمةُ من DOM يدوياً فعادت بعد أوّل
+ * تنقّلٍ بسهم.
+ */
+@keyframes skk-sharpen { from { filter: blur(4px); } to { filter: blur(0px); } }
+
 /* ===== احترام تفضيل تقليل الحركة =====
    يُبقي التغذية الراجعة الوظيفية (تغيّر الحالة مرئي) ويلغي الحركة الزخرفية:
    الحركات المحيطة اللانهائية، التمدّد، الانجراف، والمسافات الكبيرة. */
@@ -1642,6 +2102,35 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .skk-skeleton { animation: none; }
+}
+
+/* ===== توهّجُ السطر المقصود ===== */
+/*
+ * ثلاثُ نبضاتٍ خفيفة على سطر الطالب الذي قُفز إليه من ملاحظة النقل.
+ * الكشف ثلاثةَ عشرَ سطراً متشابهة، والقادمُ من ورقةٍ أخرى يحتاج ما
+ * يدلّه على سطره — ثمّ يسكن، فالوميضُ الدائم يشوّش القراءة.
+ *
+ * والتوهّجُ ظلٌّ داخليّ لا `background`: خاناتُ الترتيب والاسم والحالة
+ * مثبَّتةٌ بخلفيةٍ صلبة (`bg-[#070b14]`) تعلو خلفيةَ السطر، فلو لُوِّن
+ * السطرُ لتوهّج وسطُه وانقطع عند طرفيه المثبَّتين. والظلُّ الداخليّ
+ * يُرسم فوق خلفية الخانة أيّاً كانت، ولا يزحزح تخطيطاً.
+ */
+@keyframes skk-row-glow {
+  0%,
+  100% { box-shadow: inset 0 0 0 9999px rgba(252, 211, 77, 0); }
+  50%  { box-shadow: inset 0 0 0 9999px rgba(252, 211, 77, 0.16); }
+}
+
+.skk-row-glow > td {
+  animation: skk-row-glow 900ms ease-in-out 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* لا نبض — وتبقى إشارةٌ ساكنة تدلّ على السطر */
+  .skk-row-glow > td {
+    animation: none;
+    box-shadow: inset 0 0 0 9999px rgba(252, 211, 77, 0.12);
+  }
 }
 
 /* ================= الإعدادات ================= */

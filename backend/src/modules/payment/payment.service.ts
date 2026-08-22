@@ -8,6 +8,7 @@ import {
 import { ErrorCodeEnum } from "../../core/enums/error-code.enum";
 import { getPagination, buildPagination } from "../../core/config/api-response";
 import { startOfUtcDay, addUtcDays } from "../../core/utils/time";
+import { recordDebtCollections } from "../teacher-debt-share/teacher-debt-share.service";
 import { uniqueDocumentNumber } from "../../core/utils/document-number";
 import {
   CreatePaymentInput,
@@ -160,26 +161,67 @@ const deriveInvoiceStatus = (
 export const listPaymentsService = async (query: PaymentQueryInput) => {
   const { skip, take, page, limit } = getPagination(query.page, query.limit);
 
+  /*
+   * مرشِّحاتُ الطالب — تُبنى طبقةً طبقةً لا تُكتب متداخلةً في مكانها.
+   *
+   * الطريقُ من الدفعة إلى الطالب واحد: سطرُ توزيعٍ ← فاتورة ← تسجيل ←
+   * طالب. فلو كُتب كلُّ مرشِّحٍ في موضعه لتكرّر مفتاحُ `invoice` مرّتين
+   * حين يجتمع رقمُ التسجيل والاسم — والثاني يمحو الأوّل صامتاً.
+   */
+  const studentFilter: Prisma.StudentWhereInput = {
+    ...(query.studentNumber && {
+      studentNumber: { contains: query.studentNumber },
+    }),
+    ...(query.studentName && {
+      OR: [
+        { firstName: { contains: query.studentName } },
+        { lastName: { contains: query.studentName } },
+      ],
+    }),
+  };
+
+  const enrollmentFilter: Prisma.StudentEnrollmentWhereInput = {
+    ...(query.studentId && { studentId: query.studentId }),
+    ...(Object.keys(studentFilter).length > 0 && { student: studentFilter }),
+  };
+
+  const lineFilter: Prisma.PaymentInvoiceWhereInput = {
+    ...(query.invoiceId && { invoiceId: query.invoiceId }),
+    ...(Object.keys(enrollmentFilter).length > 0 && {
+      invoice: { studentEnrollment: enrollmentFilter },
+    }),
+  };
+
   const where: Prisma.PaymentWhereInput = {
     ...(query.status && { status: query.status }),
     ...(query.paymentMethod && { paymentMethod: query.paymentMethod }),
     ...(query.receivedById && { receivedById: query.receivedById }),
-    ...(query.search && { paymentNumber: { contains: query.search } }),
+    /**
+     * البحثُ يشمل رقم الإيصال كما يشمل رقم الدفعة.
+     *
+     * كان على `paymentNumber` وحده، وحقلُ البحث يَعِد بـ«رقم الدفعة أو
+     * الإيصال» — وعدٌ لا يُوفى. والورقةُ التي في يد الموظّف تحمل رقم
+     * **الإيصال** بارزاً وباركودُها يشفّره (`ReceiptDoc`)، فمن نسخ ما
+     * قرأ ارتدّ بلا نتيجة والورقةُ أمامه.
+     */
+    ...(query.search && {
+      OR: [
+        { paymentNumber: { contains: query.search } },
+        { receipt: { receiptNumber: { contains: query.search } } },
+      ],
+    }),
     ...((query.dateFrom || query.dateTo) && {
       paymentDate: {
         ...(query.dateFrom && { gte: startOfUtcDay(query.dateFrom) }),
         ...(query.dateTo && { lt: addUtcDays(startOfUtcDay(query.dateTo), 1) }),
       },
     }),
-    ...((query.studentId || query.invoiceId) && {
-      paymentInvoices: {
-        some: {
-          ...(query.invoiceId && { invoiceId: query.invoiceId }),
-          ...(query.studentId && {
-            invoice: { studentEnrollment: { studentId: query.studentId } },
-          }),
-        },
-      },
+    /*
+     * `some` لا `every`: الدفعةُ الواحدة كلُّ فواتيرها لطالبٍ واحد،
+     * فمطابقةُ سطرٍ منها مطابقةٌ لها.
+     */
+    ...(Object.keys(lineFilter).length > 0 && {
+      paymentInvoices: { some: lineFilter },
     }),
   };
 
@@ -333,6 +375,24 @@ export const createPaymentService = async (
         },
       });
     }
+
+    /*
+     * حصةُ الأستاذ من دَينٍ حُصّل بعد تخليصه.
+     *
+     * تقع هنا لا في وظيفةٍ لاحقة: المال المقبوض والحصة المستحقّة عليه
+     * واقعةٌ واحدة — ولو انفصلتا لبقي دَينٌ حُصّل بلا حصةٍ لصاحبها لا
+     * يعرف بها أحد. وهي لا ترمي: قبضُ مال الطالب لا يُعطَّل لأنّ
+     * نسبة الأستاذ غامضة.
+     */
+    await recordDebtCollections(
+      tx,
+      payment.id,
+      body.allocations.map((allocation) => ({
+        invoiceId: allocation.invoiceId,
+        paidAmount: new Prisma.Decimal(allocation.paidAmount),
+      })),
+      paymentDate,
+    );
 
     // إيصال لكل دفعة — Receipt.paymentId فريد وإلزامي
     await tx.receipt.create({

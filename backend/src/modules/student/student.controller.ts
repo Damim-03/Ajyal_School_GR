@@ -8,6 +8,7 @@ import {
   updateStudentService,
   deleteStudentService,
 } from "./student.service";
+import { getStudentStatementService } from "./student-statement.service";
 import {
   CreateStudentInput,
   UpdateStudentInput,
@@ -102,4 +103,17 @@ export const deleteDocumentController = async (req: Request, res: Response) => {
   );
 
   return ApiResponse.success(res, file, "Document removed");
+};
+
+// GET /api/students/:id/statement
+export const getStudentStatementController = async (
+  req: Request,
+  res: Response,
+) => {
+  const statement = await getStudentStatementService(
+    req.params.id as string,
+    (req.query as { academicYearId: string }).academicYearId,
+  );
+
+  return ApiResponse.success(res, statement, "Statement retrieved");
 };

@@ -10,6 +10,13 @@ const teacher_schema_1 = require("./teacher.schema");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authMiddleware);
 router.get("/", (0, permission_middleware_1.requirePermission)("teacher.view"), (0, validate_middleware_1.validateQuery)(teacher_schema_1.teacherQuerySchema), (0, async_handler_middleware_1.asyncHandler)(teacher_controller_1.listTeachersController));
+// --------------------------------------------------
+// GET /api/teachers/:id/statement
+//
+// كشفُ حساب الأستاذ: كشوفُه في السنة بمستحقّها وما قُبض منه، ومعها
+// متأخّراتُه. ويسبق `/:id` لأنّ المسار أطول — ولو تأخّر لالتقطه.
+// --------------------------------------------------
+router.get("/:id/statement", (0, permission_middleware_1.requirePermission)("teacher.view"), (0, validate_middleware_1.validateParams)(teacher_schema_1.teacherIdSchema), (0, validate_middleware_1.validateQuery)(teacher_schema_1.teacherStatementQuerySchema), (0, async_handler_middleware_1.asyncHandler)(teacher_controller_1.getTeacherStatementController));
 router.get("/:id", (0, permission_middleware_1.requirePermission)("teacher.view"), (0, validate_middleware_1.validateParams)(teacher_schema_1.teacherIdSchema), (0, async_handler_middleware_1.asyncHandler)(teacher_controller_1.getTeacherController));
 router.post("/", (0, permission_middleware_1.requirePermission)("teacher.create"), (0, validate_middleware_1.validate)(teacher_schema_1.createTeacherSchema), (0, async_handler_middleware_1.asyncHandler)(teacher_controller_1.createTeacherController));
 router.patch("/:id", (0, permission_middleware_1.requirePermission)("teacher.update"), (0, validate_middleware_1.validateParams)(teacher_schema_1.teacherIdSchema), (0, validate_middleware_1.validate)(teacher_schema_1.updateTeacherSchema), (0, async_handler_middleware_1.asyncHandler)(teacher_controller_1.updateTeacherController));

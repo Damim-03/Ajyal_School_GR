@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clearSessionAttendanceService = exports.updateAttendanceService = exports.bulkAttendanceService = exports.createAttendanceService = exports.getAttendanceService = exports.listAttendanceService = void 0;
+exports.clearSessionAttendanceService = exports.deleteAttendanceService = exports.updateAttendanceService = exports.bulkAttendanceService = exports.createAttendanceService = exports.getAttendanceService = exports.listAttendanceService = void 0;
 const client_1 = require("../../core/prisma/client");
 const app_errors_1 = require("../../core/errors/app.errors");
 const error_code_enum_1 = require("../../core/enums/error-code.enum");
@@ -385,6 +385,41 @@ exports.updateAttendanceService = updateAttendanceService;
 // ولا مسار لحذف سجلّ حضورٍ منفرد: الخلية الواحدة تُصحَّح بتغيير حالتها،
 // ولا حاجة إلى محوها.
 // --------------------------------------------------
+/**
+ * إفراغُ خليةٍ واحدة — «لا شيء» لا «غائب».
+ *
+ * كان المسارُ الوحيد للمحو تفريغَ الورقة كلِّها، والتعليقُ فوقه يقول
+ * إنّ الخلية الواحدة «تُصحَّح بتغيير حالتها». وهو صحيحٌ لمن أخطأ
+ * الحالةَ، وخطأٌ لمن أخطأ **الوجود**: من علّم طالباً بالغلط لا يملك
+ * إلّا أن يجعله غائباً — وبينهما فرقٌ ماليّ ومعنويّ. الفارغ «لم
+ * يُسجَّل بعد»، والغيابُ «سُجّل أنّه غاب» ويبقى في سجلّه.
+ *
+ * **والحصة لا تُنزَّل إلّا إذا خلت.** إبقاءُ المنجزة منجزةً وفيها
+ * علاماتٌ أخرى هو ما يفعله التعديلُ اليوم؛ ولو نُزِّلت عند كلّ محوٍ
+ * لسقطت من تخليصٍ محسوب بلمسةِ تصحيحٍ واحدة. أمّا الخالية تماماً
+ * فحالُها حالُ الورقة المفرَّغة، وتُعامَل معاملتها.
+ */
+const deleteAttendanceService = async (id) => {
+    const existing = await client_1.prisma.attendance.findUnique({
+        where: { id },
+        select: { id: true, sessionId: true },
+    });
+    if (!existing) {
+        throw new app_errors_1.NotFoundException("Attendance not found", error_code_enum_1.ErrorCodeEnum.RESOURCE_NOT_FOUND);
+    }
+    await client_1.prisma.attendance.delete({ where: { id } });
+    const remaining = await client_1.prisma.attendance.count({
+        where: { sessionId: existing.sessionId },
+    });
+    if (remaining === 0) {
+        await client_1.prisma.session.updateMany({
+            where: { id: existing.sessionId, status: "COMPLETED" },
+            data: { status: "SCHEDULED" },
+        });
+    }
+    return { id, sessionId: existing.sessionId, remaining };
+};
+exports.deleteAttendanceService = deleteAttendanceService;
 const clearSessionAttendanceService = async (sessionId) => {
     await getSessionOrThrow(sessionId);
     const { count } = await client_1.prisma.attendance.deleteMany({ where: { sessionId } });

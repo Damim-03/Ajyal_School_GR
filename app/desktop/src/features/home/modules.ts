@@ -135,10 +135,10 @@ export const MODULES: Module[] = [
   {
     id: "attendance",
     wall: "attendance",
-    label: "الحضور",
+    label: "الكشوف",
     icon: ClipboardCheck,
-    tagline: "ورقة الحضور",
-    desc: "سجّل حضور الفوج كاملاً في حصة واحدة: علّم الغائبين فقط والباقي حاضرون تلقائياً.",
+    tagline: "الحضور والحقوق والحسابات",
+    desc: "كشوفُ المؤسسة كلُّها في محورٍ واحد: حضورُ الفوج، وحقوقُ الشهر، ومستحقُّ الأستاذ، وحسابُ كلِّ طالبٍ وأستاذ.",
     to: PATHS.attendance,
     from: "#c9640a", via: "#7c3a06", end: "#241202",
     accent: "#fcd34d", glow: "rgba(252,211,77,0.26)",

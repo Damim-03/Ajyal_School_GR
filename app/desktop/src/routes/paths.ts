@@ -39,8 +39,13 @@ export const PATHS = {
   attendance: "/attendance",
   attendanceDaily: "/attendance/daily",
   attendanceMonthlyFees: "/attendance/monthly-fees",
-  attendanceClearance: "/attendance/clearance",
   attendanceExpected: "/attendance/expected",
+  /** كشف حساب الطالب — سنتُه كاملةً: حضورٌ وحقٌّ وإيصال */
+  attendanceStudentAccount: "/attendance/student-account",
+  /** كشف حساب الأستاذ — ما استحقّه وما قبضه على امتداد السنة */
+  attendanceTeacherAccount: "/attendance/teacher-account",
+  /** أرشيف تخليص الأساتذة — ما دُفع ولمن وبأيّ ورقة */
+  settlementArchive: "/attendance/archive",
 
   /*
    * المالية.
@@ -81,6 +86,8 @@ export const PATHS = {
   settings: "/settings",
   settingsSchool: "/settings/school",
   settingsPrint: "/settings/print-test",
+  /** النسخ الاحتياطي والاستعادة وإعادة التهيئة */
+  settingsMaintenance: "/settings/maintenance",
   settingsUsers: "/settings/users",
   settingsRoles: "/settings/roles",
 

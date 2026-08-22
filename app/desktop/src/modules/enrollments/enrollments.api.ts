@@ -26,6 +26,8 @@ export interface Enrollment {
   isActive: boolean;
   student: {
     id: string;
+    /** رقمُ التسجيل — به يُبحث في الفوج ويُمسح باركود البطاقة */
+    studentNumber: string;
     firstName: string;
     lastName: string;
     parentPhone: string;
@@ -33,6 +35,9 @@ export interface Enrollment {
     gender: Gender;
     note: string | null;
   };
+  /** نقلٌ قُرِّر ولم يسرِ — الفوج المقصود */
+  pendingTransferToId?: string | null;
+  pendingTransferAt?: string | null;
   teachingAssignment: {
     id: string;
     isActive: boolean;
@@ -109,9 +114,18 @@ export const deleteEnrollment = async (id: string) => {
 export const transferEnrollment = async (
   id: string,
   teachingAssignmentId: string,
+  /**
+   * تأجيلُ السريان إلى أوّل كشفٍ جديد.
+   *
+   * يبقى الطالب في فوجه القديم إلى آخر حصةٍ في الكشف الجاري ويُفوتَر
+   * شهرَه كاملاً هناك، ثمّ يُنقل من نفسه حين يُفتح الكشف التالي —
+   * فلا يُقسَّم شهرٌ بين فوجين ولا يُختلف في حسابه.
+   */
+  defer = false,
 ) => {
   const { data } = await apiClient.patch(`/enrollments/${id}/transfer`, {
     teachingAssignmentId,
+    defer,
   });
 
   return data.data as {
@@ -119,7 +133,15 @@ export const transferEnrollment = async (
     to: Enrollment;
     /** أُحيي تسجيلٌ معطَّل بدل إنشاء نظيرٍ له */
     revived: boolean;
+    /** قُرِّر ولم يسرِ بعد — يسري عند فتح الكشف التالي */
+    pending?: boolean;
   };
+};
+
+/** إلغاءُ نقلٍ مؤجَّلٍ قبل أن يسري */
+export const cancelPendingTransfer = async (id: string) => {
+  const { data } = await apiClient.patch(`/enrollments/${id}/transfer/cancel`);
+  return data.data.enrollment as Enrollment;
 };
 
 /** «ثانية متوسط · فوج أ» — النسب التي تُميّز الفوج عن شبيهه */

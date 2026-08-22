@@ -1,11 +1,21 @@
 import { useCallback, useState } from "react";
-import { Check, CheckCircle2, FolderCheck, UserPlus } from "lucide-react";
+import { Check, CheckCircle2, FolderCheck, Printer, UserPlus } from "lucide-react";
 
 import { Avatar } from "../../components/shared/Avatar";
 import { FormDialog } from "../../components/shared/FormDialog";
+import { PrintPreview } from "../../components/print/PrintPreview";
 import { DocumentsPanel } from "./DocumentsPanel";
+import { RegistrationReceiptDoc } from "./RegistrationReceipt";
 import { StudentFields } from "./StudentFields";
-import { createStudent, type Student, type StudentInput } from "./student.api";
+import {
+  createStudent,
+  type CatalogueEntry,
+  type Student,
+  type StudentInput,
+} from "./student.api";
+import { RegistrationFee } from "./RegistrationFeePanel";
+import { DEFAULT_CURRENCY } from "../../core/utils/money";
+import { useSchool } from "../../core/stores/school.store";
 
 const ACCENT = "#7dd3fc";
 const FORM_ID = "student-register-form";
@@ -40,6 +50,15 @@ export function StudentRegisterDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [valid, setValid] = useState(false);
+
+  /* الوثائق كما هي لحظةَ الإنهاء — منها يُبنى الوصل */
+  const [catalogue, setCatalogue] = useState<CatalogueEntry[]>([]);
+
+  /** الوصلُ يُعاين بعد الإنهاء، ولا يُطبع إلّا إن أراد الموظّف */
+  const [receipt, setReceipt] = useState<Student | null>(null);
+
+  const currency = useSchool("school.currency") || DEFAULT_CURRENCY;
+  const defaultFee = useSchool("school.registration_fee");
 
   /* مرجعٌ ثابت — دالّةٌ جديدة كل رسمة تُعيد تشغيل أثر التحقّق بلا داعٍ */
   const onValidityChange = useCallback((ok: boolean) => setValid(ok), []);
@@ -87,10 +106,25 @@ export function StudentRegisterDialog({
       onClose={onClose}
       /* الخطوة الأولى تُرسل حقولَ الطالب، والثانية زرُّها إنهاءٌ لا حفظ */
       submitForm={step === 1 ? FORM_ID : undefined}
-      onSubmit={step === 2 ? (e) => { e.preventDefault(); onClose(); } : undefined}
+      /*
+       * الإنهاء يعرض الوصل ولا يُغلق النافذة.
+       *
+       * الوليُّ واقفٌ ينتظر ورقتَه، والإغلاقُ المباشر يُضيّع اللحظة
+       * الوحيدة التي تُطبع فيها. ومن لا يريدها يُغلق المعاينة فتُغلق
+       * النافذة معها.
+       */
+      onSubmit={
+        step === 2
+          ? (e) => {
+              e.preventDefault();
+              if (created) setReceipt(created);
+              else onClose();
+            }
+          : undefined
+      }
       busy={busy}
       submitDisabled={step === 1 && !valid}
-      submitLabel={step === 1 ? "حفظ ومتابعة إلى الوثائق" : "إنهاء التسجيل"}
+      submitLabel={step === 1 ? "حفظ ومتابعة إلى الوثائق" : "إنهاء التسجيل وعرض الوصل"}
       submitIcon={
         step === 1 ? <UserPlus className="h-4.5 w-4.5" /> : <Check className="h-4.5 w-4.5" />
       }
@@ -98,14 +132,26 @@ export function StudentRegisterDialog({
       error={error}
       footerExtra={
         step === 2 ? (
-          <button
-            type="button"
-            onClick={again}
-            className="flex items-center gap-2 rounded-xl bg-white/10 px-5 py-3 text-sm font-bold transition hover:bg-white/20"
-          >
-            <UserPlus className="h-4 w-4" />
-            تسجيل طالب آخر
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={again}
+              className="flex items-center gap-2 rounded-xl bg-white/10 px-5 py-3 text-sm font-bold transition hover:bg-white/20"
+            >
+              <UserPlus className="h-4 w-4" />
+              تسجيل طالب آخر
+            </button>
+
+            {/* الوصلُ يُعاين قبل الإنهاء أيضاً — من أراد ورقةً ثمّ تابع */}
+            <button
+              type="button"
+              onClick={() => created && setReceipt(created)}
+              className="flex items-center gap-2 rounded-xl bg-white/10 px-5 py-3 text-sm font-bold transition hover:bg-white/20"
+            >
+              <Printer className="h-4 w-4" />
+              الوصل
+            </button>
+          </>
         ) : undefined
       }
       headerExtra={<Steps step={step} complete={complete} />}
@@ -136,11 +182,46 @@ export function StudentRegisterDialog({
             </div>
           </div>
 
+          {/*
+            حقوق التسجيل — في شقّ الوثائق لا في شقّ المعلومات.
+
+            وهي تُقبض في الشبّاك مع تسليم الأوراق لا قبله، فمحلُّها حيث
+            يقف الموظّف حين يقبضها. ووضعُها في الخطوة الأولى كان يعني
+            أن تُملأ قبل أن يُعرف أيُّ الأوراق سُلِّمت.
+          */}
+          <RegistrationFee
+            student={created}
+            defaultAmount={defaultFee}
+            currency={currency}
+            onChange={setCreated}
+            onFail={setError}
+          />
+
           <DocumentsPanel
             studentId={created.id}
-            onChange={(file) => setComplete(file.completeness.isComplete)}
+            onChange={(file) => {
+              setComplete(file.completeness.isComplete);
+              setCatalogue(file.catalogue);
+            }}
           />
         </div>
+      )}
+
+      {receipt && (
+        <PrintPreview
+          doc={{
+            title: `وصل تسجيل ${receipt.studentNumber}`,
+            render: () => (
+              <RegistrationReceiptDoc
+                student={receipt}
+                catalogue={catalogue}
+                currency={currency}
+              />
+            ),
+          }}
+          /* تُغلق المعاينةُ وحدها — ونافذةُ التسجيل تبقى خلفها */
+          onClose={() => setReceipt(null)}
+        />
       )}
     </FormDialog>
   );

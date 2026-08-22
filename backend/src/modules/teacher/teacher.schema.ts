@@ -77,6 +77,11 @@ export const teacherIdSchema = z.object({
   id: z.string().trim().min(1, "Teacher id is required"),
 });
 
+/** كشف الحساب — السنةُ إلزامية: ورقةٌ بلا سنةٍ تخلط سنتين */
+export const teacherStatementQuerySchema = z.object({
+  academicYearId: z.string().trim().min(1, "Academic year is required"),
+});
+
 export const teacherQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),

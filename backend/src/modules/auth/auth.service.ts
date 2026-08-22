@@ -52,11 +52,11 @@ const userSelect = {
 // --------------------------------------------------
 
 export const loginService = async (body: LoginInput) => {
-  const { username, password } = body;
+  const { username, userId, password } = body;
 
-  // 1. البحث عن المستخدم
+  // 1. البحث عن المستخدم — بالاسم أو بالمعرّف، والمخطَّط يضمن أحدَهما
   const user = await prisma.user.findUnique({
-    where: { username },
+    where: userId ? { id: userId } : { username: username! },
     select: {
       ...userSelect,
       password: true, // نحتاجه للمقارنة فقط
@@ -202,3 +202,25 @@ export const getMeService = async (userId: string) => {
 
   return { ...user, permissions };
 };
+
+/**
+ * بطاقاتُ المستخدمين لشاشة الاختيار — **مسارٌ عامّ بلا مصادقة**.
+ *
+ * والحدُّ الأدنى حرفياً: معرّفٌ واسمُ عرضٍ وصورة. لا `username` ولا
+ * بريد ولا دور ولا آخرُ دخول — فما يُكشف أسماءُ أشخاصٍ يعملون في
+ * المؤسسة، لا مفاتيحُ تُقرّب من حساب. والدخولُ يقبل هذا المعرّف
+ * (`loginSchema`) فلا حاجة إلى اسم الدخول في الشاشة أصلاً.
+ *
+ * والمعطَّلون يُستبعدون: عرضُ حسابٍ موقوفٍ يدعو إلى محاولةٍ ترتدّ،
+ * ويُخبر أنّ الحساب كان موجوداً.
+ *
+ * والترتيبُ بآخر دخولٍ ثمّ بالاسم: من يستعمل هذا الجهاز يجد نفسه أوّلاً
+ * كما في الأجهزة المنزلية، ومن لم يدخل قطّ يأتي بترتيبٍ ثابتٍ لا يقفز.
+ */
+export const listProfilesService = async () =>
+  prisma.user.findMany({
+    where: { isActive: true },
+    select: { id: true, firstName: true, lastName: true, avatar: true, gender: true },
+    orderBy: [{ lastLoginAt: "desc" }, { firstName: "asc" }],
+    take: 24,
+  });

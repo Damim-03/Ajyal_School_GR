@@ -17,7 +17,7 @@ const assignmentSelect = {
     teacher: {
         select: { id: true, firstName: true, lastName: true, isActive: true },
     },
-    subject: { select: { id: true, name: true, code: true } },
+    subject: { select: { id: true, name: true, code: true, color: true, imagePath: true } },
     studyGroup: {
         select: {
             id: true,

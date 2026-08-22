@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cancelInvoiceService = exports.updateInvoiceService = exports.generateInvoicesService = exports.createInvoiceService = exports.getInvoiceService = exports.listInvoicesService = void 0;
+exports.cancelInvoiceService = exports.updateInvoiceService = exports.generateInvoicesService = exports.createInvoiceService = exports.getInvoiceService = exports.listInvoicesService = exports.monthSheet = void 0;
 const prisma_1 = require("../../../generated/prisma");
 const client_1 = require("../../core/prisma/client");
 const app_errors_1 = require("../../core/errors/app.errors");
@@ -204,31 +204,49 @@ const resolveTuitionFee = async (subjectId, studyGroupId, academicYearId) => {
     return fee?.amount ?? null;
 };
 /**
- * كشفُ هذا الإسناد في هذا الشهر — إن كان واحداً لا لبس فيه.
+ * كشفُ هذا الإسناد في هذا الشهر — بالمقياس الذي تراه الشاشة.
  *
- * يبقى فارغاً حين لا كشف، أو حين تتقاسم الشهرَ كشوف: الفراغُ أصدق من
- * تخمينٍ يَنسب فاتورةً إلى كشفٍ ليست منه. وقد رأينا كشفاً يمتدّ من
- * جويلية إلى أوت، فلا مجال للاشتقاق بالشهر وحده.
+ * الكشفُ ثماني حصصٍ لا شهرٌ تقويمي، فيمتدّ بطبعه على شهرين: كشفٌ من
+ * 26 أكتوبر إلى 25 نوفمبر أمرٌ عادي لا شاذّ. وكانت القسمة هنا
+ * «كشفٌ واحدٌ له حصصٌ في الشهر وإلّا فلا شيء»، فما إن تلامس كشفان
+ * شهراً واحداً حتّى تفرغ النسبة. وفي بيانات الاستعمال الحقيقي كان
+ * ذلك هو الغالب لا النادر: أكتوبر يلمسه كشفان، ونوفمبر كشفان.
+ *
+ * والنتيجة لم تكن فراغاً بريئاً: `attendanceSheetId` هو الطريق الوحيد
+ * إلى حصة الأستاذ من دَينٍ حُصّل بعد تخليصه (انظر `recordDebtCollections`)،
+ * فكان المخلَّف يسدّد ولا تنشأ لأستاذه حصة، ولا يظهر في كشفه الجديد
+ * شيء — مالٌ قُبض وحقٌّ سقط بصمت.
+ *
+ * فصار المقياس **شهرَ أوّل حصة**: الكشف يملك الشهر الذي بدأ فيه.
+ * وهو نفسه مقياسُ الكشف التقديري وكشف الحقوق (`referenceDate` في
+ * `settlement.service`) — فما تطابقه الشاشةُ تطابقه الفاتورة، ولا
+ * يفترق حسابان على شيءٍ واحد.
+ *
+ * وإن بدأ كشفان في شهرٍ واحد — وهو ممكنٌ نادر — فالأسبقُ بداية أولى
+ * به: الفاتورة الشهرية حقُّ أوّل ما فُتح في الشهر.
  */
 const monthSheet = async (teachingAssignmentId, year, month) => {
     const sheets = await client_1.prisma.attendanceSheet.findMany({
-        where: {
-            teachingAssignmentId,
+        where: { teachingAssignmentId },
+        select: {
+            id: true,
             sessions: {
-                some: {
-                    status: { not: "CANCELLED" },
-                    sessionDate: {
-                        gte: firstDayOfMonth(year, month),
-                        lte: lastDayOfMonth(year, month),
-                    },
-                },
+                where: { status: { not: "CANCELLED" } },
+                select: { sessionDate: true },
+                orderBy: { sessionDate: "asc" },
+                take: 1,
             },
         },
-        select: { id: true },
-        take: 2,
     });
-    return sheets.length === 1 ? sheets[0].id : null;
+    const from = firstDayOfMonth(year, month);
+    const to = lastDayOfMonth(year, month);
+    const opened = sheets
+        .map((sheet) => ({ id: sheet.id, start: sheet.sessions[0]?.sessionDate }))
+        .filter((sheet) => sheet.start !== undefined && sheet.start >= from && sheet.start <= to)
+        .sort((a, b) => a.start.getTime() - b.start.getTime());
+    return opened[0]?.id ?? null;
 };
+exports.monthSheet = monthSheet;
 /**
  * حصصُ الإسناد في شهر الفاتورة — مرتَّبةً بالتاريخ.
  *
@@ -560,7 +578,7 @@ const generateInvoicesService = async (body, createdById) => {
         }
         /* كشفُ الفترة — يُنسب مرّةً للإسناد ويُشارَك بين طلبته */
         if (!sheetCache.has(enrollment.teachingAssignmentId)) {
-            sheetCache.set(enrollment.teachingAssignmentId, await monthSheet(enrollment.teachingAssignmentId, body.year, body.month));
+            sheetCache.set(enrollment.teachingAssignmentId, await (0, exports.monthSheet)(enrollment.teachingAssignmentId, body.year, body.month));
         }
         const discount = new prisma_1.Prisma.Decimal(0);
         const { total, remaining, status } = computeTotals(charge.amount, discount, new prisma_1.Prisma.Decimal(0));

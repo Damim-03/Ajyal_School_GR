@@ -50,7 +50,7 @@ export function useScreenExit() {
       const accent = accentOverride ?? mod?.accent ?? "#ff8fb1";
       const deep = mod?.end ?? "#04060c";
 
-      sfx("openHome", 0.5);
+      sfx("openHome", 0.85);
       motionDispatch({ type: "RETURN_START" });
 
       /*

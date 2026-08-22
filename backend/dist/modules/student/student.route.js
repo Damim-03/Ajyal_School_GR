@@ -18,6 +18,14 @@ router.get("/", (0, permission_middleware_1.requirePermission)("student.view"), 
 // لكن الصلاحية مختلفة: بيانات تسجيل لا بيانات طالب.
 // --------------------------------------------------
 router.get("/:id/enrollments", (0, permission_middleware_1.requirePermission)("enrollment.view"), (0, validate_middleware_1.validateParams)(student_schema_1.studentIdSchema), (0, validate_middleware_1.validateQuery)(student_schema_1.studentEnrollmentQuerySchema), (0, async_handler_middleware_1.asyncHandler)(student_controller_1.getStudentEnrollmentsController));
+// --------------------------------------------------
+// GET /api/students/:id/statement
+//
+// كشفُ حساب الطالب: سطرٌ لكلّ (مادة × كشف شهر) بحضوره وحقّه وإيصاله.
+// الصلاحية `student.view` — الورقة تُقرأ في شبّاك الاستقبال حيث يسأل
+// الوليّ، لا في المالية وحدها.
+// --------------------------------------------------
+router.get("/:id/statement", (0, permission_middleware_1.requirePermission)("student.view"), (0, validate_middleware_1.validateParams)(student_schema_1.studentIdSchema), (0, validate_middleware_1.validateQuery)(student_schema_1.studentStatementQuerySchema), (0, async_handler_middleware_1.asyncHandler)(student_controller_1.getStudentStatementController));
 /*
  * كتالوج أنواع الوثائق — قبل /:id لأنّ "document-types" ليس معرّفاً.
  *

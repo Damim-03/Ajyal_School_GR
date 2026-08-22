@@ -175,6 +175,7 @@ exports.Prisma.SubjectScalarFieldEnum = {
   code: 'code',
   description: 'description',
   color: 'color',
+  imagePath: 'imagePath',
   isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -247,6 +248,7 @@ exports.Prisma.StudentScalarFieldEnum = {
   lastName: 'lastName',
   gender: 'gender',
   birthDate: 'birthDate',
+  birthPlace: 'birthPlace',
   avatar: 'avatar',
   phone: 'phone',
   parentPhone: 'parentPhone',
@@ -254,6 +256,9 @@ exports.Prisma.StudentScalarFieldEnum = {
   schoolName: 'schoolName',
   emergencyPhone: 'emergencyPhone',
   registrationDate: 'registrationDate',
+  registrationFeePaid: 'registrationFeePaid',
+  registrationFeeAmount: 'registrationFeeAmount',
+  registrationFeePaidAt: 'registrationFeePaidAt',
   isActive: 'isActive',
   note: 'note',
   levelId: 'levelId',
@@ -290,6 +295,14 @@ exports.Prisma.StudentEnrollmentScalarFieldEnum = {
   teachingAssignmentId: 'teachingAssignmentId',
   enrolledAt: 'enrolledAt',
   eligibleFrom: 'eligibleFrom',
+  note: 'note',
+  transferPeerAssignmentId: 'transferPeerAssignmentId',
+  transferSheetId: 'transferSheetId',
+  transferPeerSheetId: 'transferPeerSheetId',
+  transferAt: 'transferAt',
+  pendingTransferToId: 'pendingTransferToId',
+  pendingTransferAt: 'pendingTransferAt',
+  pendingTransferSheetId: 'pendingTransferSheetId',
   isActive: 'isActive'
 };
 
@@ -318,6 +331,7 @@ exports.Prisma.SessionScalarFieldEnum = {
 
 exports.Prisma.AttendanceSheetScalarFieldEnum = {
   id: 'id',
+  code: 'code',
   teachingAssignmentId: 'teachingAssignmentId',
   academicYearId: 'academicYearId',
   number: 'number',
@@ -521,6 +535,25 @@ exports.Prisma.SettlementLineScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.SettlementDocumentScalarFieldEnum = {
+  id: 'id',
+  settlementId: 'settlementId',
+  pageNumber: 'pageNumber',
+  filePath: 'filePath',
+  fileName: 'fileName',
+  note: 'note',
+  uploadedById: 'uploadedById',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.SettlementSnapshotScalarFieldEnum = {
+  id: 'id',
+  settlementId: 'settlementId',
+  dailySheet: 'dailySheet',
+  monthlyFees: 'monthlyFees',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.FinancialAuditLogScalarFieldEnum = {
   id: 'id',
   entity: 'entity',
@@ -599,6 +632,10 @@ exports.Prisma.SortOrder = {
   desc: 'desc'
 };
 
+exports.Prisma.JsonNullValueInput = {
+  JsonNull: Prisma.JsonNull
+};
+
 exports.Prisma.SettingOrderByRelevanceFieldEnum = {
   key: 'key',
   value: 'value'
@@ -636,7 +673,8 @@ exports.Prisma.SubjectOrderByRelevanceFieldEnum = {
   name: 'name',
   code: 'code',
   description: 'description',
-  color: 'color'
+  color: 'color',
+  imagePath: 'imagePath'
 };
 
 exports.Prisma.ClassroomOrderByRelevanceFieldEnum = {
@@ -680,6 +718,7 @@ exports.Prisma.StudentOrderByRelevanceFieldEnum = {
   studentNumber: 'studentNumber',
   firstName: 'firstName',
   lastName: 'lastName',
+  birthPlace: 'birthPlace',
   avatar: 'avatar',
   phone: 'phone',
   parentPhone: 'parentPhone',
@@ -711,7 +750,13 @@ exports.Prisma.TeachingAssignmentOrderByRelevanceFieldEnum = {
 exports.Prisma.StudentEnrollmentOrderByRelevanceFieldEnum = {
   id: 'id',
   studentId: 'studentId',
-  teachingAssignmentId: 'teachingAssignmentId'
+  teachingAssignmentId: 'teachingAssignmentId',
+  note: 'note',
+  transferPeerAssignmentId: 'transferPeerAssignmentId',
+  transferSheetId: 'transferSheetId',
+  transferPeerSheetId: 'transferPeerSheetId',
+  pendingTransferToId: 'pendingTransferToId',
+  pendingTransferSheetId: 'pendingTransferSheetId'
 };
 
 exports.Prisma.ScheduleOrderByRelevanceFieldEnum = {
@@ -730,6 +775,7 @@ exports.Prisma.SessionOrderByRelevanceFieldEnum = {
 
 exports.Prisma.AttendanceSheetOrderByRelevanceFieldEnum = {
   id: 'id',
+  code: 'code',
   teachingAssignmentId: 'teachingAssignmentId',
   academicYearId: 'academicYearId',
   label: 'label',
@@ -840,6 +886,31 @@ exports.Prisma.SettlementLineOrderByRelevanceFieldEnum = {
   id: 'id',
   settlementId: 'settlementId',
   sessionId: 'sessionId'
+};
+
+exports.Prisma.SettlementDocumentOrderByRelevanceFieldEnum = {
+  id: 'id',
+  settlementId: 'settlementId',
+  filePath: 'filePath',
+  fileName: 'fileName',
+  note: 'note',
+  uploadedById: 'uploadedById'
+};
+
+exports.Prisma.JsonNullValueFilter = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull,
+  AnyNull: Prisma.AnyNull
+};
+
+exports.Prisma.QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+};
+
+exports.Prisma.SettlementSnapshotOrderByRelevanceFieldEnum = {
+  id: 'id',
+  settlementId: 'settlementId'
 };
 
 exports.Prisma.FinancialAuditLogOrderByRelevanceFieldEnum = {
@@ -957,7 +1028,9 @@ exports.PermissionModule = exports.$Enums.PermissionModule = {
   LESSON_SLOT: 'LESSON_SLOT',
   TUITION_FEE: 'TUITION_FEE',
   SETTLEMENT_POLICY: 'SETTLEMENT_POLICY',
-  SETTLEMENT: 'SETTLEMENT'
+  SETTLEMENT: 'SETTLEMENT',
+  TEACHER_PAYMENT: 'TEACHER_PAYMENT',
+  MAINTENANCE: 'MAINTENANCE'
 };
 
 exports.InvoiceStatus = exports.$Enums.InvoiceStatus = {
@@ -1071,6 +1144,8 @@ exports.Prisma.ModelName = {
   SettlementPolicy: 'SettlementPolicy',
   Settlement: 'Settlement',
   SettlementLine: 'SettlementLine',
+  SettlementDocument: 'SettlementDocument',
+  SettlementSnapshot: 'SettlementSnapshot',
   FinancialAuditLog: 'FinancialAuditLog',
   DebtCollection: 'DebtCollection',
   TeacherDebtShare: 'TeacherDebtShare',

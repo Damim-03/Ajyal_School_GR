@@ -17,6 +17,13 @@ import {
 import { AppHeader } from "../../components/AppHeader";
 import { PrintPreview } from "../../components/print/PrintPreview";
 import { Avatar } from "../../components/shared/Avatar";
+import { BarcodeScanner } from "../../components/shared/BarcodeScanner";
+import {
+  FilterField,
+  FilterPanel,
+  FilterSelect,
+  type FilterChip,
+} from "../../components/shared/FilterPanel";
 import { useAuthStore } from "../../core/stores/auth.store";
 import { useSchoolStore } from "../../core/stores/school.store";
 import { MOTION } from "../../motion/system";
@@ -45,6 +52,25 @@ const PAGE_SIZE = 15;
 
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("fr-DZ");
 
+const METHODS = [
+  { key: "", label: "الكل" },
+  { key: "CASH", label: "نقداً" },
+  { key: "CARD", label: "بطاقة" },
+  { key: "BANK_TRANSFER", label: "تحويل" },
+] as const;
+
+/**
+ * الحالة — والدفعةُ لا تُحذف بل تُلغى، فالملغاةُ في القائمة أبداً.
+ *
+ * ولم يكن ثمّة ما يفصلها: من أراد جردَ ما قُبض فعلاً في يومٍ قرأ
+ * السطورَ سطراً سطراً ليطرح الملغى منها. والخادمُ يرشّح بها أصلاً.
+ */
+const STATES = [
+  { key: "", label: "الكل" },
+  { key: "ACTIVE", label: "نشطة" },
+  { key: "CANCELLED", label: "ملغاة" },
+] as const;
+
 export default function PaymentsPage() {
   const exitTo = useScreenExit();
   const can = useAuthStore((s) => s.hasPermission);
@@ -57,7 +83,15 @@ export default function PaymentsPage() {
 
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
+  /** الطالبُ بما يُقرأ منه — اسمُه، ورقمُه على بطاقته */
+  const [studentName, setStudentName] = useState("");
+  const [studentNumber, setStudentNumber] = useState("");
+  const [debouncedStudent, setDebouncedStudent] = useState({ name: "", number: "" });
   const [method, setMethod] = useState<PaymentMethod | "">("");
+  /** الحالةُ والمدى الزمني — يرشّحها الخادم ولم تكن الشاشة تعرضها */
+  const [state, setState] = useState<"ACTIVE" | "CANCELLED" | "">("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
 
   const [creating, setCreating] = useState(false);
@@ -70,17 +104,65 @@ export default function PaymentsPage() {
     return () => window.clearTimeout(t);
   }, [search]);
 
-  useEffect(() => setPage(1), [debounced, method]);
+  /* حقلا الطالب يُمهَلان معاً — كتابةُ اسمٍ ورقمٍ استعلامٌ واحد لا اثنان */
+  useEffect(() => {
+    const t = window.setTimeout(
+      () => setDebouncedStudent({ name: studentName.trim(), number: studentNumber.trim() }),
+      350,
+    );
+    return () => window.clearTimeout(t);
+  }, [studentName, studentNumber]);
+
+  useEffect(
+    () => setPage(1),
+    [debounced, debouncedStudent, method, state, dateFrom, dateTo],
+  );
 
   const query = useMemo(
     () => ({
       page,
       limit: PAGE_SIZE,
       ...(debounced && { search: debounced }),
+      ...(debouncedStudent.name && { studentName: debouncedStudent.name }),
+      ...(debouncedStudent.number && { studentNumber: debouncedStudent.number }),
       ...(method && { paymentMethod: method }),
+      ...(state && { status: state }),
+      ...(dateFrom && { dateFrom }),
+      ...(dateTo && { dateTo }),
     }),
-    [page, debounced, method],
+    [page, debounced, debouncedStudent, method, state, dateFrom, dateTo],
   );
+
+  const clearFilters = () => {
+    setSearch("");
+    setStudentName("");
+    setStudentNumber("");
+    setMethod("");
+    setState("");
+    setDateFrom("");
+    setDateTo("");
+  };
+
+  /** ما يُقرأ حين يُطوى اللوح — إخفاءُ الحقول لا يجوز أن يُخفي ما اختير */
+  const chips = useMemo(() => {
+    const out: FilterChip[] = [];
+
+    if (debounced) out.push({ label: "بحث", value: debounced });
+    if (debouncedStudent.name) out.push({ label: "الطالب", value: debouncedStudent.name });
+    if (debouncedStudent.number)
+      out.push({ label: "رقم التسجيل", value: debouncedStudent.number });
+
+    const picked = METHODS.find((m) => m.key === method);
+    if (picked?.key) out.push({ label: "الطريقة", value: picked.label });
+
+    const picked2 = STATES.find((s) => s.key === state);
+    if (picked2?.key) out.push({ label: "الحالة", value: picked2.label });
+
+    if (dateFrom) out.push({ label: "من", value: fmtDate(dateFrom) });
+    if (dateTo) out.push({ label: "إلى", value: fmtDate(dateTo) });
+
+    return out;
+  }, [debounced, debouncedStudent, method, state, dateFrom, dateTo]);
 
   const fetchRows = async () => {
     setLoading(true);
@@ -141,51 +223,125 @@ export default function PaymentsPage() {
       </AppHeader>
 
       <div className="mx-auto max-w-350 p-6">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: MOTION.duration.normal, ease: MOTION.easing.enter }}
-          className="mb-5 flex flex-wrap items-center gap-3"
+        <FilterPanel
+          accent={ACCENT}
+          storageKey="payments"
+          busy={loading}
+          chips={chips}
+          onReset={clearFilters}
+          extra={
+            /*
+              الماسحُ و«تسجيل دفعة» في الترويسة لا بين الحقول: اللوحُ
+              يُطوى بعد الاختيار، وهما عملُ الشاشة — لا يختفيان معه.
+            */
+            <>
+              <ReceiptScanner
+                accent={ACCENT}
+                onFound={(payment) => {
+                  clearFilters();
+                  setSearch(payment.receipt?.receiptNumber ?? payment.paymentNumber);
+                }}
+              />
+
+              {can("payment.create") && (
+                <button
+                  onClick={() => setCreating(true)}
+                  className="flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-black text-[#1a0410] transition hover:brightness-110"
+                  style={{ background: ACCENT }}
+                >
+                  <Plus className="h-4 w-4" />
+                  تسجيل دفعة
+                </button>
+              )}
+            </>
+          }
         >
-          <div className="relative min-w-60 flex-1">
-            <Search className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+          <FilterField label="بحث" span>
+            <div className="relative">
+              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="رقم الدفعة أو الإيصال…"
+                className="w-full rounded-xl border border-white/10 bg-black/30 py-2.5 pe-3 ps-9 text-xs font-bold outline-none transition hover:bg-black/40 focus:border-white/35"
+              />
+            </div>
+          </FilterField>
+
+          <FilterField label="اسم الطالب أو لقبه">
+            <div className="relative">
+              <UserSearch className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+              <input
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                placeholder="بلقاسم…"
+                className="w-full rounded-xl border bg-black/30 py-2.5 pe-3 ps-9 text-xs font-bold outline-none transition hover:bg-black/40 focus:border-white/35"
+                style={{ borderColor: studentName ? `${ACCENT}55` : "rgba(255,255,255,0.1)" }}
+              />
+            </div>
+          </FilterField>
+
+          <FilterField label="رقم تسجيل الطالب">
             <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="ابحث برقم الدفعة أو الإيصال…"
-              className="w-full rounded-xl border border-white/10 bg-black/30 py-2.5 pe-4 ps-10 outline-none transition focus:border-white/30"
+              value={studentNumber}
+              onChange={(e) => setStudentNumber(e.target.value)}
+              placeholder="2026000147"
+              dir="ltr"
+              inputMode="numeric"
+              className="w-full rounded-xl border bg-black/30 px-3 py-2.5 text-xs font-bold tabular-nums outline-none transition hover:bg-black/40 focus:border-white/35"
+              style={{ borderColor: studentNumber ? `${ACCENT}55` : "rgba(255,255,255,0.1)" }}
             />
-          </div>
+          </FilterField>
 
-          <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/30 p-1">
-            {([
-              { v: "", label: "الكل" },
-              { v: "CASH", label: "نقداً" },
-              { v: "CARD", label: "بطاقة" },
-              { v: "BANK_TRANSFER", label: "تحويل" },
-            ] as const).map((o) => (
-              <button
-                key={o.v}
-                onClick={() => setMethod(o.v as PaymentMethod | "")}
-                className="rounded-lg px-3 py-1.5 text-xs font-bold transition"
-                style={method === o.v ? { background: `${ACCENT}22`, color: ACCENT } : { color: "rgba(255,255,255,0.5)" }}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
+          <FilterField label="الحالة">
+            <FilterSelect
+              value={state}
+              onChange={(v) => setState(v as "ACTIVE" | "CANCELLED" | "")}
+              placeholder="الكل"
+              accent={ACCENT}
+              items={STATES.filter((s) => s.key).map((s) => ({ id: s.key, name: s.label }))}
+            />
+          </FilterField>
 
-          {can("payment.create") && (
-            <button
-              onClick={() => setCreating(true)}
-              className="flex items-center gap-2 rounded-xl px-4 py-2.5 font-black text-[#1a0410] transition hover:brightness-110"
-              style={{ background: ACCENT }}
-            >
-              <Plus className="h-4.5 w-4.5" />
-              تسجيل دفعة
-            </button>
-          )}
-        </motion.div>
+          <FilterField label="من تاريخ">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full rounded-xl border bg-black/30 px-3 py-2.5 text-xs font-bold outline-none transition hover:bg-black/40 focus:border-white/35"
+              style={{ borderColor: dateFrom ? `${ACCENT}55` : "rgba(255,255,255,0.1)" }}
+            />
+          </FilterField>
+
+          <FilterField label="إلى تاريخ">
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full rounded-xl border bg-black/30 px-3 py-2.5 text-xs font-bold outline-none transition hover:bg-black/40 focus:border-white/35"
+              style={{ borderColor: dateTo ? `${ACCENT}55` : "rgba(255,255,255,0.1)" }}
+            />
+          </FilterField>
+
+          <FilterField label="الطريقة" span>
+            <div className="flex flex-wrap items-center gap-1 rounded-xl border border-white/10 bg-black/30 p-1">
+              {METHODS.map((option) => (
+                <button
+                  key={option.key || "all"}
+                  onClick={() => setMethod(option.key as PaymentMethod | "")}
+                  className="rounded-lg px-3 py-1.5 text-xs font-bold transition"
+                  style={
+                    method === option.key
+                      ? { background: `${ACCENT}22`, color: ACCENT }
+                      : { color: "rgba(255,255,255,0.5)" }
+                  }
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </FilterField>
+        </FilterPanel>
 
         {error && (
           <div className="mb-4 flex items-center justify-between rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
@@ -222,7 +378,7 @@ export default function PaymentsPage() {
                   <td colSpan={7} className="px-4 py-16 text-center">
                     <Wallet className="mx-auto mb-3 h-10 w-10 text-white/15" />
                     <p className="text-white/50">
-                      {debounced || method ? "لا دفعة تطابق هذه التصفية" : "لا مدفوعات بعد"}
+                      {chips.length > 0 ? "لا دفعة تطابق هذه التصفية" : "لا مدفوعات بعد"}
                     </p>
                   </td>
                 </tr>
@@ -698,5 +854,66 @@ function StudentPicker({
         </p>
       )}
     </div>
+  );
+}
+
+// --------------------------------------------------
+// مسحُ باركود الإيصال المطبوع
+// --------------------------------------------------
+
+/**
+ * الورقةُ التي في يد الوليّ تحمل باركودها ورقمَه تحته (`ReceiptDoc`).
+ *
+ * **والباركود يشفّر رقم الإيصال إن وُجد، وإلّا رقمَ الدفعة** — وهما
+ * سلسلتان مختلفتان لدفعةٍ واحدة. فتُجرَّبان معاً في المطابقة، إذ لا
+ * يعرف الماسحُ أيَّهما في يده ولا ينبغي أن يعرف.
+ *
+ * والمطابقةُ التامّة وحدها، أو صفٌّ واحدٌ لا ثاني له: البحث `contains`
+ * لا `equals`، فرقمٌ قصير قد يقع داخل رقمٍ أطول — وإيصالٌ يُفتح على
+ * دفعة غيره أسوأ من «لا وجود».
+ */
+function ReceiptScanner({
+  accent,
+  onFound,
+}: {
+  accent: string;
+  onFound: (payment: Payment) => void;
+}) {
+  return (
+    <BarcodeScanner<Payment>
+      accent={accent}
+      onFound={onFound}
+      copy={{
+        button: "مسح الإيصال",
+        buttonTitle: "اعثر على دفعة بمسح الباركود المطبوع على إيصالها",
+        title: "مسح باركود الإيصال",
+        subtitle: "الورقة تدلّ على دفعتها — بلا بحثٍ ولا مرشِّحات",
+        placeholder: "امسح الباركود، أو اكتب رقم الإيصال أو الدفعة…",
+        action: "اعرض الدفعة",
+        notFound: "لا وجود لدفعة بهذا الكود بار — الرجاء التحقّق منه.",
+        hint: "الرقم مكتوبٌ تحت الباركود في أسفل الإيصال",
+        steps: [
+          <>
+            وجّه القارئ إلى <span className="font-bold text-white/85">الباركود المطبوع</span> في
+            أسفل ورقة الإيصال.
+          </>,
+          <>القارئ يكتب الرقم في الحقل أدناه من نفسه ثمّ يُرسله — لا تضغط شيئاً.</>,
+          <>
+            تُغلق هذه النافذة وتُفرَغ المرشِّحات، فتبقى في القائمة دفعتُها وحدها بمبلغها
+            وفواتيرها وحالتها.
+          </>,
+        ],
+      }}
+      resolve={async (text) => {
+        const { payments } = await listPayments({ search: text, limit: 5 });
+
+        return (
+          payments.find(
+            (payment) =>
+              payment.receipt?.receiptNumber === text || payment.paymentNumber === text,
+          ) ?? (payments.length === 1 ? payments[0]! : null)
+        );
+      }}
+    />
   );
 }

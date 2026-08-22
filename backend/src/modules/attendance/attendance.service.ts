@@ -486,6 +486,49 @@ export const updateAttendanceService = async (
 // ولا حاجة إلى محوها.
 // --------------------------------------------------
 
+/**
+ * إفراغُ خليةٍ واحدة — «لا شيء» لا «غائب».
+ *
+ * كان المسارُ الوحيد للمحو تفريغَ الورقة كلِّها، والتعليقُ فوقه يقول
+ * إنّ الخلية الواحدة «تُصحَّح بتغيير حالتها». وهو صحيحٌ لمن أخطأ
+ * الحالةَ، وخطأٌ لمن أخطأ **الوجود**: من علّم طالباً بالغلط لا يملك
+ * إلّا أن يجعله غائباً — وبينهما فرقٌ ماليّ ومعنويّ. الفارغ «لم
+ * يُسجَّل بعد»، والغيابُ «سُجّل أنّه غاب» ويبقى في سجلّه.
+ *
+ * **والحصة لا تُنزَّل إلّا إذا خلت.** إبقاءُ المنجزة منجزةً وفيها
+ * علاماتٌ أخرى هو ما يفعله التعديلُ اليوم؛ ولو نُزِّلت عند كلّ محوٍ
+ * لسقطت من تخليصٍ محسوب بلمسةِ تصحيحٍ واحدة. أمّا الخالية تماماً
+ * فحالُها حالُ الورقة المفرَّغة، وتُعامَل معاملتها.
+ */
+export const deleteAttendanceService = async (id: string) => {
+  const existing = await prisma.attendance.findUnique({
+    where: { id },
+    select: { id: true, sessionId: true },
+  });
+
+  if (!existing) {
+    throw new NotFoundException(
+      "Attendance not found",
+      ErrorCodeEnum.RESOURCE_NOT_FOUND,
+    );
+  }
+
+  await prisma.attendance.delete({ where: { id } });
+
+  const remaining = await prisma.attendance.count({
+    where: { sessionId: existing.sessionId },
+  });
+
+  if (remaining === 0) {
+    await prisma.session.updateMany({
+      where: { id: existing.sessionId, status: "COMPLETED" },
+      data: { status: "SCHEDULED" },
+    });
+  }
+
+  return { id, sessionId: existing.sessionId, remaining };
+};
+
 export const clearSessionAttendanceService = async (sessionId: string) => {
   await getSessionOrThrow(sessionId);
 

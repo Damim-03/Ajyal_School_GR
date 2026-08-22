@@ -22,6 +22,14 @@ router.patch("/:id", (0, permission_middleware_1.requirePermission)("enrollment.
  * تعطيل إسنادٍ وإعادة إسناده يملك أثرَ النقل نفسه بخطوتين.
  */
 router.patch("/:id/transfer", (0, permission_middleware_1.requirePermission)("enrollment.update"), (0, validate_middleware_1.validateParams)(enrollment_schema_1.enrollmentIdSchema), (0, validate_middleware_1.validate)(enrollment_schema_1.transferEnrollmentSchema), (0, async_handler_middleware_1.asyncHandler)(enrollment_controller_1.transferEnrollmentController));
+/*
+ * إلغاءُ نقلٍ مؤجَّل — قرارٌ يُراجَع قبل أن يسري.
+ *
+ * وبدونه يصير التأجيلُ فخّاً: قرارٌ كُتب اليوم ويُنفَّذ من نفسه بعد
+ * أسابيع، ولا سبيل إلى الرجوع فيه إلّا بنقلٍ مضادٍّ بعد وقوعه —
+ * وذاك يترك في السجلّ نقلتين لم تقع إحداهما.
+ */
+router.patch("/:id/transfer/cancel", (0, permission_middleware_1.requirePermission)("enrollment.update"), (0, validate_middleware_1.validateParams)(enrollment_schema_1.enrollmentIdSchema), (0, async_handler_middleware_1.asyncHandler)(enrollment_controller_1.cancelPendingTransferController));
 router.delete("/:id", (0, permission_middleware_1.requirePermission)("enrollment.delete"), (0, validate_middleware_1.validateParams)(enrollment_schema_1.enrollmentIdSchema), (0, async_handler_middleware_1.asyncHandler)(enrollment_controller_1.deleteEnrollmentController));
 exports.default = router;
 //# sourceMappingURL=enrollment.route.js.map

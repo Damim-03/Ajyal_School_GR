@@ -16,15 +16,17 @@ router.get("/", (0, permission_middleware_1.requirePermission)("attendance.view"
 // --------------------------------------------------
 router.post("/bulk", (0, permission_middleware_1.requirePermission)("attendance.create"), (0, validate_middleware_1.validate)(attendance_schema_1.bulkAttendanceSchema), (0, async_handler_middleware_1.asyncHandler)(attendance_controller_1.bulkAttendanceController));
 // --------------------------------------------------
-// DELETE /api/attendance/session/:sessionId
+// المحو — ورقةً كاملة أو خليةً واحدة
 //
-// المسار الوحيد الذي يمحو حضوراً، ومحصورٌ في ورقة حصةٍ كاملة.
-// وسببُه أنّ ورقةً مُلئت بالخطأ لا تُصحَّح بالتعديل: الصواب أن تعود
-// الخانات فارغة («لم يُسجَّل بعد») لا أن تصير غياباً («سُجّل أنه غاب»).
+// وسببُهما واحد: ما مُلئ بالخطأ لا يُصحَّح بالتعديل. الصواب أن تعود
+// الخانة فارغة («لم يُسجَّل بعد») لا أن تصير غياباً («سُجّل أنه غاب»)
+// — وبينهما فرقٌ ماليٌّ في التخليص ومعنويٌّ في سجلّ الطالب.
 //
-// ولا مسار لحذف سجلٍّ منفرد — الخلية الواحدة تُصحَّح بتغيير حالتها.
+// و`/session/:sessionId` قبل `/:id` لأنّه أخصّ — ولا يتعارضان أصلاً
+// لاختلاف عدد المقاطع، لكنّ الترتيب يُبقي القراءة على وجهٍ واحد.
 // --------------------------------------------------
 router.delete("/session/:sessionId", (0, permission_middleware_1.requirePermission)("attendance.delete"), (0, validate_middleware_1.validateParams)(attendance_schema_1.attendanceSessionIdSchema), (0, async_handler_middleware_1.asyncHandler)(attendance_controller_1.clearSessionAttendanceController));
+router.delete("/:id", (0, permission_middleware_1.requirePermission)("attendance.delete"), (0, validate_middleware_1.validateParams)(attendance_schema_1.attendanceIdSchema), (0, async_handler_middleware_1.asyncHandler)(attendance_controller_1.deleteAttendanceController));
 router.get("/:id", (0, permission_middleware_1.requirePermission)("attendance.view"), (0, validate_middleware_1.validateParams)(attendance_schema_1.attendanceIdSchema), (0, async_handler_middleware_1.asyncHandler)(attendance_controller_1.getAttendanceController));
 router.post("/", (0, permission_middleware_1.requirePermission)("attendance.create"), (0, validate_middleware_1.validate)(attendance_schema_1.createAttendanceSchema), (0, async_handler_middleware_1.asyncHandler)(attendance_controller_1.createAttendanceController));
 router.patch("/:id", (0, permission_middleware_1.requirePermission)("attendance.update"), (0, validate_middleware_1.validateParams)(attendance_schema_1.attendanceIdSchema), (0, validate_middleware_1.validate)(attendance_schema_1.updateAttendanceSchema), (0, async_handler_middleware_1.asyncHandler)(attendance_controller_1.updateAttendanceController));

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.studentEnrollmentQuerySchema = exports.putDocumentSchema = exports.documentTypeParamSchema = exports.studentQuerySchema = exports.studentIdSchema = exports.updateStudentSchema = exports.createStudentSchema = void 0;
+exports.studentEnrollmentQuerySchema = exports.studentStatementQuerySchema = exports.putDocumentSchema = exports.documentTypeParamSchema = exports.studentQuerySchema = exports.studentIdSchema = exports.updateStudentSchema = exports.createStudentSchema = void 0;
 const zod_1 = require("zod");
 const prisma_1 = require("../../../generated/prisma");
 // --------------------------------------------------
@@ -33,6 +33,8 @@ exports.createStudentSchema = zod_1.z.object({
         error: "Birth date must be in the past",
     })
         .nullish(),
+    /** مسقطُ الرأس — تكتبه شهادة التمدرس، وهو غيرُ `address` (مسكنُه اليوم) */
+    birthPlace: zod_1.z.string().trim().max(120).nullish(),
     /*
      * مسار الصورة كما يُعيده POST /api/uploads — لا الملف نفسه.
      * أي قيمة أخرى تُرفض: العميل لا يختار أين تُخزَّن الملفّات.
@@ -57,6 +59,15 @@ exports.createStudentSchema = zod_1.z.object({
      */
     levelId: zod_1.z.string().trim().min(1).nullish(),
     registrationDate: zod_1.z.coerce.date().optional(),
+    /*
+     * حقوق التسجيل — تُقبض في الشبّاك ساعةَ التسجيل.
+     *
+     * والمبلغُ اختياريٌّ مع الحالة: المؤسسة قد تُعفي طالباً أو تؤجّله،
+     * فتُعلَّم الحالةُ ويبقى المبلغ فارغاً حتّى يُقبض.
+     */
+    registrationFeePaid: zod_1.z.boolean().optional(),
+    registrationFeeAmount: zod_1.z.coerce.number().min(0).max(9999999).nullish(),
+    registrationFeePaidAt: zod_1.z.coerce.date().nullish(),
     note: zod_1.z.string().trim().max(1000).nullish(),
     isActive: zod_1.z.boolean().optional(),
 });
@@ -78,6 +89,15 @@ exports.studentQuerySchema = zod_1.z.object({
     page: zod_1.z.coerce.number().int().min(1).default(1),
     limit: zod_1.z.coerce.number().int().min(1).max(100).default(20),
     search: zod_1.z.string().trim().min(1).optional(),
+    /*
+     * رقمُ التسجيل وحده — حقلٌ مستقلٌّ عن البحث الحرّ.
+     *
+     * و`search` يطابقه مطابقةً تامّة عمداً (رقمُ البطاقة يُمسح كاملاً)،
+     * فلا يصلح لحقلٍ يُكتب فيه رقمٌ خانةً خانةً وتُعرض القائمة من أوّل
+     * رقم. وهذا يطابق **جزءاً منه** ولا يمسّ الهاتف — فلا يختلط برقمٍ
+     * يحوي تلك الخانات.
+     */
+    studentNumber: zod_1.z.string().trim().min(1).optional(),
     gender: zod_1.z.enum(prisma_1.Gender).optional(),
     isActive: zod_1.z
         .enum(["true", "false"])
@@ -121,6 +141,10 @@ exports.putDocumentSchema = zod_1.z.object({
         .max(255),
     fileName: zod_1.z.string().trim().max(255).nullish(),
     note: zod_1.z.string().trim().max(300).nullish(),
+});
+/** كشف الحساب — السنةُ إلزامية: ورقةٌ بلا سنةٍ تخلط سنتين */
+exports.studentStatementQuerySchema = zod_1.z.object({
+    academicYearId: zod_1.z.string().trim().min(1, "Academic year is required"),
 });
 exports.studentEnrollmentQuerySchema = zod_1.z.object({
     isActive: zod_1.z

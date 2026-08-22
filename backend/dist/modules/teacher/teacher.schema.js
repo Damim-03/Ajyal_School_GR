@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.teacherQuerySchema = exports.teacherIdSchema = exports.updateTeacherSchema = exports.createTeacherSchema = void 0;
+exports.teacherQuerySchema = exports.teacherStatementQuerySchema = exports.teacherIdSchema = exports.updateTeacherSchema = exports.createTeacherSchema = void 0;
 const zod_1 = require("zod");
 const prisma_1 = require("../../../generated/prisma");
 // --------------------------------------------------
@@ -57,6 +57,10 @@ exports.updateTeacherSchema = exports.createTeacherSchema
 // --------------------------------------------------
 exports.teacherIdSchema = zod_1.z.object({
     id: zod_1.z.string().trim().min(1, "Teacher id is required"),
+});
+/** كشف الحساب — السنةُ إلزامية: ورقةٌ بلا سنةٍ تخلط سنتين */
+exports.teacherStatementQuerySchema = zod_1.z.object({
+    academicYearId: zod_1.z.string().trim().min(1, "Academic year is required"),
 });
 exports.teacherQuerySchema = zod_1.z.object({
     page: zod_1.z.coerce.number().int().min(1).default(1),

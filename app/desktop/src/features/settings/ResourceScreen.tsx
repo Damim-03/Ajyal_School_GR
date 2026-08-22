@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import {
   ArrowRight,
   Calculator,
+  ImageIcon,
   Loader2,
   Pencil,
   Plus,
@@ -15,6 +16,9 @@ import {
 import { AppHeader } from "../../components/AppHeader";
 import { DateField } from "../../components/DateField";
 import { Avatar } from "../../components/shared/Avatar";
+import { ImageIntake } from "../../components/shared/ImageIntake";
+import { assetUrl } from "../../lib/asset-url";
+import { uploadImage } from "../../modules/students/student.api";
 import { FormDialog, FormGrid, FormRow } from "../../components/shared/FormDialog";
 import { apiClient } from "../../core/api/client";
 import { useAuthStore } from "../../core/stores/auth.store";
@@ -218,6 +222,9 @@ export function ResourceScreen({ spec }: { spec: ResourceSpec }) {
       : String(raw);
   };
 
+  /* تُقرأ مرّةً — فالتضييق لا يعبر حدود الدوالّ الداخلية */
+  const card = spec.card;
+
   return (
     <div className="min-h-screen bg-[#05070d] text-white">
       <AppHeader title={spec.label} subtitle={spec.desc}>
@@ -290,6 +297,103 @@ export function ResourceScreen({ spec }: { spec: ResourceSpec }) {
           </div>
         )}
 
+        {card ? (
+          /*
+            مربّعاتٌ لا جدول — والإجراءان في زاويتها.
+
+            الجدولُ يصلح لما يُقارَن سطراً بسطر، والموادُّ تُنتقى لا
+            تُقارَن. وصورتُها تُعرف قبل اسمها، فحقُّها مربّعٌ لا خانةٌ
+            في صفّ.
+          */
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {loading ? (
+              <div className="col-span-full grid place-items-center rounded-2xl border border-white/10 bg-white/[0.02] p-16 text-white/40">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : rows.length === 0 ? (
+              <div className="col-span-full grid place-items-center rounded-2xl border border-white/10 bg-white/[0.02] p-16 text-center">
+                <spec.icon className="mb-3 h-10 w-10 text-white/15" />
+                <p className="text-white/50">لا {spec.label} بعد</p>
+              </div>
+            ) : (
+              rows.map((row) => {
+                const image = card.image
+                  ? assetUrl(String(row[card.image] ?? "") || null)
+                  : undefined;
+                const title = String(row[card.title] ?? "");
+                const meta = (card.meta ?? [])
+                  .map((k) => String(row[k] ?? "").trim())
+                  .filter(Boolean)
+                  .join(" · ");
+                const tint = String(row.color ?? "") || spec.tone;
+                const off = row.isActive === false;
+
+                return (
+                  <div
+                    key={row.id}
+                    className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition hover:border-white/25"
+                    style={off ? { opacity: 0.5 } : undefined}
+                  >
+                    {/* الصورة — وبديلُها حرفُ الاسم الأوّل بلون المادة */}
+                    <div
+                      className="grid h-28 place-items-center overflow-hidden"
+                      style={{ background: `${tint}1f` }}
+                    >
+                      {image ? (
+                        <img
+                          src={image}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span
+                          className="text-4xl font-black"
+                          style={{ color: tint }}
+                        >
+                          {title.slice(0, 1)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="p-4">
+                      <h3 className="truncate text-base font-black">{title}</h3>
+                      {meta && (
+                        <p className="mt-0.5 truncate text-[12px] text-white/45">{meta}</p>
+                      )}
+                      {off && (
+                        <span className="mt-2 inline-block rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-bold text-white/50">
+                          معطّل
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="absolute top-0 flex gap-1 p-2 opacity-0 transition group-hover:opacity-100"
+                      style={{ insetInlineStart: 0 }}>
+                      {can(`${spec.permission}.update`) && (
+                        <button
+                          title="تعديل"
+                          onClick={() => { setEditing(row); setFormOpen(true); }}
+                          className="grid h-8 w-8 place-items-center rounded-lg bg-black/50 text-white/80 backdrop-blur transition hover:bg-black/70"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      )}
+                      {can(`${spec.permission}.delete`) && (
+                        <button
+                          title="حذف"
+                          onClick={() => setConfirming(row)}
+                          className="grid h-8 w-8 place-items-center rounded-lg bg-black/50 text-white/80 backdrop-blur transition hover:bg-rose-500/60"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        ) : (
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
           <table className="w-full text-sm">
             <thead>
@@ -352,6 +456,7 @@ export function ResourceScreen({ spec }: { spec: ResourceSpec }) {
             </tbody>
           </table>
         </div>
+        )}
 
         {total > 0 && (
           <div className="mt-4 flex items-center justify-between text-sm text-white/50">
@@ -687,6 +792,8 @@ function Field({
         <TimeField value={value ?? ""} onChange={onChange} tone={tone} />
       ) : spec.kind === "date" ? (
         <DateField value={value ?? ""} onChange={onChange} tone={tone} />
+      ) : spec.kind === "image" ? (
+        <ImageField value={value ?? null} onChange={onChange} tone={tone} />
       ) : spec.kind === "color" ? (
         <div className="flex items-center gap-3">
           <input type="color" value={value || "#3b82f6"} onChange={(e) => onChange(e.target.value)}
@@ -745,6 +852,76 @@ function Field({
 //
 // فصار حقلاً نصّياً بمعاينةٍ حيّة: ما تحته هو ما يُرسل حرفاً بحرف.
 // --------------------------------------------------
+
+/**
+ * حقلُ صورة — رفعٌ أو مسحٌ، ومعاينةٌ لما اختير.
+ *
+ * والمحفوظُ مسارٌ لا ملفّ: الرفع يمرّ بـ`/api/uploads` كصورة الطالب
+ * وشعار المؤسسة، فلا خدمةَ ثانية ولا مجلَّدٌ خاصّ. والمسحُ من الماسح
+ * الضوئي متاحٌ معه — بعضُ المؤسسات تُصوّر أغلفة الكتب.
+ */
+function ImageField({
+  value,
+  onChange,
+  tone,
+}: {
+  value: string | null;
+  onChange: (next: string | null) => void;
+  tone: string;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const src = assetUrl(value);
+
+  const take = async (file: File) => {
+    setBusy(true);
+    setError(null);
+
+    try {
+      onChange(await uploadImage(file));
+    } catch {
+      setError("تعذّر رفع الصورة");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-3">
+        <span
+          className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/10"
+          style={{ background: `${tone}14` }}
+        >
+          {src ? (
+            <img src={src} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <ImageIcon className="h-6 w-6 text-white/25" />
+          )}
+        </span>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <ImageIntake aspect="1:1" editorTitle="صورة المادة" busy={busy} onFile={take}>
+            {src ? "استبدال" : "رفع أو مسح"}
+          </ImageIntake>
+
+          {src && (
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-bold transition hover:bg-rose-500/20 hover:text-rose-300"
+            >
+              إزالة
+            </button>
+          )}
+        </div>
+      </div>
+
+      {error && <p className="text-[11px] text-rose-300">{error}</p>}
+    </div>
+  );
+}
 
 function MoneyField({
   value,

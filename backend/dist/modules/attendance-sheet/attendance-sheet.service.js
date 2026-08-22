@@ -2,10 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteSheetService = exports.updateSheetService = exports.createSheetService = exports.getSheetService = exports.listSheetsService = void 0;
 const client_1 = require("../../core/prisma/client");
+const enrollment_service_1 = require("../enrollment/enrollment.service");
 const app_errors_1 = require("../../core/errors/app.errors");
 const error_code_enum_1 = require("../../core/enums/error-code.enum");
 const api_response_1 = require("../../core/config/api-response");
 const time_1 = require("../../core/utils/time");
+const document_number_1 = require("../../core/utils/document-number");
 /**
  * كشف الحضور — وحدةٌ إدارية يملك حصصه.
  *
@@ -15,6 +17,7 @@ const time_1 = require("../../core/utils/time");
  */
 const sheetSelect = {
     id: true,
+    code: true,
     teachingAssignmentId: true,
     academicYearId: true,
     number: true,
@@ -119,6 +122,11 @@ const listSheetsService = async (query) => {
         ...(query.teacherId && { teacherId: query.teacherId }),
     };
     const where = {
+        /*
+         * الرمز يُفرد صفّاً واحداً — وهو مدخلُ الباركود: يُمسح فيُعرف
+         * الكشف بلا معرفة إسناده ولا سنته.
+         */
+        ...(query.code && { code: query.code }),
         ...(query.teachingAssignmentId && {
             teachingAssignmentId: query.teachingAssignmentId,
         }),
@@ -189,8 +197,18 @@ const createSheetService = async (body) => {
     /* العدد يُنسخ لا يُقرأ: تغيير السياسة لاحقاً لا يُعيد رسم كشفٍ مضى */
     const sessionCount = body.sessionCount ?? assignment.academicYear.sessionsPerMonth;
     const sheet = await client_1.prisma.$transaction(async (tx) => {
+        /*
+         * الرمز يُفحص **داخل** المعاملة التي تحفظ الصف — لا قبلها: بين
+         * الفحص والحفظ متّسعٌ لكشفٍ آخر يأخذ الرقم نفسه. وقيد التفرّد في
+         * القاعدة حارسٌ أخير خلفه.
+         */
+        const code = await (0, document_number_1.uniqueDocumentNumber)(async (candidate) => (await tx.attendanceSheet.count({ where: { code: candidate } })) > 0);
+        if (!code) {
+            throw new app_errors_1.ConflictException("Could not allocate a sheet code", error_code_enum_1.ErrorCodeEnum.RESOURCE_ALREADY_EXISTS);
+        }
         const created = await tx.attendanceSheet.create({
             data: {
+                code,
                 teachingAssignmentId: body.teachingAssignmentId,
                 academicYearId: assignment.academicYearId,
                 number,
@@ -222,7 +240,19 @@ const createSheetService = async (body) => {
         }
         return created;
     });
-    return (0, exports.getSheetService)(sheet.id);
+    /*
+     * فتحُ كشفٍ جديد هو حدُّ الشهر — وعنده تسري النقولُ المؤجَّلة.
+     *
+     * ولا يقع داخل المعاملة: النقلُ يمسّ فوجاً آخر بفواتيره وحضوره،
+     * وربطُه بمعاملة إنشاء الكشف يجعل تعثُّرَ نقلِ طالبٍ واحد يُسقط
+     * الكشفَ كلَّه. فيُنفَّذ بعده، وما تعثّر منه يبقى معلَّقاً بملاحظته
+     * ظاهرةً لمن يُصلحه.
+     */
+    const pending = await (0, enrollment_service_1.runPendingTransfersService)(body.teachingAssignmentId, sheet.id);
+    const full = await (0, exports.getSheetService)(sheet.id);
+    return pending.moved > 0 || pending.failed.length > 0
+        ? { ...full, pendingTransfers: pending }
+        : full;
 };
 exports.createSheetService = createSheetService;
 // --------------------------------------------------

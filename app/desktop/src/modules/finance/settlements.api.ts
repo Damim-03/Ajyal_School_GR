@@ -209,6 +209,42 @@ const round = (value: number, dp: number) => {
   return Math.round(value * factor + Number.EPSILON) / factor;
 };
 
+/**
+ * قيمةُ الوحدة — نصيب الأستاذ من حضورٍ واحد.
+ *
+ * ثابتةٌ عبر الأسطر في `PER_ATTENDED_SHARE` وحدها، وفي غيرها المستحقُّ
+ * لا يُشتقّ من الحضور أصلاً فلا وحدةَ له. مستخرَجةٌ هنا لأنّ الجدولين
+ * يقرآنها — المجموعات ونصيبُ الأستاذ من المخلَّفين — فلا تُكتب مرّتين.
+ */
+export const teacherUnitRate = (estimate: Estimate): number | null =>
+  estimate.policy.method === "PER_ATTENDED_SHARE"
+    ? (estimate.rows[0]?.rate ?? null)
+    : null;
+
+/**
+ * نصيبُ الأستاذ المؤجَّل من طالبٍ بعينه — ما يأخذه إن سدّد.
+ *
+ * الورقة تُعرض على الأستاذ ليُوقّع، وعمود «الدَّين» فيها كان دَينَ
+ * **المؤسسة** (1,500 دج): يقرؤه فيظنّه حقَّه الضائع، وحقُّه منه 1,125
+ * لا غير. فيُعرض نصيبُه هو.
+ *
+ * و**صفرٌ لمن دخل حضورُه الحساب**: أساسُ العدّ إن كان «المسجَّلون»
+ * فالأستاذ قُبض عن حصصه أصلاً، ودَينُ الطالب شأنُ المؤسسة وحدها.
+ * ومجموعُ ما هنا يساوي `totals.outstandingTeacherShare` من الخادم —
+ * وهو ما يُطبع في خانة المجموع، فالورقة لا تجمع ما حسبه غيرُها.
+ */
+export const pendingTeacherShare = (
+  estimate: Estimate,
+  student: EstimateStudent,
+): number | null => {
+  const rate = teacherUnitRate(estimate);
+  if (rate === null) return null;
+
+  if (isCountedStudent(student, estimate.policy.countBasis)) return 0;
+
+  return round(student.present * rate, estimate.policy.roundingPrecision);
+};
+
 export const bucketByAttendance = (estimate: Estimate): BucketSummary => {
   const { policy, totals, rows, students } = estimate;
   const dp = policy.roundingPrecision;

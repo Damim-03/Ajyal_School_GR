@@ -54,6 +54,13 @@ const ACTION_OVERRIDES = {
     REPORT: ["view", "export"],
     // الإعدادات العامة
     SETTINGS: ["view", "update"],
+    /*
+     * الصيانة: نسخٌ واستعادةٌ وإعادةُ تهيئة.
+     *
+     * ولا `create/update/delete` فيها — الأفعالُ هنا ليست على صفٍّ بل
+     * على القاعدة كلِّها، و«حذف» لا يصف محوَ مؤسسةٍ بكاملها.
+     */
+    MAINTENANCE: ["view", "backup", "restore", "reset"],
 };
 const toKebab = (module) => module.toLowerCase().replace(/_/g, "-");
 const buildPermissions = () => {

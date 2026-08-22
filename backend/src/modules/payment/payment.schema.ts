@@ -51,6 +51,15 @@ export const paymentQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().trim().min(1).optional(),
   studentId: z.string().trim().min(1).optional(),
+  /**
+   * الطالبُ بما يُعرف به لا بمعرّفه الداخلي.
+   *
+   * `studentId` معرّفٌ (cuid) لا يُملى ولا يُكتب — تختاره الشاشةُ من
+   * قائمة. والموظّفُ في شبّاك التحصيل يمسك اسماً أو بطاقةً فيها رقم،
+   * فلا يجد بهما مدخلاً وكان يقلّب الصفحات.
+   */
+  studentName: z.string().trim().min(1).optional(),
+  studentNumber: z.string().trim().min(1).optional(),
   invoiceId: z.string().trim().min(1).optional(),
   paymentMethod: z.enum(PaymentMethod).optional(),
   status: z.enum(PaymentStatus).optional(),

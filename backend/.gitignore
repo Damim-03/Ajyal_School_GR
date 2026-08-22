@@ -7,3 +7,6 @@ node_modules
 # Uploaded user files — not app config, shouldn't live in git
 /uploads/*
 !/uploads/.gitkeep
+
+# نسخُ الصيانة — بيانات المؤسسة لا شيفرة
+backups/

@@ -52,10 +52,13 @@ const payment_route_1 = __importDefault(require("../modules/payment/payment.rout
 const receipt_route_1 = __importDefault(require("../modules/receipt/receipt.route"));
 const settlement_policy_route_1 = __importDefault(require("../modules/settlement-policy/settlement-policy.route"));
 const settlement_route_1 = __importDefault(require("../modules/settlement/settlement.route"));
+const teacher_payment_route_1 = __importDefault(require("../modules/teacher-payment/teacher-payment.route"));
+const teacher_debt_share_route_1 = __importDefault(require("../modules/teacher-debt-share/teacher-debt-share.route"));
 const user_route_1 = __importDefault(require("../modules/user/user.route"));
 const role_route_1 = __importStar(require("../modules/role/role.route"));
 const report_route_1 = __importDefault(require("../modules/report/report.route"));
 const upload_route_1 = __importDefault(require("../modules/upload/upload.route"));
+const maintenance_route_1 = __importDefault(require("../modules/maintenance/maintenance.route"));
 const mainRoute = (0, express_1.Router)();
 // --------------------------------------------------
 // Auth
@@ -92,6 +95,8 @@ mainRoute.use("/receipts", receipt_route_1.default);
 /* تخليص الأستاذ — السياسات قبل التخليص، فالثاني لا يقوم بغير الأولى */
 mainRoute.use("/settlement-policies", settlement_policy_route_1.default);
 mainRoute.use("/settlements", settlement_route_1.default);
+mainRoute.use("/teacher-payments", teacher_payment_route_1.default);
+mainRoute.use("/teacher-debt-shares", teacher_debt_share_route_1.default);
 // --------------------------------------------------
 // Administration
 // --------------------------------------------------
@@ -106,5 +111,9 @@ mainRoute.use("/reports", report_route_1.default);
 // Uploads — صور الطلبة وشعار المدرسة
 // --------------------------------------------------
 mainRoute.use("/uploads", upload_route_1.default);
+// --------------------------------------------------
+// الصيانة — النسخ الاحتياطي والاستعادة وإعادة التهيئة
+// --------------------------------------------------
+mainRoute.use("/maintenance", maintenance_route_1.default);
 exports.default = mainRoute;
 //# sourceMappingURL=mainroute.js.map

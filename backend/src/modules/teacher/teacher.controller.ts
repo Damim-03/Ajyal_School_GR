@@ -7,6 +7,7 @@ import {
   updateTeacherService,
   deleteTeacherService,
 } from "./teacher.service";
+import { getTeacherStatementService } from "./teacher-statement.service";
 import {
   CreateTeacherInput,
   UpdateTeacherInput,
@@ -46,4 +47,17 @@ export const deleteTeacherController = async (req: Request, res: Response) => {
   await deleteTeacherService(req.params.id as string);
 
   return ApiResponse.success(res, null, "Teacher deleted");
+};
+
+// GET /api/teachers/:id/statement
+export const getTeacherStatementController = async (
+  req: Request,
+  res: Response,
+) => {
+  const statement = await getTeacherStatementService(
+    req.params.id as string,
+    (req.query as { academicYearId: string }).academicYearId,
+  );
+
+  return ApiResponse.success(res, statement, "Statement retrieved");
 };

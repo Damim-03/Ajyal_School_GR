@@ -1,9 +1,10 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import {
   ArrowRight,
   BadgeDollarSign,
+  CalendarClock,
   CalendarRange,
   Check,
   CircleCheckBig,
@@ -19,7 +20,22 @@ import {
 
 import { AppHeader } from "../../components/AppHeader";
 import { logoSpec, type LogoSpec } from "../../components/print/logo";
+import { usePagedBlocks } from "../../components/print/paged-sheet";
+import { printedStamp } from "../../components/print/printed-at";
+import { SheetBarcode } from "../../components/print/SheetBarcode";
 import { SheetPreview } from "../../components/print/SheetPreview";
+import {
+  FilterField,
+  FilterPanel,
+  FilterSelect,
+  type FilterChip,
+} from "../../components/shared/FilterPanel";
+import { SearchBox } from "../../components/shared/SearchBox";
+import { matchesQuery } from "../../lib/search";
+import { SheetScanner } from "./components/sheet-scan";
+import { useSheetJump } from "./hooks/use-sheet-jump";
+import { PaymentDoneDialog } from "./components/payment-receipt";
+import { formatInputAmount } from "../../core/utils/money";
 import { useAcademicYears } from "../../core/api/reference.api";
 import { useAuthStore } from "../../core/stores/auth.store";
 import { useSchool, useSchoolStore } from "../../core/stores/school.store";
@@ -33,10 +49,12 @@ import {
   money,
   MONTHS,
   type Invoice,
+  type Payment,
   type PaymentMethod,
 } from "../finance/finance.api";
 import {
   deriveOptions,
+  filterSummary,
   fullName,
   getSheet,
   isoDate,
@@ -45,6 +63,7 @@ import {
   listEnrollments,
   listSheets,
   resolveAssignment,
+  sheetCode,
   sheetTitle,
   type Assignment,
   type AttendanceRow,
@@ -127,6 +146,7 @@ interface FeeRow {
  */
 export default function MonthlyFeesPage() {
   const exitTo = useScreenExit();
+  const navigate = useNavigate();
   const can = useAuthStore((s) => s.hasPermission);
   const schoolName = useSchool("school.name_ar");
 
@@ -138,6 +158,8 @@ export default function MonthlyFeesPage() {
 
   const [yearId, setYearId] = useState("");
   const [filters, setFilters] = useState<SheetFilters>(EMPTY_FILTERS);
+  /** بحثٌ داخل الكشف — عرضٌ لا حذف: المجاميع والورقة على الكشف كلِّه */
+  const [search, setSearch] = useState("");
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loadingRefs, setLoadingRefs] = useState(false);
 
@@ -157,6 +179,14 @@ export default function MonthlyFeesPage() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [paying, setPaying] = useState<FeeRow | null>(null);
+
+  /*
+   * الدفعة المقبوضة للتوّ — تبقى معروضةً حتّى تُقرأ أرقامُها.
+   *
+   * السطرُ الأخضر العابر لا يكفي في الشبّاك: الوليُّ ينتظر ورقته،
+   * والإدارة تحتاج رقم الإيصال الذي حُفظ في المالية.
+   */
+  const [received, setReceived] = useState<Payment | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [generating, setGenerating] = useState(false);
 
@@ -245,11 +275,23 @@ export default function MonthlyFeesPage() {
     });
   };
 
+  /* المسح ينقل الشاشة إلى كشفٍ آخر — انظر `use-sheet-jump` */
+  const { jumpTo, jumping } = useSheetJump({
+    assignments,
+    sheets,
+    setYearId,
+    setFilters,
+    setSheetId,
+  });
+
   // --------------------------------------------------
   // كشوف الإسناد
   // --------------------------------------------------
 
   useEffect(() => {
+    /* الفوجُ تبدّل، فبحثُ الفوج السابق لا معنى له في جدولٍ آخر */
+    setSearch("");
+
     if (!assignment) {
       setSheets([]);
       setSheetId("");
@@ -448,9 +490,23 @@ export default function MonthlyFeesPage() {
     };
   }, [sheet, counted, rows]);
 
+  /**
+   * ورقةٌ فارغة — لا حضورَ دُوِّن بعد.
+   *
+   * فعمود «ع.ح» يخرج فارغاً لا أصفاراً: الصفر يُقرأ «حضر لا شيء» وهو
+   * خبرٌ عن الطالب، والحقيقةُ أنّ أحداً لم يدوّن بعد. والورقة في هذه
+   * الحال ذاهبةٌ إلى الشبّاك أو إلى الأستاذ لتُملأ بالقلم.
+   */
+  const blankForm = cells.size === 0;
+
   /** ما يُقرأ قبل إهدار ورقة — أو `null` إن امتلأ الكشف */
   const printWarning = useMemo(() => {
     if (filling.full) return null;
+
+    /* لا تدوينَ أصلاً: ورقةٌ للملء بالقلم، لا كشفٌ ناقص */
+    if (blankForm) {
+      return "لا حضورَ مدوَّناً في هذا الكشف بعد، فعمود «ع.ح» يخرج فارغاً ليُملأ بالقلم. أكمل التدوين في كشف الحضور اليومي إن أردتها محسوبة.";
+    }
 
     const parts: string[] = [];
 
@@ -464,7 +520,7 @@ export default function MonthlyFeesPage() {
     if (parts.length === 0) return null;
 
     return `الكشف لم يمتلئ بعد: ${parts.join("، ")}. عمود «ع.ح» في الورقة سيخرج ناقصاً — أكمل التدوين في كشف الحضور اليومي، أو اطبعها على علمٍ بذلك.`;
-  }, [filling]);
+  }, [filling, blankForm]);
 
   const totals = useMemo(() => {
     let paid = 0;
@@ -545,6 +601,32 @@ export default function MonthlyFeesPage() {
   const ready = Boolean(assignment && sheet);
   const printable = ready && rows.length > 0;
 
+  /** ما يبقى مقروءاً حين يُطوى لوح المرشِّحات */
+  const chips = useMemo<FilterChip[]>(() => {
+    const year = years.find((y) => y.id === yearId);
+
+    return [
+      ...(year ? [{ label: "السنة", value: year.name }] : []),
+      ...filterSummary(options, filters),
+      ...(sheet ? [{ label: "الكشف", value: sheetTitle(sheet) }] : []),
+    ];
+  }, [years, yearId, options, filters, sheet]);
+
+  /**
+   * صفوفُ العرض — مصفّاةً بالبحث ومحتفظةً بترتيبها في الكشف.
+   *
+   * والمجاميع وشريط الطباعة يقرآن `rows` كاملةً: البحثُ نظرةٌ في الجدول
+   * لا اقتطاعٌ من الكشف، ولو تبع المجموعُ البحثَ لخرجت «المتبقّي» رقماً
+   * يخصّ طالباً واحداً في موضعٍ يُقرأ على أنّه حصيلةُ الفوج.
+   */
+  const visible = useMemo(
+    () =>
+      rows
+        .map((row, index) => ({ row, order: index + 1 }))
+        .filter((item) => matchesQuery(fullName(item.row.enrollment.student), search)),
+    [rows, search],
+  );
+
   return (
     <div className="min-h-screen bg-[#05070d] text-white">
       <AppHeader title="كشف دفع الحقوق الشهري" subtitle="حصصُ الشهر · الدفع · الإمضاء">
@@ -559,73 +641,85 @@ export default function MonthlyFeesPage() {
 
       <div className="mx-auto max-w-[1600px] p-6">
         {/* ================= المرشِّحات ================= */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: MOTION.duration.normal, ease: MOTION.easing.enter }}
-          className="mb-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+        <FilterPanel
+          accent={ACCENT}
+          storageKey="attendance.fees"
+          collapseKey={assignment?.id ?? ""}
+          busy={loadingRefs || loading}
+          chips={chips}
+          extra={
+            <SheetScanner sheets={sheets} onFound={jumpTo} busy={jumping} accent={ACCENT} />
+          }
+          onReset={() => setFilters(EMPTY_FILTERS)}
         >
-          <div className="flex flex-wrap items-end gap-3">
-            <Field label="السنة الدراسية">
-              <select value={yearId} onChange={(e) => setYearId(e.target.value)} className={selectClass}>
-                {years.map((y) => (
-                  <option key={y.id} value={y.id} className="bg-[#0a0f1a]">
-                    {y.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+          <FilterField label="السنة الدراسية">
+            <FilterSelect value={yearId} onChange={setYearId} items={years} accent={ACCENT} />
+          </FilterField>
 
-            <Field label="الطور">
-              <Picker value={filters.stageId} onChange={(v) => setFilter("stageId", v)} items={options.stages} all="كل الأطوار" />
-            </Field>
+          <FilterField label="الطور">
+            <FilterSelect
+              value={filters.stageId}
+              onChange={(v) => setFilter("stageId", v)}
+              items={options.stages}
+              placeholder="كل الأطوار"
+              accent={ACCENT}
+            />
+          </FilterField>
 
-            <Field label="المستوى">
-              <Picker value={filters.levelId} onChange={(v) => setFilter("levelId", v)} items={options.levels} all="كل المستويات" />
-            </Field>
+          <FilterField label="المستوى">
+            <FilterSelect
+              value={filters.levelId}
+              onChange={(v) => setFilter("levelId", v)}
+              items={options.levels}
+              placeholder="كل المستويات"
+              accent={ACCENT}
+            />
+          </FilterField>
 
-            <Field label="المادة">
-              <Picker value={filters.subjectId} onChange={(v) => setFilter("subjectId", v)} items={options.subjects} all="اختر المادة" />
-            </Field>
+          <FilterField label="المادة">
+            <FilterSelect
+              value={filters.subjectId}
+              onChange={(v) => setFilter("subjectId", v)}
+              items={options.subjects}
+              placeholder="اختر المادة"
+              accent={ACCENT}
+            />
+          </FilterField>
 
-            <Field label="الأستاذ">
-              <Picker
-                value={filters.teacherId}
-                onChange={(v) => setFilter("teacherId", v)}
-                items={options.teachers.map((t) => ({ id: t.id, name: fullName(t) }))}
-                all="اختر الأستاذ"
+          <FilterField label="الأستاذ">
+            <FilterSelect
+              value={filters.teacherId}
+              onChange={(v) => setFilter("teacherId", v)}
+              items={options.teachers.map((t) => ({ id: t.id, name: fullName(t) }))}
+              placeholder="اختر الأستاذ"
+              accent={ACCENT}
+            />
+          </FilterField>
+
+          <FilterField label="الفوج">
+            <FilterSelect
+              value={filters.groupId}
+              onChange={(v) => setFilter("groupId", v)}
+              items={options.groups}
+              placeholder="اختر الفوج"
+              accent={ACCENT}
+            />
+          </FilterField>
+
+          {/* الكشف بدل الشهر: وحدةٌ إدارية لا مدىً تقويمي */}
+          {assignment && (
+            <FilterField label="الكشف">
+              <FilterSelect
+                value={sheetId}
+                onChange={setSheetId}
+                items={sheets.map((s) => ({ id: s.id, name: sheetTitle(s) }))}
+                placeholder={sheets.length === 0 ? "لا كشوف بعد" : undefined}
+                disabled={sheets.length === 0}
+                accent={ACCENT}
               />
-            </Field>
-
-            <Field label="الفوج">
-              <Picker value={filters.groupId} onChange={(v) => setFilter("groupId", v)} items={options.groups} all="اختر الفوج" />
-            </Field>
-
-            {/* الكشف بدل الشهر: وحدةٌ إدارية لا مدىً تقويمي */}
-            {assignment && (
-              <Field label="الكشف">
-                <select
-                  value={sheetId}
-                  onChange={(e) => setSheetId(e.target.value)}
-                  className={selectClass}
-                  disabled={sheets.length === 0}
-                >
-                  {sheets.length === 0 ? (
-                    <option value="" className="bg-[#0a0f1a]">لا كشوف بعد</option>
-                  ) : (
-                    sheets.map((s) => (
-                      <option key={s.id} value={s.id} className="bg-[#0a0f1a]">
-                        {sheetTitle(s)}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </Field>
-            )}
-
-            {(loadingRefs || loading) && <Loader2 className="mb-2.5 h-4 w-4 animate-spin text-white/40" />}
-          </div>
-        </motion.div>
+            </FilterField>
+          )}
+        </FilterPanel>
 
         {error && (
           <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
@@ -789,6 +883,29 @@ export default function MonthlyFeesPage() {
                   </button>
 
                   {/*
+                    الجسر إلى مستحقّ الأستاذ.
+
+                    الورقتان وجهان لكشفٍ واحد: هذه تقول مَن سدَّد من الطلبة،
+                    وتلك تقول كم يستحقّ أستاذُهم منه. والانتقال كان يعني
+                    إعادةَ اختيار خمسة مرشِّحاتٍ في الشاشة الأخرى — فالرابط
+                    يحمل السنة والإسناد والكشف، وتفتح الشاشةُ على نفس الورقة.
+                  */}
+                  {assignment && sheet && (
+                    <button
+                      onClick={() =>
+                        navigate(
+                          `${PATHS.attendanceExpected}?y=${yearId}&a=${assignment.id}&s=${sheet.id}`,
+                        )
+                      }
+                      title="مستحقّ الأستاذ عن هذا الكشف بعينه"
+                      className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-bold text-white/70 transition hover:bg-sky-500/15 hover:text-sky-200"
+                    >
+                      <CalendarClock className="h-4 w-4" />
+                      الكشف التقديري لهذا الكشف
+                    </button>
+                  )}
+
+                  {/*
                     الطباعة تمرّ بالمعاينة دائماً — لا زرَّ يطبع مباشرة.
                     الورقة تُقرأ قبل أن تُتلَف، وفي المعاينة نفسها زرُّ
                     الطباعة وتنبيهُ النقص.
@@ -820,6 +937,21 @@ export default function MonthlyFeesPage() {
 
             {/* ================= الجدول ================= */}
             <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+              {/* البحث فوق الجدول — يبقى ظاهراً ولو طُوي لوح المرشِّحات */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+                <SearchBox
+                  value={search}
+                  onChange={setSearch}
+                  shown={visible.length}
+                  total={rows.length}
+                  accent={ACCENT}
+                />
+
+                <span className="text-[11px] text-white/35">
+                  {rows.length} مسجَّلاً — المجاميع أعلاه على الكشف كلِّه
+                </span>
+              </div>
+
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/10 text-xs text-white/50">
@@ -842,8 +974,14 @@ export default function MonthlyFeesPage() {
                         لا مسجَّلين في هذا الإسناد
                       </td>
                     </tr>
+                  ) : visible.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="px-4 py-16 text-center text-white/40">
+                        لا طالب باسم «{search.trim()}» في هذا الكشف
+                      </td>
+                    </tr>
                   ) : (
-                    rows.map((row, index) => {
+                    visible.map(({ row, order }) => {
                       const tone = FEE_TONE[row.state];
 
                       return (
@@ -851,7 +989,7 @@ export default function MonthlyFeesPage() {
                           key={row.enrollment.id}
                           className="border-b border-white/5 transition last:border-0 hover:bg-white/[0.03]"
                         >
-                          <td className="px-3 py-2.5 text-center text-white/40">{index + 1}</td>
+                          <td className="px-3 py-2.5 text-center text-white/40">{order}</td>
                           <td className="px-4 py-2.5 font-bold">{fullName(row.enrollment.student)}</td>
                           <td className="px-3 py-2.5 text-center font-black" style={{ color: ACCENT }}>
                             {row.attended}
@@ -910,6 +1048,10 @@ export default function MonthlyFeesPage() {
           title="كشف دفع الحقوق الشهري"
           subtitle={`${assignment.subject.name} · ${assignment.studyGroup.level.name} · ${assignment.studyGroup.name} · الشهر ${sheetMonthLabel(sheet)}`}
           warning={printWarning}
+          onRefresh={async () => {
+            /* الحضور والمال معاً — الورقة تجمعهما فلا يُحدَّث أحدهما وحده */
+            await Promise.all([loadSheet(), loadInvoices()]);
+          }}
           onClose={() => setPreviewing(false)}
         >
           <FeesSheetPrint
@@ -917,6 +1059,7 @@ export default function MonthlyFeesPage() {
             assignment={assignment}
             sheet={sheet}
             rows={rows}
+            blankForm={blankForm}
             logo={logo}
           />
         </SheetPreview>
@@ -926,12 +1069,18 @@ export default function MonthlyFeesPage() {
         <PayDialog
           row={paying}
           onClose={() => setPaying(null)}
-          onDone={async (message) => {
+          onDone={async (message, payment) => {
+            /* الإيصال أوّلاً: الوليُّ واقفٌ ينتظر، وإعادةُ جلب الفواتير تأخذ وقتها */
             setPaying(null);
-            await loadInvoices();
+            setReceived(payment);
             flash(message);
+            await loadInvoices();
           }}
         />
+      )}
+
+      {received && (
+        <PaymentDoneDialog payment={received} onClose={() => setReceived(null)} />
       )}
 
       {toast && (
@@ -962,11 +1111,18 @@ function PayDialog({
 }: {
   row: FeeRow;
   onClose: () => void;
-  onDone: (message: string) => void;
+  onDone: (message: string, payment: Payment) => void;
 }) {
   const invoice = row.invoice!;
 
-  const [amount, setAmount] = useState(String(invoice.remaining));
+  /*
+   * المبلغ يُكتب بمنزلتيه كما يُعرض في كل موضعٍ آخر.
+   *
+   * كان يُعرض خاماً — «1500» في حقلٍ بجانبه «المتبقّي 1,500.00 دج» —
+   * فيقرأ الموظّف رقمين بصيغتين ويتردّد: أهو نفسُه أم نصفُه؟ والحقل
+   * يُعاد تنسيقه عند الخروج منه فيطابق ما سيُحفظ.
+   */
+  const [amount, setAmount] = useState(() => formatInputAmount(invoice.remaining));
   const [date, setDate] = useState(today());
   const [method, setMethod] = useState<PaymentMethod>("CASH");
   const [busy, setBusy] = useState(false);
@@ -980,7 +1136,7 @@ function PayDialog({
     setError(null);
 
     try {
-      await createPayment({
+      const payment = await createPayment({
         allocations: [{ invoiceId: invoice.id, paidAmount: value }],
         paymentMethod: method,
         paymentDate: date,
@@ -990,6 +1146,7 @@ function PayDialog({
         value >= invoice.remaining
           ? `خالص — ${fullName(row.enrollment.student)}`
           : `دفعة جزئية — ${fullName(row.enrollment.student)}`,
+        payment,
       );
     } catch (err: any) {
       setError(err?.response?.data?.message ?? "تعذّر تسجيل الدفعة");
@@ -1019,8 +1176,16 @@ function PayDialog({
             <span className="mb-1.5 block text-xs font-bold text-white/60">المبلغ المدفوع</span>
             <input
               type="number"
+              step="0.01"
+              min="0"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              onBlur={() => {
+                const typed = Number(amount);
+                if (Number.isFinite(typed) && amount.trim() !== "") {
+                  setAmount(formatInputAmount(typed));
+                }
+              }}
               className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none"
             />
           </label>
@@ -1085,107 +1250,161 @@ function PayDialog({
 // ومن اعتاد أن يجد الطالب رقم 30 في أعلى النصف الأيسر يضيع إن نُقل.
 // --------------------------------------------------
 
+/**
+ * عُرفُ الورقة الأصلية: ستّةٌ وعشرون في النصف الواحد.
+ *
+ * وهو **سقفٌ لا سعةٌ مضمونة**: السعة تُقاس بعد الرسم، لأنّ اسماً طويلاً
+ * يلتفّ سطرين فيصير الصفّ ضعفَ ارتفاعه. انظر `usePagedBlocks` في
+ * `components/print/paged-sheet`.
+ */
 const ROWS_PER_BLOCK = 26;
-const ROWS_PER_PAGE = ROWS_PER_BLOCK * 2;
 
 function FeesSheetPrint({
   schoolName,
   assignment,
   sheet,
   rows,
+  blankForm,
   logo,
 }: {
   schoolName: string;
   assignment: Assignment;
   sheet: Sheet;
   rows: FeeRow[];
+  /** لا حضورَ دُوِّن — فالمحسوب من الحضور يخرج فارغاً ليُكتب بالقلم */
+  blankForm: boolean;
   logo: LogoSpec;
 }) {
-  const count = Math.max(rows.length, ROWS_PER_PAGE);
-  const pages = Math.ceil(count / ROWS_PER_PAGE);
-  const printedOn = new Date().toLocaleDateString("fr-DZ");
+  const printedOn = printedStamp();
 
   /* الشعار على الورقة أكبر منه على الإيصال — 297mm لا 80mm */
   const logoWidth = Math.max(24, Math.round(logo.widthMm * 1.4));
+
+  /* بصمةُ ما يغيّر ارتفاع الصفوف — الأسماء وحدها في هذا الكشف */
+  const signature = rows.map((row) => fullName(row.enrollment.student)).join("|");
+
+  const { measureRef, perBlock } = usePagedBlocks(signature, ROWS_PER_BLOCK);
+
+  const header = (
+    <header className="sheet-print-top">
+      <div className="sheet-print-side">
+        <span>المستوى : {assignment.studyGroup.level.name}</span>
+        <span>الشهر : {sheetMonthLabel(sheet)}</span>
+        <span className="sheet-print-printed">حُرِّر في {printedOn}</span>
+        <SheetBarcode code={sheetCode(sheet)} />
+      </div>
+
+      <div className="sheet-print-center">
+        {logo.src && (
+          <img
+            src={logo.src}
+            alt=""
+            className="sheet-print-logo"
+            style={{ width: `${logoWidth}mm`, filter: logo.filter }}
+          />
+        )}
+        <h1>{schoolName}</h1>
+        <div className="sheet-print-year">{assignment.academicYear.name}</div>
+        <h2>كشف دفع الحقوق الشهري للطلبة</h2>
+      </div>
+
+      <div className="sheet-print-side sheet-print-side-end">
+        <span>المادة : {assignment.subject.name}</span>
+        <span>الأستاذ : {fullName(assignment.teacher)}</span>
+        <span>الفوج : {assignment.studyGroup.name}</span>
+      </div>
+    </header>
+  );
+
+  const columns = (
+    <thead>
+      <tr>
+        {[0, 1].map((block) => (
+          <Fragment key={block}>
+            <th style={{ width: "4%" }}>ترتيب</th>
+            <th style={{ width: "15%" }}>اللقب والاسم</th>
+            <th style={{ width: "5%" }}>ع . ح</th>
+            <th style={{ width: "9%" }}>الامضاء</th>
+            <th style={{ width: "9%" }}>التاريخ</th>
+            <th
+              style={{ width: "8%" }}
+              className={block === 0 ? "fees-print-split" : undefined}
+            >
+              الحالة
+            </th>
+          </Fragment>
+        ))}
+      </tr>
+    </thead>
+  );
+
+  /** صفٌّ يحمل طالبين: يمينُ الورقة ويسارُها */
+  const bodyRow = (offset: number, base: number, blockSize: number) => (
+    <tr key={offset}>
+      {[0, 1].map((block) => {
+        const index = base + block * blockSize + offset;
+        const row = rows[index];
+
+        /* صفٌّ مرقَّم فارغ — الورقة تُطبع كاملةً وتُملأ بالقلم */
+        return (
+          <Fragment key={block}>
+            <td className="c">{index + 1}</td>
+            <td>{row ? fullName(row.enrollment.student) : ""}</td>
+            <td className="c b">{row && !blankForm ? row.attended : ""}</td>
+            <td />
+            <td className="c">{row ? feeDate(row.paidOn) : ""}</td>
+            <td className={`c${block === 0 ? " fees-print-split" : ""}`}>
+              {row ? FEE_PRINT[row.state] : ""}
+            </td>
+          </Fragment>
+        );
+      })}
+    </tr>
+  );
+
+  /*
+   * طورُ القياس — نصفٌ واحد بنصف المسجَّلين، فيمرّ كلُّ اسمٍ بالقياس.
+   * لا تُرى ولا تُطبع ولا تحمل صنف `.sheet-page` فلا تُعدّ ورقةً.
+   */
+  if (!perBlock) {
+    const half = Math.max(1, Math.ceil(Math.max(rows.length, ROWS_PER_BLOCK * 2) / 2));
+
+    return (
+      <div className="sheet-print" dir="rtl">
+        <div className="sheet-measure" ref={measureRef}>
+          <section className="sheet-measure-page" data-measure-page="">
+            {header}
+
+            <table className="sheet-print-table">
+              {columns}
+              <tbody>{Array.from({ length: half }, (_, offset) => bodyRow(offset, 0, half))}</tbody>
+            </table>
+
+            <footer className="sheet-print-foot" data-measure-foot="">
+              الصفحة 1 من 1
+            </footer>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  const perPage = perBlock * 2;
+  const count = Math.max(rows.length, perPage);
+  const pages = Math.ceil(count / perPage);
 
   return (
     <div className="sheet-print" dir="rtl">
       {Array.from({ length: pages }).map((_, page) => (
         <section className="sheet-page" key={page}>
-          <header className="sheet-print-top">
-            <div className="sheet-print-side">
-              <span>المستوى : {assignment.studyGroup.level.name}</span>
-              <span>الشهر : {sheetMonthLabel(sheet)}</span>
-              <span className="sheet-print-printed">حُرِّر في {printedOn}</span>
-            </div>
-
-            <div className="sheet-print-center">
-              {logo.src && (
-                <img
-                  src={logo.src}
-                  alt=""
-                  className="sheet-print-logo"
-                  style={{ width: `${logoWidth}mm`, filter: logo.filter }}
-                />
-              )}
-              <h1>{schoolName}</h1>
-              <div className="sheet-print-year">{assignment.academicYear.name}</div>
-              <h2>كشف دفع الحقوق الشهري للطلبة</h2>
-            </div>
-
-            <div className="sheet-print-side sheet-print-side-end">
-              <span>المادة : {assignment.subject.name}</span>
-              <span>الأستاذ : {fullName(assignment.teacher)}</span>
-              <span>الفوج : {assignment.studyGroup.name}</span>
-            </div>
-          </header>
+          {header}
 
           <table className="sheet-print-table">
-            <thead>
-              <tr>
-                {[0, 1].map((block) => (
-                  <Fragment key={block}>
-                    <th style={{ width: "4%" }}>ترتيب</th>
-                    <th style={{ width: "15%" }}>اللقب والاسم</th>
-                    <th style={{ width: "5%" }}>ع . ح</th>
-                    <th style={{ width: "9%" }}>الامضاء</th>
-                    <th style={{ width: "9%" }}>التاريخ</th>
-                    <th
-                      style={{ width: "8%" }}
-                      className={block === 0 ? "fees-print-split" : undefined}
-                    >
-                      الحالة
-                    </th>
-                  </Fragment>
-                ))}
-              </tr>
-            </thead>
-
+            {columns}
             <tbody>
-              {Array.from({ length: ROWS_PER_BLOCK }).map((_, offset) => (
-                <tr key={offset}>
-                  {[0, 1].map((block) => {
-                    const index = page * ROWS_PER_PAGE + block * ROWS_PER_BLOCK + offset;
-                    const row = rows[index];
-
-                    /* صفٌّ مرقَّم فارغ — الورقة تُطبع كاملةً وتُملأ بالقلم */
-                    return (
-                      <Fragment key={block}>
-                        <td className="c">{index + 1}</td>
-                        <td>{row ? fullName(row.enrollment.student) : ""}</td>
-                        <td className="c b">{row ? row.attended : ""}</td>
-                        <td />
-                        <td className="c">{row ? feeDate(row.paidOn) : ""}</td>
-                        <td
-                          className={`c${block === 0 ? " fees-print-split" : ""}`}
-                        >
-                          {row ? FEE_PRINT[row.state] : ""}
-                        </td>
-                      </Fragment>
-                    );
-                  })}
-                </tr>
-              ))}
+              {Array.from({ length: perBlock }, (_, offset) =>
+                bodyRow(offset, page * perPage, perBlock),
+              )}
             </tbody>
           </table>
 
@@ -1197,41 +1416,12 @@ function FeesSheetPrint({
     </div>
   );
 }
-
 // --------------------------------------------------
 
 const selectClass =
   "rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-xs font-bold outline-none transition focus:border-white/30";
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-[11px] font-bold text-white/45">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function Picker({
-  value,
-  onChange,
-  items,
-  all,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  items: { id: string; name: string }[];
-  all: string;
-}) {
-  return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} className={selectClass}>
-      <option value="" className="bg-[#0a0f1a]">{all}</option>
-      {items.map((i) => (
-        <option key={i.id} value={i.id} className="bg-[#0a0f1a]">{i.name}</option>
-      ))}
-    </select>
-  );
-}
+/* حقول المرشِّحات وقوائمها في components/shared/FilterPanel — و`selectClass` باقٍ لحقول تصحيح الشهر */
 
 function Meta({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (

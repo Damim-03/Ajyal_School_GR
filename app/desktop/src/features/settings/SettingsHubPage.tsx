@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
-import { ArrowRight, Building2, Printer, Shield } from "lucide-react";
+import { ArrowRight, Building2, DatabaseBackup, Printer, Shield } from "lucide-react";
 
 import { AppHeader } from "../../components/AppHeader";
 import { MOTION } from "../../motion/system";
@@ -48,6 +48,14 @@ export default function SettingsHubPage() {
       icon: Shield,
       tone: "#fda4af",
       to: PATHS.settingsRoles,
+    },
+    {
+      key: "maintenance",
+      label: "النسخ الاحتياطي والصيانة",
+      desc: "خُذ نسخةً من كل شيء، أو أعِدها، أو ابدأ من جديد — والحسابات تبقى.",
+      icon: DatabaseBackup,
+      tone: "#7dd3fc",
+      to: PATHS.settingsMaintenance,
     },
     {
       key: "print",

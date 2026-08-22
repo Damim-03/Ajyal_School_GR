@@ -63,10 +63,21 @@ const GROUPS: { title: string; fields: Field[] }[] = [
     ],
   },
   {
+    title: "المال",
+    fields: [
+      { key: "school.currency", label: "رمز العملة" },
+      {
+        key: "school.registration_fee",
+        label: "حقوق التسجيل",
+        hint: "مبلغٌ يُقبض مرّةً عند تسجيل طالب جديد — يُملأ وحده في نافذة التسجيل، ويبقى قابلاً للتغيير فيها",
+        dir: "ltr",
+      },
+    ],
+  },
+  {
     title: "المظهر والطباعة",
     fields: [
       { key: "school.brand_color", label: "لون الهوية", hint: "يصبغ الإقلاع والدخول والشعار", color: true },
-      { key: "school.currency", label: "رمز العملة" },
       { key: "school.receipt_note", label: "ملاحظة أسفل الإيصال", area: true },
       { key: "school.receipt_thanks", label: "سطر الشكر", hint: "آخر سطر في الورقة" },
     ],

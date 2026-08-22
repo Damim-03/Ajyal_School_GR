@@ -11,11 +11,17 @@ import {
   Loader2,
   Pencil,
   Phone,
+  Printer,
   Receipt,
+  ScrollText,
   School,
   User,
 } from "lucide-react";
 
+import { SheetPreview } from "../../components/print/SheetPreview";
+import { PrintPreview } from "../../components/print/PrintPreview";
+import { EnrolmentCertificate } from "./EnrolmentCertificate";
+import { RegistrationReceiptDoc } from "./RegistrationReceipt";
 import { AppHeader } from "../../components/AppHeader";
 import { Avatar } from "../../components/shared/Avatar";
 import { useAuthStore } from "../../core/stores/auth.store";
@@ -29,10 +35,12 @@ import {
   getAttendanceSummary,
   getStudent,
   getStudentEnrollments,
+  getStudentFile,
   listStudentAttendance,
   listStudentInvoices,
   type AttendanceRow,
   type AttendanceSummary,
+  type CatalogueEntry,
   type Enrollment,
   type Student,
   type StudentInvoice,
@@ -76,6 +84,19 @@ export default function StudentDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
 
+  /*
+   * ورقتا الطالب — تُجهَّزان عند الطلب لا مع الصفحة.
+   *
+   * الشهادةُ تحتاج تسجيلاتِه، والوصلُ يحتاج ملفَّ وثائقه. وجلبُهما مع
+   * كلّ فتحةٍ للصفحة طلبان لا يُقرآن غالباً — فيُؤجَّلان إلى الضغط.
+   */
+  const [certificate, setCertificate] = useState<{
+    enrolments: Enrollment[];
+    year: string;
+  } | null>(null);
+  const [receipt, setReceipt] = useState<CatalogueEntry[] | null>(null);
+  const [preparing, setPreparing] = useState<"cert" | "receipt" | null>(null);
+
   const tabs: { key: Tab; label: string; icon: typeof BookMarked; allowed: boolean }[] = [
     /*
      * البطاقة أوّلاً: هي ما يُفتح الملفّ لأجله في الاستقبال — تُطبع
@@ -113,6 +134,44 @@ export default function StudentDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  const openCertificate = async () => {
+    if (!student) return;
+
+    setPreparing("cert");
+
+    try {
+      const enrolments = await getStudentEnrollments(student.id, { isActive: true });
+
+      /* السنةُ من تسجيلاته — الشهادةُ تُثبت سنةَ دراسته لا سنةَ النظام */
+      const year =
+        enrolments.find((e) => e.teachingAssignment.academicYear.isCurrent)
+          ?.teachingAssignment.academicYear.name ??
+        enrolments[0]?.teachingAssignment.academicYear.name ??
+        "..................";
+
+      setCertificate({ enrolments, year });
+    } catch {
+      setError("تعذّر جلب تسجيلات الطالب");
+    } finally {
+      setPreparing(null);
+    }
+  };
+
+  const openReceipt = async () => {
+    if (!student) return;
+
+    setPreparing("receipt");
+
+    try {
+      const file = await getStudentFile(student.id);
+      setReceipt(file.catalogue);
+    } catch {
+      setError("تعذّر جلب ملف الطالب");
+    } finally {
+      setPreparing(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="grid min-h-screen place-items-center bg-[#05070d] text-white/40">
@@ -148,6 +207,36 @@ export default function StudentDetailPage() {
   return (
     <div className="min-h-screen bg-[#05070d] text-white">
       <AppHeader title={name} subtitle="ملف الطالب">
+        {/*
+          ورقتا الطالب في ترويسة ملفّه — حيث يقف من يُسأل عنهما.
+          والشاشةُ الأخرى تطبعهما من سطر القائمة، وهذه من داخل الملفّ.
+        */}
+        <button
+          onClick={openCertificate}
+          disabled={preparing !== null}
+          className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-bold transition hover:bg-white/20 disabled:opacity-50"
+        >
+          {preparing === "cert" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ScrollText className="h-4 w-4" />
+          )}
+          شهادة تمدرس
+        </button>
+
+        <button
+          onClick={openReceipt}
+          disabled={preparing !== null}
+          className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-bold transition hover:bg-white/20 disabled:opacity-50"
+        >
+          {preparing === "receipt" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Printer className="h-4 w-4" />
+          )}
+          وصل الملفّ
+        </button>
+
         {can("student.update") && (
           <button
             onClick={() => setEditing(true)}
@@ -165,6 +254,33 @@ export default function StudentDetailPage() {
           رجوع
         </button>
       </AppHeader>
+
+      {certificate && (
+        <SheetPreview
+          title="شهادة تمدرس"
+          subtitle={`${student.lastName} ${student.firstName} — ${certificate.year}`}
+          orientation="portrait"
+          onClose={() => setCertificate(null)}
+        >
+          <EnrolmentCertificate
+            student={student}
+            enrolments={certificate.enrolments}
+            academicYear={certificate.year}
+          />
+        </SheetPreview>
+      )}
+
+      {receipt && (
+        <PrintPreview
+          doc={{
+            title: `وصل ملفّ ${student.studentNumber}`,
+            render: () => (
+              <RegistrationReceiptDoc student={student} catalogue={receipt} />
+            ),
+          }}
+          onClose={() => setReceipt(null)}
+        />
+      )}
 
       <div className="mx-auto grid max-w-325 gap-6 p-6 lg:grid-cols-[340px_1fr]">
         {/* ================= بطاقة الهوية ================= */}

@@ -159,6 +159,16 @@ export type Settlement = $Result.DefaultSelection<Prisma.$SettlementPayload>
  */
 export type SettlementLine = $Result.DefaultSelection<Prisma.$SettlementLinePayload>
 /**
+ * Model SettlementDocument
+ * وجهُ الورقة — الأمامي وحده يكفي، والخلفي حين تُطبع الورقة على وجهين
+ */
+export type SettlementDocument = $Result.DefaultSelection<Prisma.$SettlementDocumentPayload>
+/**
+ * Model SettlementSnapshot
+ * 
+ */
+export type SettlementSnapshot = $Result.DefaultSelection<Prisma.$SettlementSnapshotPayload>
+/**
  * Model FinancialAuditLog
  * 
  */
@@ -266,7 +276,9 @@ export const PermissionModule: {
   LESSON_SLOT: 'LESSON_SLOT',
   TUITION_FEE: 'TUITION_FEE',
   SETTLEMENT_POLICY: 'SETTLEMENT_POLICY',
-  SETTLEMENT: 'SETTLEMENT'
+  SETTLEMENT: 'SETTLEMENT',
+  TEACHER_PAYMENT: 'TEACHER_PAYMENT',
+  MAINTENANCE: 'MAINTENANCE'
 };
 
 export type PermissionModule = (typeof PermissionModule)[keyof typeof PermissionModule]
@@ -916,6 +928,26 @@ export class PrismaClient<
   get settlementLine(): Prisma.SettlementLineDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.settlementDocument`: Exposes CRUD operations for the **SettlementDocument** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SettlementDocuments
+    * const settlementDocuments = await prisma.settlementDocument.findMany()
+    * ```
+    */
+  get settlementDocument(): Prisma.SettlementDocumentDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.settlementSnapshot`: Exposes CRUD operations for the **SettlementSnapshot** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SettlementSnapshots
+    * const settlementSnapshots = await prisma.settlementSnapshot.findMany()
+    * ```
+    */
+  get settlementSnapshot(): Prisma.SettlementSnapshotDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.financialAuditLog`: Exposes CRUD operations for the **FinancialAuditLog** model.
     * Example usage:
     * ```ts
@@ -1427,6 +1459,8 @@ export namespace Prisma {
     SettlementPolicy: 'SettlementPolicy',
     Settlement: 'Settlement',
     SettlementLine: 'SettlementLine',
+    SettlementDocument: 'SettlementDocument',
+    SettlementSnapshot: 'SettlementSnapshot',
     FinancialAuditLog: 'FinancialAuditLog',
     DebtCollection: 'DebtCollection',
     TeacherDebtShare: 'TeacherDebtShare',
@@ -1447,7 +1481,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "setting" | "academicYear" | "educationStage" | "level" | "studyGroup" | "subject" | "classroom" | "lessonSlot" | "tuitionFee" | "teacher" | "student" | "studentDocument" | "teachingAssignment" | "studentEnrollment" | "schedule" | "session" | "attendanceSheet" | "attendance" | "user" | "role" | "permission" | "rolePermission" | "invoice" | "payment" | "paymentInvoice" | "receipt" | "settlementPolicy" | "settlement" | "settlementLine" | "financialAuditLog" | "debtCollection" | "teacherDebtShare" | "teacherPayment" | "teacherPaymentAllocation"
+      modelProps: "setting" | "academicYear" | "educationStage" | "level" | "studyGroup" | "subject" | "classroom" | "lessonSlot" | "tuitionFee" | "teacher" | "student" | "studentDocument" | "teachingAssignment" | "studentEnrollment" | "schedule" | "session" | "attendanceSheet" | "attendance" | "user" | "role" | "permission" | "rolePermission" | "invoice" | "payment" | "paymentInvoice" | "receipt" | "settlementPolicy" | "settlement" | "settlementLine" | "settlementDocument" | "settlementSnapshot" | "financialAuditLog" | "debtCollection" | "teacherDebtShare" | "teacherPayment" | "teacherPaymentAllocation"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3365,6 +3399,138 @@ export namespace Prisma {
           }
         }
       }
+      SettlementDocument: {
+        payload: Prisma.$SettlementDocumentPayload<ExtArgs>
+        fields: Prisma.SettlementDocumentFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SettlementDocumentFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementDocumentPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SettlementDocumentFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementDocumentPayload>
+          }
+          findFirst: {
+            args: Prisma.SettlementDocumentFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementDocumentPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SettlementDocumentFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementDocumentPayload>
+          }
+          findMany: {
+            args: Prisma.SettlementDocumentFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementDocumentPayload>[]
+          }
+          create: {
+            args: Prisma.SettlementDocumentCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementDocumentPayload>
+          }
+          createMany: {
+            args: Prisma.SettlementDocumentCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SettlementDocumentDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementDocumentPayload>
+          }
+          update: {
+            args: Prisma.SettlementDocumentUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementDocumentPayload>
+          }
+          deleteMany: {
+            args: Prisma.SettlementDocumentDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SettlementDocumentUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SettlementDocumentUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementDocumentPayload>
+          }
+          aggregate: {
+            args: Prisma.SettlementDocumentAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSettlementDocument>
+          }
+          groupBy: {
+            args: Prisma.SettlementDocumentGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SettlementDocumentGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SettlementDocumentCountArgs<ExtArgs>
+            result: $Utils.Optional<SettlementDocumentCountAggregateOutputType> | number
+          }
+        }
+      }
+      SettlementSnapshot: {
+        payload: Prisma.$SettlementSnapshotPayload<ExtArgs>
+        fields: Prisma.SettlementSnapshotFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SettlementSnapshotFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementSnapshotPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SettlementSnapshotFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementSnapshotPayload>
+          }
+          findFirst: {
+            args: Prisma.SettlementSnapshotFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementSnapshotPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SettlementSnapshotFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementSnapshotPayload>
+          }
+          findMany: {
+            args: Prisma.SettlementSnapshotFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementSnapshotPayload>[]
+          }
+          create: {
+            args: Prisma.SettlementSnapshotCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementSnapshotPayload>
+          }
+          createMany: {
+            args: Prisma.SettlementSnapshotCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SettlementSnapshotDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementSnapshotPayload>
+          }
+          update: {
+            args: Prisma.SettlementSnapshotUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementSnapshotPayload>
+          }
+          deleteMany: {
+            args: Prisma.SettlementSnapshotDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SettlementSnapshotUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SettlementSnapshotUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SettlementSnapshotPayload>
+          }
+          aggregate: {
+            args: Prisma.SettlementSnapshotAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSettlementSnapshot>
+          }
+          groupBy: {
+            args: Prisma.SettlementSnapshotGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SettlementSnapshotGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SettlementSnapshotCountArgs<ExtArgs>
+            result: $Utils.Optional<SettlementSnapshotCountAggregateOutputType> | number
+          }
+        }
+      }
       FinancialAuditLog: {
         payload: Prisma.$FinancialAuditLogPayload<ExtArgs>
         fields: Prisma.FinancialAuditLogFieldRefs
@@ -3832,6 +3998,8 @@ export namespace Prisma {
     settlementPolicy?: SettlementPolicyOmit
     settlement?: SettlementOmit
     settlementLine?: SettlementLineOmit
+    settlementDocument?: SettlementDocumentOmit
+    settlementSnapshot?: SettlementSnapshotOmit
     financialAuditLog?: FinancialAuditLogOmit
     debtCollection?: DebtCollectionOmit
     teacherDebtShare?: TeacherDebtShareOmit
@@ -4592,6 +4760,7 @@ export namespace Prisma {
     receipts: number
     cancelledReceipts: number
     documents: number
+    settlementDocs: number
     confirmedSettlements: number
     paidSettlements: number
     cancelledSettlements: number
@@ -4609,6 +4778,7 @@ export namespace Prisma {
     receipts?: boolean | UserCountOutputTypeCountReceiptsArgs
     cancelledReceipts?: boolean | UserCountOutputTypeCountCancelledReceiptsArgs
     documents?: boolean | UserCountOutputTypeCountDocumentsArgs
+    settlementDocs?: boolean | UserCountOutputTypeCountSettlementDocsArgs
     confirmedSettlements?: boolean | UserCountOutputTypeCountConfirmedSettlementsArgs
     paidSettlements?: boolean | UserCountOutputTypeCountPaidSettlementsArgs
     cancelledSettlements?: boolean | UserCountOutputTypeCountCancelledSettlementsArgs
@@ -4676,6 +4846,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountDocumentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: StudentDocumentWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountSettlementDocsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SettlementDocumentWhereInput
   }
 
   /**
@@ -4916,6 +5093,7 @@ export namespace Prisma {
 
   export type SettlementCountOutputType = {
     lines: number
+    documents: number
     debtSharesOrigin: number
     debtSharesCollected: number
     teacherAllocations: number
@@ -4923,6 +5101,7 @@ export namespace Prisma {
 
   export type SettlementCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     lines?: boolean | SettlementCountOutputTypeCountLinesArgs
+    documents?: boolean | SettlementCountOutputTypeCountDocumentsArgs
     debtSharesOrigin?: boolean | SettlementCountOutputTypeCountDebtSharesOriginArgs
     debtSharesCollected?: boolean | SettlementCountOutputTypeCountDebtSharesCollectedArgs
     teacherAllocations?: boolean | SettlementCountOutputTypeCountTeacherAllocationsArgs
@@ -4944,6 +5123,13 @@ export namespace Prisma {
    */
   export type SettlementCountOutputTypeCountLinesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SettlementLineWhereInput
+  }
+
+  /**
+   * SettlementCountOutputType without action
+   */
+  export type SettlementCountOutputTypeCountDocumentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SettlementDocumentWhereInput
   }
 
   /**
@@ -10366,6 +10552,7 @@ export namespace Prisma {
     code: string | null
     description: string | null
     color: string | null
+    imagePath: string | null
     isActive: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -10377,6 +10564,7 @@ export namespace Prisma {
     code: string | null
     description: string | null
     color: string | null
+    imagePath: string | null
     isActive: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -10388,6 +10576,7 @@ export namespace Prisma {
     code: number
     description: number
     color: number
+    imagePath: number
     isActive: number
     createdAt: number
     updatedAt: number
@@ -10401,6 +10590,7 @@ export namespace Prisma {
     code?: true
     description?: true
     color?: true
+    imagePath?: true
     isActive?: true
     createdAt?: true
     updatedAt?: true
@@ -10412,6 +10602,7 @@ export namespace Prisma {
     code?: true
     description?: true
     color?: true
+    imagePath?: true
     isActive?: true
     createdAt?: true
     updatedAt?: true
@@ -10423,6 +10614,7 @@ export namespace Prisma {
     code?: true
     description?: true
     color?: true
+    imagePath?: true
     isActive?: true
     createdAt?: true
     updatedAt?: true
@@ -10507,6 +10699,7 @@ export namespace Prisma {
     code: string | null
     description: string | null
     color: string | null
+    imagePath: string | null
     isActive: boolean
     createdAt: Date
     updatedAt: Date
@@ -10535,6 +10728,7 @@ export namespace Prisma {
     code?: boolean
     description?: boolean
     color?: boolean
+    imagePath?: boolean
     isActive?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -10552,12 +10746,13 @@ export namespace Prisma {
     code?: boolean
     description?: boolean
     color?: boolean
+    imagePath?: boolean
     isActive?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type SubjectOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "code" | "description" | "color" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["subject"]>
+  export type SubjectOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "code" | "description" | "color" | "imagePath" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["subject"]>
   export type SubjectInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     teachingAssignments?: boolean | Subject$teachingAssignmentsArgs<ExtArgs>
     tuitionFees?: boolean | Subject$tuitionFeesArgs<ExtArgs>
@@ -10578,6 +10773,10 @@ export namespace Prisma {
       code: string | null
       description: string | null
       color: string | null
+      /**
+       * صورةُ المادة — مسارٌ من /api/uploads، تُعرض في مربّعها
+       */
+      imagePath: string | null
       isActive: boolean
       createdAt: Date
       updatedAt: Date
@@ -10958,6 +11157,7 @@ export namespace Prisma {
     readonly code: FieldRef<"Subject", 'String'>
     readonly description: FieldRef<"Subject", 'String'>
     readonly color: FieldRef<"Subject", 'String'>
+    readonly imagePath: FieldRef<"Subject", 'String'>
     readonly isActive: FieldRef<"Subject", 'Boolean'>
     readonly createdAt: FieldRef<"Subject", 'DateTime'>
     readonly updatedAt: FieldRef<"Subject", 'DateTime'>
@@ -15931,8 +16131,18 @@ export namespace Prisma {
 
   export type AggregateStudent = {
     _count: StudentCountAggregateOutputType | null
+    _avg: StudentAvgAggregateOutputType | null
+    _sum: StudentSumAggregateOutputType | null
     _min: StudentMinAggregateOutputType | null
     _max: StudentMaxAggregateOutputType | null
+  }
+
+  export type StudentAvgAggregateOutputType = {
+    registrationFeeAmount: Decimal | null
+  }
+
+  export type StudentSumAggregateOutputType = {
+    registrationFeeAmount: Decimal | null
   }
 
   export type StudentMinAggregateOutputType = {
@@ -15942,6 +16152,7 @@ export namespace Prisma {
     lastName: string | null
     gender: $Enums.Gender | null
     birthDate: Date | null
+    birthPlace: string | null
     avatar: string | null
     phone: string | null
     parentPhone: string | null
@@ -15949,6 +16160,9 @@ export namespace Prisma {
     schoolName: string | null
     emergencyPhone: string | null
     registrationDate: Date | null
+    registrationFeePaid: boolean | null
+    registrationFeeAmount: Decimal | null
+    registrationFeePaidAt: Date | null
     isActive: boolean | null
     note: string | null
     levelId: string | null
@@ -15963,6 +16177,7 @@ export namespace Prisma {
     lastName: string | null
     gender: $Enums.Gender | null
     birthDate: Date | null
+    birthPlace: string | null
     avatar: string | null
     phone: string | null
     parentPhone: string | null
@@ -15970,6 +16185,9 @@ export namespace Prisma {
     schoolName: string | null
     emergencyPhone: string | null
     registrationDate: Date | null
+    registrationFeePaid: boolean | null
+    registrationFeeAmount: Decimal | null
+    registrationFeePaidAt: Date | null
     isActive: boolean | null
     note: string | null
     levelId: string | null
@@ -15984,6 +16202,7 @@ export namespace Prisma {
     lastName: number
     gender: number
     birthDate: number
+    birthPlace: number
     avatar: number
     phone: number
     parentPhone: number
@@ -15991,6 +16210,9 @@ export namespace Prisma {
     schoolName: number
     emergencyPhone: number
     registrationDate: number
+    registrationFeePaid: number
+    registrationFeeAmount: number
+    registrationFeePaidAt: number
     isActive: number
     note: number
     levelId: number
@@ -16000,6 +16222,14 @@ export namespace Prisma {
   }
 
 
+  export type StudentAvgAggregateInputType = {
+    registrationFeeAmount?: true
+  }
+
+  export type StudentSumAggregateInputType = {
+    registrationFeeAmount?: true
+  }
+
   export type StudentMinAggregateInputType = {
     id?: true
     studentNumber?: true
@@ -16007,6 +16237,7 @@ export namespace Prisma {
     lastName?: true
     gender?: true
     birthDate?: true
+    birthPlace?: true
     avatar?: true
     phone?: true
     parentPhone?: true
@@ -16014,6 +16245,9 @@ export namespace Prisma {
     schoolName?: true
     emergencyPhone?: true
     registrationDate?: true
+    registrationFeePaid?: true
+    registrationFeeAmount?: true
+    registrationFeePaidAt?: true
     isActive?: true
     note?: true
     levelId?: true
@@ -16028,6 +16262,7 @@ export namespace Prisma {
     lastName?: true
     gender?: true
     birthDate?: true
+    birthPlace?: true
     avatar?: true
     phone?: true
     parentPhone?: true
@@ -16035,6 +16270,9 @@ export namespace Prisma {
     schoolName?: true
     emergencyPhone?: true
     registrationDate?: true
+    registrationFeePaid?: true
+    registrationFeeAmount?: true
+    registrationFeePaidAt?: true
     isActive?: true
     note?: true
     levelId?: true
@@ -16049,6 +16287,7 @@ export namespace Prisma {
     lastName?: true
     gender?: true
     birthDate?: true
+    birthPlace?: true
     avatar?: true
     phone?: true
     parentPhone?: true
@@ -16056,6 +16295,9 @@ export namespace Prisma {
     schoolName?: true
     emergencyPhone?: true
     registrationDate?: true
+    registrationFeePaid?: true
+    registrationFeeAmount?: true
+    registrationFeePaidAt?: true
     isActive?: true
     note?: true
     levelId?: true
@@ -16102,6 +16344,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: StudentAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: StudentSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: StudentMinAggregateInputType
@@ -16132,6 +16386,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: StudentCountAggregateInputType | true
+    _avg?: StudentAvgAggregateInputType
+    _sum?: StudentSumAggregateInputType
     _min?: StudentMinAggregateInputType
     _max?: StudentMaxAggregateInputType
   }
@@ -16143,6 +16399,7 @@ export namespace Prisma {
     lastName: string
     gender: $Enums.Gender
     birthDate: Date | null
+    birthPlace: string | null
     avatar: string | null
     phone: string | null
     parentPhone: string
@@ -16150,12 +16407,17 @@ export namespace Prisma {
     schoolName: string | null
     emergencyPhone: string | null
     registrationDate: Date
+    registrationFeePaid: boolean
+    registrationFeeAmount: Decimal | null
+    registrationFeePaidAt: Date | null
     isActive: boolean
     note: string | null
     levelId: string | null
     createdAt: Date
     updatedAt: Date
     _count: StudentCountAggregateOutputType | null
+    _avg: StudentAvgAggregateOutputType | null
+    _sum: StudentSumAggregateOutputType | null
     _min: StudentMinAggregateOutputType | null
     _max: StudentMaxAggregateOutputType | null
   }
@@ -16181,6 +16443,7 @@ export namespace Prisma {
     lastName?: boolean
     gender?: boolean
     birthDate?: boolean
+    birthPlace?: boolean
     avatar?: boolean
     phone?: boolean
     parentPhone?: boolean
@@ -16188,6 +16451,9 @@ export namespace Prisma {
     schoolName?: boolean
     emergencyPhone?: boolean
     registrationDate?: boolean
+    registrationFeePaid?: boolean
+    registrationFeeAmount?: boolean
+    registrationFeePaidAt?: boolean
     isActive?: boolean
     note?: boolean
     levelId?: boolean
@@ -16208,6 +16474,7 @@ export namespace Prisma {
     lastName?: boolean
     gender?: boolean
     birthDate?: boolean
+    birthPlace?: boolean
     avatar?: boolean
     phone?: boolean
     parentPhone?: boolean
@@ -16215,6 +16482,9 @@ export namespace Prisma {
     schoolName?: boolean
     emergencyPhone?: boolean
     registrationDate?: boolean
+    registrationFeePaid?: boolean
+    registrationFeeAmount?: boolean
+    registrationFeePaidAt?: boolean
     isActive?: boolean
     note?: boolean
     levelId?: boolean
@@ -16222,7 +16492,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type StudentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "studentNumber" | "firstName" | "lastName" | "gender" | "birthDate" | "avatar" | "phone" | "parentPhone" | "address" | "schoolName" | "emergencyPhone" | "registrationDate" | "isActive" | "note" | "levelId" | "createdAt" | "updatedAt", ExtArgs["result"]["student"]>
+  export type StudentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "studentNumber" | "firstName" | "lastName" | "gender" | "birthDate" | "birthPlace" | "avatar" | "phone" | "parentPhone" | "address" | "schoolName" | "emergencyPhone" | "registrationDate" | "registrationFeePaid" | "registrationFeeAmount" | "registrationFeePaidAt" | "isActive" | "note" | "levelId" | "createdAt" | "updatedAt", ExtArgs["result"]["student"]>
   export type StudentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     level?: boolean | Student$levelArgs<ExtArgs>
     enrollments?: boolean | Student$enrollmentsArgs<ExtArgs>
@@ -16256,6 +16526,10 @@ export namespace Prisma {
       gender: $Enums.Gender
       birthDate: Date | null
       /**
+       * مسقطُ الرأس — تطلبه شهادة التمدرس، وهو غيرُ `address` (مسكنُه اليوم)
+       */
+      birthPlace: string | null
+      /**
        * مسار الصورة كما يُرجعه /api/uploads — مثل "/uploads/1712-93.jpg"
        */
       avatar: string | null
@@ -16265,6 +16539,15 @@ export namespace Prisma {
       schoolName: string | null
       emergencyPhone: string | null
       registrationDate: Date
+      /**
+       * حقوقُ التسجيل — مبلغٌ يُدفع مرّةً عند التحاقه، غيرُ الحقّ الشهري.
+       * 
+       * وثلاثةُ حقولٍ لا حقلٌ واحد: الحالةُ وحدها تقول «دُفع» ولا تقول كم
+       * ولا متى، والوصلُ الذي يُسلَّم للوليّ يحتاجهما.
+       */
+      registrationFeePaid: boolean
+      registrationFeeAmount: Prisma.Decimal | null
+      registrationFeePaidAt: Date | null
       isActive: boolean
       note: string | null
       /**
@@ -16662,6 +16945,7 @@ export namespace Prisma {
     readonly lastName: FieldRef<"Student", 'String'>
     readonly gender: FieldRef<"Student", 'Gender'>
     readonly birthDate: FieldRef<"Student", 'DateTime'>
+    readonly birthPlace: FieldRef<"Student", 'String'>
     readonly avatar: FieldRef<"Student", 'String'>
     readonly phone: FieldRef<"Student", 'String'>
     readonly parentPhone: FieldRef<"Student", 'String'>
@@ -16669,6 +16953,9 @@ export namespace Prisma {
     readonly schoolName: FieldRef<"Student", 'String'>
     readonly emergencyPhone: FieldRef<"Student", 'String'>
     readonly registrationDate: FieldRef<"Student", 'DateTime'>
+    readonly registrationFeePaid: FieldRef<"Student", 'Boolean'>
+    readonly registrationFeeAmount: FieldRef<"Student", 'Decimal'>
+    readonly registrationFeePaidAt: FieldRef<"Student", 'DateTime'>
     readonly isActive: FieldRef<"Student", 'Boolean'>
     readonly note: FieldRef<"Student", 'String'>
     readonly levelId: FieldRef<"Student", 'String'>
@@ -19226,6 +19513,14 @@ export namespace Prisma {
     teachingAssignmentId: string | null
     enrolledAt: Date | null
     eligibleFrom: Date | null
+    note: string | null
+    transferPeerAssignmentId: string | null
+    transferSheetId: string | null
+    transferPeerSheetId: string | null
+    transferAt: Date | null
+    pendingTransferToId: string | null
+    pendingTransferAt: Date | null
+    pendingTransferSheetId: string | null
     isActive: boolean | null
   }
 
@@ -19235,6 +19530,14 @@ export namespace Prisma {
     teachingAssignmentId: string | null
     enrolledAt: Date | null
     eligibleFrom: Date | null
+    note: string | null
+    transferPeerAssignmentId: string | null
+    transferSheetId: string | null
+    transferPeerSheetId: string | null
+    transferAt: Date | null
+    pendingTransferToId: string | null
+    pendingTransferAt: Date | null
+    pendingTransferSheetId: string | null
     isActive: boolean | null
   }
 
@@ -19244,6 +19547,14 @@ export namespace Prisma {
     teachingAssignmentId: number
     enrolledAt: number
     eligibleFrom: number
+    note: number
+    transferPeerAssignmentId: number
+    transferSheetId: number
+    transferPeerSheetId: number
+    transferAt: number
+    pendingTransferToId: number
+    pendingTransferAt: number
+    pendingTransferSheetId: number
     isActive: number
     _all: number
   }
@@ -19255,6 +19566,14 @@ export namespace Prisma {
     teachingAssignmentId?: true
     enrolledAt?: true
     eligibleFrom?: true
+    note?: true
+    transferPeerAssignmentId?: true
+    transferSheetId?: true
+    transferPeerSheetId?: true
+    transferAt?: true
+    pendingTransferToId?: true
+    pendingTransferAt?: true
+    pendingTransferSheetId?: true
     isActive?: true
   }
 
@@ -19264,6 +19583,14 @@ export namespace Prisma {
     teachingAssignmentId?: true
     enrolledAt?: true
     eligibleFrom?: true
+    note?: true
+    transferPeerAssignmentId?: true
+    transferSheetId?: true
+    transferPeerSheetId?: true
+    transferAt?: true
+    pendingTransferToId?: true
+    pendingTransferAt?: true
+    pendingTransferSheetId?: true
     isActive?: true
   }
 
@@ -19273,6 +19600,14 @@ export namespace Prisma {
     teachingAssignmentId?: true
     enrolledAt?: true
     eligibleFrom?: true
+    note?: true
+    transferPeerAssignmentId?: true
+    transferSheetId?: true
+    transferPeerSheetId?: true
+    transferAt?: true
+    pendingTransferToId?: true
+    pendingTransferAt?: true
+    pendingTransferSheetId?: true
     isActive?: true
     _all?: true
   }
@@ -19355,6 +19690,14 @@ export namespace Prisma {
     teachingAssignmentId: string
     enrolledAt: Date
     eligibleFrom: Date | null
+    note: string | null
+    transferPeerAssignmentId: string | null
+    transferSheetId: string | null
+    transferPeerSheetId: string | null
+    transferAt: Date | null
+    pendingTransferToId: string | null
+    pendingTransferAt: Date | null
+    pendingTransferSheetId: string | null
     isActive: boolean
     _count: StudentEnrollmentCountAggregateOutputType | null
     _min: StudentEnrollmentMinAggregateOutputType | null
@@ -19381,6 +19724,14 @@ export namespace Prisma {
     teachingAssignmentId?: boolean
     enrolledAt?: boolean
     eligibleFrom?: boolean
+    note?: boolean
+    transferPeerAssignmentId?: boolean
+    transferSheetId?: boolean
+    transferPeerSheetId?: boolean
+    transferAt?: boolean
+    pendingTransferToId?: boolean
+    pendingTransferAt?: boolean
+    pendingTransferSheetId?: boolean
     isActive?: boolean
     student?: boolean | StudentDefaultArgs<ExtArgs>
     teachingAssignment?: boolean | TeachingAssignmentDefaultArgs<ExtArgs>
@@ -19397,10 +19748,18 @@ export namespace Prisma {
     teachingAssignmentId?: boolean
     enrolledAt?: boolean
     eligibleFrom?: boolean
+    note?: boolean
+    transferPeerAssignmentId?: boolean
+    transferSheetId?: boolean
+    transferPeerSheetId?: boolean
+    transferAt?: boolean
+    pendingTransferToId?: boolean
+    pendingTransferAt?: boolean
+    pendingTransferSheetId?: boolean
     isActive?: boolean
   }
 
-  export type StudentEnrollmentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "studentId" | "teachingAssignmentId" | "enrolledAt" | "eligibleFrom" | "isActive", ExtArgs["result"]["studentEnrollment"]>
+  export type StudentEnrollmentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "studentId" | "teachingAssignmentId" | "enrolledAt" | "eligibleFrom" | "note" | "transferPeerAssignmentId" | "transferSheetId" | "transferPeerSheetId" | "transferAt" | "pendingTransferToId" | "pendingTransferAt" | "pendingTransferSheetId" | "isActive", ExtArgs["result"]["studentEnrollment"]>
   export type StudentEnrollmentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     student?: boolean | StudentDefaultArgs<ExtArgs>
     teachingAssignment?: boolean | TeachingAssignmentDefaultArgs<ExtArgs>
@@ -19437,6 +19796,74 @@ export namespace Prisma {
        *    * ترقيمُها، فمؤشّرٌ إليها يكسره أوّلُ إعادة ضمّ — والتاريخ يصمد.
        */
       eligibleFrom: Date | null
+      /**
+       * *
+       *    * خبرٌ عن هذا التسجيل يُعرض في عمود «ملاحظات» بالكشف.
+       *    *
+       *    * ويكتبه النظامُ لا الموظّف: النقلُ يترك أثره هنا — «مُنقَل من
+       *    * الفوج 1» في الجديد و«نُقل إلى الفوج 2» في القديم — فيفهم الأستاذ
+       *    * لِمَ ظهر طالبٌ في منتصف كشفه أو لِمَ غاب.
+       *    *
+       *    * وهي غيرُ `Student.note`: تلك واحدةٌ للطالب في المؤسسة كلِّها،
+       *    * يكتبها الموظّف وتظهر في كشوف موادّه جميعاً. وهذه تخصّ فوجاً واحداً.
+       */
+      note: string | null
+      /**
+       * *
+       *    * الإسنادُ الآخر في النقل — مقصدُ زرّ الملاحظة.
+       *    *
+       *    * في التسجيل الوافد يشير إلى الفوج المغادَر، وفي المغادَر يشير إلى
+       *    * الوافد. فمن قرأ «مُنقَل من الفوج 1» فتحه بضغطة بدل أن يعيد
+       *    * اختيار الطور والمستوى والمادة والأستاذ والفوج.
+       */
+      transferPeerAssignmentId: string | null
+      /**
+       * *
+       *    * كشفُ **هذا الفوج** الذي وقع النقل في أثنائه.
+       *    *
+       *    * به يُعرف أين يُعرض سطرُ المغادِر: من غادر في كشف مارس لا يُعرض في
+       *    * كشف جانفي إلى آخر السنة.
+       */
+      transferSheetId: string | null
+      /**
+       * *
+       *    * كشفُ **الفوج الآخر** في شهر النقل — وإليه يذهب زرّ الملاحظة.
+       *    *
+       *    * وهو غيرُ `transferSheetId`: لو مُرِّر كشفُ هذا الفوج إلى ذاك
+       *    * لسقط الاختيار (ليس من كشوفه) وفُتح كشفُه الافتراضيّ — شهرٌ لا
+       *    * صلة له بالنقل. وفارغُه حين لا كشفَ للفوج الآخر في ذلك الشهر،
+       *    * فيُفتح الفوجُ ويُترك اختيارُ الكشف له.
+       */
+      transferPeerSheetId: string | null
+      /**
+       * *
+       *    * يومُ النقل — به تُعرف حصصُه من حصص غيره في الكشف.
+       *    *
+       *    * المغادِرُ مسؤولٌ عمّا وقع **إلى** هذا اليوم، والوافدُ عمّا وقع
+       *    * **منه**. وبدونه كان سطرُ المغادِر يعدّ حضوراً في حصصٍ تلت رحيله.
+       */
+      transferAt: Date | null
+      /**
+       * *
+       *    * نقلٌ قُرِّر ولم يسرِ بعد — الإسنادُ المقصود.
+       *    *
+       *    * والتسجيلُ يبقى **نشطاً** معه: الطالب في فوجه القديم إلى آخر حصةٍ
+       *    * في الكشف الجاري، يُدوَّن حضورُه ويُفوتَر شهرُه كاملاً هناك. وحين
+       *    * يُنشأ كشفٌ جديد لهذا الإسناد يُنفَّذ النقلُ من نفسه.
+       */
+      pendingTransferToId: string | null
+      /**
+       * * يومُ القرار — يُعرض في الملاحظة ويصير `transferAt` عند التنفيذ
+       */
+      pendingTransferAt: Date | null
+      /**
+       * *
+       *    * الكشفُ الجاري يومَ القرار — وبه يُعرف متى يسري.
+       *    *
+       *    * التنفيذُ عند إنشاء كشفٍ **غيره** لهذا الإسناد. ولولا حفظُه لسرى
+       *    * النقلُ عند أوّل كشفٍ يُنشأ ولو كان الكشفَ نفسه أُعيد إنشاؤه.
+       */
+      pendingTransferSheetId: string | null
       isActive: boolean
     }, ExtArgs["result"]["studentEnrollment"]>
     composites: {}
@@ -19816,6 +20243,14 @@ export namespace Prisma {
     readonly teachingAssignmentId: FieldRef<"StudentEnrollment", 'String'>
     readonly enrolledAt: FieldRef<"StudentEnrollment", 'DateTime'>
     readonly eligibleFrom: FieldRef<"StudentEnrollment", 'DateTime'>
+    readonly note: FieldRef<"StudentEnrollment", 'String'>
+    readonly transferPeerAssignmentId: FieldRef<"StudentEnrollment", 'String'>
+    readonly transferSheetId: FieldRef<"StudentEnrollment", 'String'>
+    readonly transferPeerSheetId: FieldRef<"StudentEnrollment", 'String'>
+    readonly transferAt: FieldRef<"StudentEnrollment", 'DateTime'>
+    readonly pendingTransferToId: FieldRef<"StudentEnrollment", 'String'>
+    readonly pendingTransferAt: FieldRef<"StudentEnrollment", 'DateTime'>
+    readonly pendingTransferSheetId: FieldRef<"StudentEnrollment", 'String'>
     readonly isActive: FieldRef<"StudentEnrollment", 'Boolean'>
   }
     
@@ -22376,6 +22811,7 @@ export namespace Prisma {
 
   export type AttendanceSheetMinAggregateOutputType = {
     id: string | null
+    code: string | null
     teachingAssignmentId: string | null
     academicYearId: string | null
     number: number | null
@@ -22388,6 +22824,7 @@ export namespace Prisma {
 
   export type AttendanceSheetMaxAggregateOutputType = {
     id: string | null
+    code: string | null
     teachingAssignmentId: string | null
     academicYearId: string | null
     number: number | null
@@ -22400,6 +22837,7 @@ export namespace Prisma {
 
   export type AttendanceSheetCountAggregateOutputType = {
     id: number
+    code: number
     teachingAssignmentId: number
     academicYearId: number
     number: number
@@ -22424,6 +22862,7 @@ export namespace Prisma {
 
   export type AttendanceSheetMinAggregateInputType = {
     id?: true
+    code?: true
     teachingAssignmentId?: true
     academicYearId?: true
     number?: true
@@ -22436,6 +22875,7 @@ export namespace Prisma {
 
   export type AttendanceSheetMaxAggregateInputType = {
     id?: true
+    code?: true
     teachingAssignmentId?: true
     academicYearId?: true
     number?: true
@@ -22448,6 +22888,7 @@ export namespace Prisma {
 
   export type AttendanceSheetCountAggregateInputType = {
     id?: true
+    code?: true
     teachingAssignmentId?: true
     academicYearId?: true
     number?: true
@@ -22547,6 +22988,7 @@ export namespace Prisma {
 
   export type AttendanceSheetGroupByOutputType = {
     id: string
+    code: string
     teachingAssignmentId: string
     academicYearId: string
     number: number
@@ -22578,6 +23020,7 @@ export namespace Prisma {
 
   export type AttendanceSheetSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    code?: boolean
     teachingAssignmentId?: boolean
     academicYearId?: boolean
     number?: boolean
@@ -22598,6 +23041,7 @@ export namespace Prisma {
 
   export type AttendanceSheetSelectScalar = {
     id?: boolean
+    code?: boolean
     teachingAssignmentId?: boolean
     academicYearId?: boolean
     number?: boolean
@@ -22608,7 +23052,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type AttendanceSheetOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "teachingAssignmentId" | "academicYearId" | "number" | "label" | "sessionCount" | "note" | "createdAt" | "updatedAt", ExtArgs["result"]["attendanceSheet"]>
+  export type AttendanceSheetOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "code" | "teachingAssignmentId" | "academicYearId" | "number" | "label" | "sessionCount" | "note" | "createdAt" | "updatedAt", ExtArgs["result"]["attendanceSheet"]>
   export type AttendanceSheetInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     teachingAssignment?: boolean | TeachingAssignmentDefaultArgs<ExtArgs>
     academicYear?: boolean | AcademicYearDefaultArgs<ExtArgs>
@@ -22629,6 +23073,10 @@ export namespace Prisma {
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
+      /**
+       * رمزُ الورقة — ثلاث عشرة خانة يشفّرها الباركود المطبوع عليها
+       */
+      code: string
       teachingAssignmentId: string
       academicYearId: string
       /**
@@ -23021,6 +23469,7 @@ export namespace Prisma {
    */
   interface AttendanceSheetFieldRefs {
     readonly id: FieldRef<"AttendanceSheet", 'String'>
+    readonly code: FieldRef<"AttendanceSheet", 'String'>
     readonly teachingAssignmentId: FieldRef<"AttendanceSheet", 'String'>
     readonly academicYearId: FieldRef<"AttendanceSheet", 'String'>
     readonly number: FieldRef<"AttendanceSheet", 'Int'>
@@ -24671,6 +25120,7 @@ export namespace Prisma {
     receipts?: boolean | User$receiptsArgs<ExtArgs>
     cancelledReceipts?: boolean | User$cancelledReceiptsArgs<ExtArgs>
     documents?: boolean | User$documentsArgs<ExtArgs>
+    settlementDocs?: boolean | User$settlementDocsArgs<ExtArgs>
     confirmedSettlements?: boolean | User$confirmedSettlementsArgs<ExtArgs>
     paidSettlements?: boolean | User$paidSettlementsArgs<ExtArgs>
     cancelledSettlements?: boolean | User$cancelledSettlementsArgs<ExtArgs>
@@ -24710,6 +25160,7 @@ export namespace Prisma {
     receipts?: boolean | User$receiptsArgs<ExtArgs>
     cancelledReceipts?: boolean | User$cancelledReceiptsArgs<ExtArgs>
     documents?: boolean | User$documentsArgs<ExtArgs>
+    settlementDocs?: boolean | User$settlementDocsArgs<ExtArgs>
     confirmedSettlements?: boolean | User$confirmedSettlementsArgs<ExtArgs>
     paidSettlements?: boolean | User$paidSettlementsArgs<ExtArgs>
     cancelledSettlements?: boolean | User$cancelledSettlementsArgs<ExtArgs>
@@ -24731,6 +25182,7 @@ export namespace Prisma {
       receipts: Prisma.$ReceiptPayload<ExtArgs>[]
       cancelledReceipts: Prisma.$ReceiptPayload<ExtArgs>[]
       documents: Prisma.$StudentDocumentPayload<ExtArgs>[]
+      settlementDocs: Prisma.$SettlementDocumentPayload<ExtArgs>[]
       confirmedSettlements: Prisma.$SettlementPayload<ExtArgs>[]
       paidSettlements: Prisma.$SettlementPayload<ExtArgs>[]
       cancelledSettlements: Prisma.$SettlementPayload<ExtArgs>[]
@@ -25106,6 +25558,7 @@ export namespace Prisma {
     receipts<T extends User$receiptsArgs<ExtArgs> = {}>(args?: Subset<T, User$receiptsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReceiptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     cancelledReceipts<T extends User$cancelledReceiptsArgs<ExtArgs> = {}>(args?: Subset<T, User$cancelledReceiptsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReceiptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     documents<T extends User$documentsArgs<ExtArgs> = {}>(args?: Subset<T, User$documentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StudentDocumentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    settlementDocs<T extends User$settlementDocsArgs<ExtArgs> = {}>(args?: Subset<T, User$settlementDocsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SettlementDocumentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     confirmedSettlements<T extends User$confirmedSettlementsArgs<ExtArgs> = {}>(args?: Subset<T, User$confirmedSettlementsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SettlementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     paidSettlements<T extends User$paidSettlementsArgs<ExtArgs> = {}>(args?: Subset<T, User$paidSettlementsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SettlementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     cancelledSettlements<T extends User$cancelledSettlementsArgs<ExtArgs> = {}>(args?: Subset<T, User$cancelledSettlementsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SettlementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -25669,6 +26122,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: StudentDocumentScalarFieldEnum | StudentDocumentScalarFieldEnum[]
+  }
+
+  /**
+   * User.settlementDocs
+   */
+  export type User$settlementDocsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementDocument
+     */
+    select?: SettlementDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementDocument
+     */
+    omit?: SettlementDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementDocumentInclude<ExtArgs> | null
+    where?: SettlementDocumentWhereInput
+    orderBy?: SettlementDocumentOrderByWithRelationInput | SettlementDocumentOrderByWithRelationInput[]
+    cursor?: SettlementDocumentWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SettlementDocumentScalarFieldEnum | SettlementDocumentScalarFieldEnum[]
   }
 
   /**
@@ -35083,6 +35560,8 @@ export namespace Prisma {
     paidBy?: boolean | Settlement$paidByArgs<ExtArgs>
     cancelledBy?: boolean | Settlement$cancelledByArgs<ExtArgs>
     lines?: boolean | Settlement$linesArgs<ExtArgs>
+    documents?: boolean | Settlement$documentsArgs<ExtArgs>
+    snapshot?: boolean | Settlement$snapshotArgs<ExtArgs>
     debtSharesOrigin?: boolean | Settlement$debtSharesOriginArgs<ExtArgs>
     debtSharesCollected?: boolean | Settlement$debtSharesCollectedArgs<ExtArgs>
     teacherAllocations?: boolean | Settlement$teacherAllocationsArgs<ExtArgs>
@@ -35142,6 +35621,8 @@ export namespace Prisma {
     paidBy?: boolean | Settlement$paidByArgs<ExtArgs>
     cancelledBy?: boolean | Settlement$cancelledByArgs<ExtArgs>
     lines?: boolean | Settlement$linesArgs<ExtArgs>
+    documents?: boolean | Settlement$documentsArgs<ExtArgs>
+    snapshot?: boolean | Settlement$snapshotArgs<ExtArgs>
     debtSharesOrigin?: boolean | Settlement$debtSharesOriginArgs<ExtArgs>
     debtSharesCollected?: boolean | Settlement$debtSharesCollectedArgs<ExtArgs>
     teacherAllocations?: boolean | Settlement$teacherAllocationsArgs<ExtArgs>
@@ -35160,6 +35641,8 @@ export namespace Prisma {
       paidBy: Prisma.$UserPayload<ExtArgs> | null
       cancelledBy: Prisma.$UserPayload<ExtArgs> | null
       lines: Prisma.$SettlementLinePayload<ExtArgs>[]
+      documents: Prisma.$SettlementDocumentPayload<ExtArgs>[]
+      snapshot: Prisma.$SettlementSnapshotPayload<ExtArgs> | null
       debtSharesOrigin: Prisma.$TeacherDebtSharePayload<ExtArgs>[]
       debtSharesCollected: Prisma.$TeacherDebtSharePayload<ExtArgs>[]
       teacherAllocations: Prisma.$TeacherPaymentAllocationPayload<ExtArgs>[]
@@ -35567,6 +36050,8 @@ export namespace Prisma {
     paidBy<T extends Settlement$paidByArgs<ExtArgs> = {}>(args?: Subset<T, Settlement$paidByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     cancelledBy<T extends Settlement$cancelledByArgs<ExtArgs> = {}>(args?: Subset<T, Settlement$cancelledByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     lines<T extends Settlement$linesArgs<ExtArgs> = {}>(args?: Subset<T, Settlement$linesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SettlementLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    documents<T extends Settlement$documentsArgs<ExtArgs> = {}>(args?: Subset<T, Settlement$documentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SettlementDocumentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    snapshot<T extends Settlement$snapshotArgs<ExtArgs> = {}>(args?: Subset<T, Settlement$snapshotArgs<ExtArgs>>): Prisma__SettlementSnapshotClient<$Result.GetResult<Prisma.$SettlementSnapshotPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     debtSharesOrigin<T extends Settlement$debtSharesOriginArgs<ExtArgs> = {}>(args?: Subset<T, Settlement$debtSharesOriginArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TeacherDebtSharePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     debtSharesCollected<T extends Settlement$debtSharesCollectedArgs<ExtArgs> = {}>(args?: Subset<T, Settlement$debtSharesCollectedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TeacherDebtSharePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     teacherAllocations<T extends Settlement$teacherAllocationsArgs<ExtArgs> = {}>(args?: Subset<T, Settlement$teacherAllocationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TeacherPaymentAllocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -36062,6 +36547,49 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: SettlementLineScalarFieldEnum | SettlementLineScalarFieldEnum[]
+  }
+
+  /**
+   * Settlement.documents
+   */
+  export type Settlement$documentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementDocument
+     */
+    select?: SettlementDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementDocument
+     */
+    omit?: SettlementDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementDocumentInclude<ExtArgs> | null
+    where?: SettlementDocumentWhereInput
+    orderBy?: SettlementDocumentOrderByWithRelationInput | SettlementDocumentOrderByWithRelationInput[]
+    cursor?: SettlementDocumentWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SettlementDocumentScalarFieldEnum | SettlementDocumentScalarFieldEnum[]
+  }
+
+  /**
+   * Settlement.snapshot
+   */
+  export type Settlement$snapshotArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementSnapshot
+     */
+    select?: SettlementSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementSnapshot
+     */
+    omit?: SettlementSnapshotOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementSnapshotInclude<ExtArgs> | null
+    where?: SettlementSnapshotWhereInput
   }
 
   /**
@@ -37205,6 +37733,1974 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: SettlementLineInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SettlementDocument
+   */
+
+  export type AggregateSettlementDocument = {
+    _count: SettlementDocumentCountAggregateOutputType | null
+    _avg: SettlementDocumentAvgAggregateOutputType | null
+    _sum: SettlementDocumentSumAggregateOutputType | null
+    _min: SettlementDocumentMinAggregateOutputType | null
+    _max: SettlementDocumentMaxAggregateOutputType | null
+  }
+
+  export type SettlementDocumentAvgAggregateOutputType = {
+    pageNumber: number | null
+  }
+
+  export type SettlementDocumentSumAggregateOutputType = {
+    pageNumber: number | null
+  }
+
+  export type SettlementDocumentMinAggregateOutputType = {
+    id: string | null
+    settlementId: string | null
+    pageNumber: number | null
+    filePath: string | null
+    fileName: string | null
+    note: string | null
+    uploadedById: string | null
+    createdAt: Date | null
+  }
+
+  export type SettlementDocumentMaxAggregateOutputType = {
+    id: string | null
+    settlementId: string | null
+    pageNumber: number | null
+    filePath: string | null
+    fileName: string | null
+    note: string | null
+    uploadedById: string | null
+    createdAt: Date | null
+  }
+
+  export type SettlementDocumentCountAggregateOutputType = {
+    id: number
+    settlementId: number
+    pageNumber: number
+    filePath: number
+    fileName: number
+    note: number
+    uploadedById: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type SettlementDocumentAvgAggregateInputType = {
+    pageNumber?: true
+  }
+
+  export type SettlementDocumentSumAggregateInputType = {
+    pageNumber?: true
+  }
+
+  export type SettlementDocumentMinAggregateInputType = {
+    id?: true
+    settlementId?: true
+    pageNumber?: true
+    filePath?: true
+    fileName?: true
+    note?: true
+    uploadedById?: true
+    createdAt?: true
+  }
+
+  export type SettlementDocumentMaxAggregateInputType = {
+    id?: true
+    settlementId?: true
+    pageNumber?: true
+    filePath?: true
+    fileName?: true
+    note?: true
+    uploadedById?: true
+    createdAt?: true
+  }
+
+  export type SettlementDocumentCountAggregateInputType = {
+    id?: true
+    settlementId?: true
+    pageNumber?: true
+    filePath?: true
+    fileName?: true
+    note?: true
+    uploadedById?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type SettlementDocumentAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SettlementDocument to aggregate.
+     */
+    where?: SettlementDocumentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SettlementDocuments to fetch.
+     */
+    orderBy?: SettlementDocumentOrderByWithRelationInput | SettlementDocumentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SettlementDocumentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SettlementDocuments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SettlementDocuments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SettlementDocuments
+    **/
+    _count?: true | SettlementDocumentCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SettlementDocumentAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SettlementDocumentSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SettlementDocumentMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SettlementDocumentMaxAggregateInputType
+  }
+
+  export type GetSettlementDocumentAggregateType<T extends SettlementDocumentAggregateArgs> = {
+        [P in keyof T & keyof AggregateSettlementDocument]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSettlementDocument[P]>
+      : GetScalarType<T[P], AggregateSettlementDocument[P]>
+  }
+
+
+
+
+  export type SettlementDocumentGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SettlementDocumentWhereInput
+    orderBy?: SettlementDocumentOrderByWithAggregationInput | SettlementDocumentOrderByWithAggregationInput[]
+    by: SettlementDocumentScalarFieldEnum[] | SettlementDocumentScalarFieldEnum
+    having?: SettlementDocumentScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SettlementDocumentCountAggregateInputType | true
+    _avg?: SettlementDocumentAvgAggregateInputType
+    _sum?: SettlementDocumentSumAggregateInputType
+    _min?: SettlementDocumentMinAggregateInputType
+    _max?: SettlementDocumentMaxAggregateInputType
+  }
+
+  export type SettlementDocumentGroupByOutputType = {
+    id: string
+    settlementId: string
+    pageNumber: number
+    filePath: string
+    fileName: string | null
+    note: string | null
+    uploadedById: string | null
+    createdAt: Date
+    _count: SettlementDocumentCountAggregateOutputType | null
+    _avg: SettlementDocumentAvgAggregateOutputType | null
+    _sum: SettlementDocumentSumAggregateOutputType | null
+    _min: SettlementDocumentMinAggregateOutputType | null
+    _max: SettlementDocumentMaxAggregateOutputType | null
+  }
+
+  type GetSettlementDocumentGroupByPayload<T extends SettlementDocumentGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SettlementDocumentGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SettlementDocumentGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SettlementDocumentGroupByOutputType[P]>
+            : GetScalarType<T[P], SettlementDocumentGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SettlementDocumentSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    settlementId?: boolean
+    pageNumber?: boolean
+    filePath?: boolean
+    fileName?: boolean
+    note?: boolean
+    uploadedById?: boolean
+    createdAt?: boolean
+    settlement?: boolean | SettlementDefaultArgs<ExtArgs>
+    uploadedBy?: boolean | SettlementDocument$uploadedByArgs<ExtArgs>
+  }, ExtArgs["result"]["settlementDocument"]>
+
+
+
+  export type SettlementDocumentSelectScalar = {
+    id?: boolean
+    settlementId?: boolean
+    pageNumber?: boolean
+    filePath?: boolean
+    fileName?: boolean
+    note?: boolean
+    uploadedById?: boolean
+    createdAt?: boolean
+  }
+
+  export type SettlementDocumentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "settlementId" | "pageNumber" | "filePath" | "fileName" | "note" | "uploadedById" | "createdAt", ExtArgs["result"]["settlementDocument"]>
+  export type SettlementDocumentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    settlement?: boolean | SettlementDefaultArgs<ExtArgs>
+    uploadedBy?: boolean | SettlementDocument$uploadedByArgs<ExtArgs>
+  }
+
+  export type $SettlementDocumentPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SettlementDocument"
+    objects: {
+      settlement: Prisma.$SettlementPayload<ExtArgs>
+      uploadedBy: Prisma.$UserPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      settlementId: string
+      /**
+       * رقمُ الصفحة في الورقة الموقَّعة — واحدٌ فما فوق، بلا حدّ.
+       * 
+       * كان وجهاً من اثنين، والكشف يطول فيُطبع على ثلاث صفحاتٍ وأربع
+       * وتعود موقَّعةً كلُّها. فما زاد على الوجهين كان يُستبدل بما قبله.
+       */
+      pageNumber: number
+      /**
+       * مسار الملف كما يُرجعه /api/uploads
+       */
+      filePath: string
+      /**
+       * الاسم الأصلي للعرض والتنزيل
+       */
+      fileName: string | null
+      note: string | null
+      uploadedById: string | null
+      createdAt: Date
+    }, ExtArgs["result"]["settlementDocument"]>
+    composites: {}
+  }
+
+  type SettlementDocumentGetPayload<S extends boolean | null | undefined | SettlementDocumentDefaultArgs> = $Result.GetResult<Prisma.$SettlementDocumentPayload, S>
+
+  type SettlementDocumentCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SettlementDocumentFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SettlementDocumentCountAggregateInputType | true
+    }
+
+  export interface SettlementDocumentDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SettlementDocument'], meta: { name: 'SettlementDocument' } }
+    /**
+     * Find zero or one SettlementDocument that matches the filter.
+     * @param {SettlementDocumentFindUniqueArgs} args - Arguments to find a SettlementDocument
+     * @example
+     * // Get one SettlementDocument
+     * const settlementDocument = await prisma.settlementDocument.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SettlementDocumentFindUniqueArgs>(args: SelectSubset<T, SettlementDocumentFindUniqueArgs<ExtArgs>>): Prisma__SettlementDocumentClient<$Result.GetResult<Prisma.$SettlementDocumentPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SettlementDocument that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SettlementDocumentFindUniqueOrThrowArgs} args - Arguments to find a SettlementDocument
+     * @example
+     * // Get one SettlementDocument
+     * const settlementDocument = await prisma.settlementDocument.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SettlementDocumentFindUniqueOrThrowArgs>(args: SelectSubset<T, SettlementDocumentFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SettlementDocumentClient<$Result.GetResult<Prisma.$SettlementDocumentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SettlementDocument that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementDocumentFindFirstArgs} args - Arguments to find a SettlementDocument
+     * @example
+     * // Get one SettlementDocument
+     * const settlementDocument = await prisma.settlementDocument.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SettlementDocumentFindFirstArgs>(args?: SelectSubset<T, SettlementDocumentFindFirstArgs<ExtArgs>>): Prisma__SettlementDocumentClient<$Result.GetResult<Prisma.$SettlementDocumentPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SettlementDocument that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementDocumentFindFirstOrThrowArgs} args - Arguments to find a SettlementDocument
+     * @example
+     * // Get one SettlementDocument
+     * const settlementDocument = await prisma.settlementDocument.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SettlementDocumentFindFirstOrThrowArgs>(args?: SelectSubset<T, SettlementDocumentFindFirstOrThrowArgs<ExtArgs>>): Prisma__SettlementDocumentClient<$Result.GetResult<Prisma.$SettlementDocumentPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SettlementDocuments that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementDocumentFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SettlementDocuments
+     * const settlementDocuments = await prisma.settlementDocument.findMany()
+     * 
+     * // Get first 10 SettlementDocuments
+     * const settlementDocuments = await prisma.settlementDocument.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const settlementDocumentWithIdOnly = await prisma.settlementDocument.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SettlementDocumentFindManyArgs>(args?: SelectSubset<T, SettlementDocumentFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SettlementDocumentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SettlementDocument.
+     * @param {SettlementDocumentCreateArgs} args - Arguments to create a SettlementDocument.
+     * @example
+     * // Create one SettlementDocument
+     * const SettlementDocument = await prisma.settlementDocument.create({
+     *   data: {
+     *     // ... data to create a SettlementDocument
+     *   }
+     * })
+     * 
+     */
+    create<T extends SettlementDocumentCreateArgs>(args: SelectSubset<T, SettlementDocumentCreateArgs<ExtArgs>>): Prisma__SettlementDocumentClient<$Result.GetResult<Prisma.$SettlementDocumentPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SettlementDocuments.
+     * @param {SettlementDocumentCreateManyArgs} args - Arguments to create many SettlementDocuments.
+     * @example
+     * // Create many SettlementDocuments
+     * const settlementDocument = await prisma.settlementDocument.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SettlementDocumentCreateManyArgs>(args?: SelectSubset<T, SettlementDocumentCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SettlementDocument.
+     * @param {SettlementDocumentDeleteArgs} args - Arguments to delete one SettlementDocument.
+     * @example
+     * // Delete one SettlementDocument
+     * const SettlementDocument = await prisma.settlementDocument.delete({
+     *   where: {
+     *     // ... filter to delete one SettlementDocument
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SettlementDocumentDeleteArgs>(args: SelectSubset<T, SettlementDocumentDeleteArgs<ExtArgs>>): Prisma__SettlementDocumentClient<$Result.GetResult<Prisma.$SettlementDocumentPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SettlementDocument.
+     * @param {SettlementDocumentUpdateArgs} args - Arguments to update one SettlementDocument.
+     * @example
+     * // Update one SettlementDocument
+     * const settlementDocument = await prisma.settlementDocument.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SettlementDocumentUpdateArgs>(args: SelectSubset<T, SettlementDocumentUpdateArgs<ExtArgs>>): Prisma__SettlementDocumentClient<$Result.GetResult<Prisma.$SettlementDocumentPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SettlementDocuments.
+     * @param {SettlementDocumentDeleteManyArgs} args - Arguments to filter SettlementDocuments to delete.
+     * @example
+     * // Delete a few SettlementDocuments
+     * const { count } = await prisma.settlementDocument.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SettlementDocumentDeleteManyArgs>(args?: SelectSubset<T, SettlementDocumentDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SettlementDocuments.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementDocumentUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SettlementDocuments
+     * const settlementDocument = await prisma.settlementDocument.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SettlementDocumentUpdateManyArgs>(args: SelectSubset<T, SettlementDocumentUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SettlementDocument.
+     * @param {SettlementDocumentUpsertArgs} args - Arguments to update or create a SettlementDocument.
+     * @example
+     * // Update or create a SettlementDocument
+     * const settlementDocument = await prisma.settlementDocument.upsert({
+     *   create: {
+     *     // ... data to create a SettlementDocument
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SettlementDocument we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SettlementDocumentUpsertArgs>(args: SelectSubset<T, SettlementDocumentUpsertArgs<ExtArgs>>): Prisma__SettlementDocumentClient<$Result.GetResult<Prisma.$SettlementDocumentPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SettlementDocuments.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementDocumentCountArgs} args - Arguments to filter SettlementDocuments to count.
+     * @example
+     * // Count the number of SettlementDocuments
+     * const count = await prisma.settlementDocument.count({
+     *   where: {
+     *     // ... the filter for the SettlementDocuments we want to count
+     *   }
+     * })
+    **/
+    count<T extends SettlementDocumentCountArgs>(
+      args?: Subset<T, SettlementDocumentCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SettlementDocumentCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SettlementDocument.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementDocumentAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SettlementDocumentAggregateArgs>(args: Subset<T, SettlementDocumentAggregateArgs>): Prisma.PrismaPromise<GetSettlementDocumentAggregateType<T>>
+
+    /**
+     * Group by SettlementDocument.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementDocumentGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SettlementDocumentGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SettlementDocumentGroupByArgs['orderBy'] }
+        : { orderBy?: SettlementDocumentGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SettlementDocumentGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSettlementDocumentGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SettlementDocument model
+   */
+  readonly fields: SettlementDocumentFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SettlementDocument.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SettlementDocumentClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    settlement<T extends SettlementDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SettlementDefaultArgs<ExtArgs>>): Prisma__SettlementClient<$Result.GetResult<Prisma.$SettlementPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    uploadedBy<T extends SettlementDocument$uploadedByArgs<ExtArgs> = {}>(args?: Subset<T, SettlementDocument$uploadedByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SettlementDocument model
+   */
+  interface SettlementDocumentFieldRefs {
+    readonly id: FieldRef<"SettlementDocument", 'String'>
+    readonly settlementId: FieldRef<"SettlementDocument", 'String'>
+    readonly pageNumber: FieldRef<"SettlementDocument", 'Int'>
+    readonly filePath: FieldRef<"SettlementDocument", 'String'>
+    readonly fileName: FieldRef<"SettlementDocument", 'String'>
+    readonly note: FieldRef<"SettlementDocument", 'String'>
+    readonly uploadedById: FieldRef<"SettlementDocument", 'String'>
+    readonly createdAt: FieldRef<"SettlementDocument", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SettlementDocument findUnique
+   */
+  export type SettlementDocumentFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementDocument
+     */
+    select?: SettlementDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementDocument
+     */
+    omit?: SettlementDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementDocumentInclude<ExtArgs> | null
+    /**
+     * Filter, which SettlementDocument to fetch.
+     */
+    where: SettlementDocumentWhereUniqueInput
+  }
+
+  /**
+   * SettlementDocument findUniqueOrThrow
+   */
+  export type SettlementDocumentFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementDocument
+     */
+    select?: SettlementDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementDocument
+     */
+    omit?: SettlementDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementDocumentInclude<ExtArgs> | null
+    /**
+     * Filter, which SettlementDocument to fetch.
+     */
+    where: SettlementDocumentWhereUniqueInput
+  }
+
+  /**
+   * SettlementDocument findFirst
+   */
+  export type SettlementDocumentFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementDocument
+     */
+    select?: SettlementDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementDocument
+     */
+    omit?: SettlementDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementDocumentInclude<ExtArgs> | null
+    /**
+     * Filter, which SettlementDocument to fetch.
+     */
+    where?: SettlementDocumentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SettlementDocuments to fetch.
+     */
+    orderBy?: SettlementDocumentOrderByWithRelationInput | SettlementDocumentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SettlementDocuments.
+     */
+    cursor?: SettlementDocumentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SettlementDocuments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SettlementDocuments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SettlementDocuments.
+     */
+    distinct?: SettlementDocumentScalarFieldEnum | SettlementDocumentScalarFieldEnum[]
+  }
+
+  /**
+   * SettlementDocument findFirstOrThrow
+   */
+  export type SettlementDocumentFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementDocument
+     */
+    select?: SettlementDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementDocument
+     */
+    omit?: SettlementDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementDocumentInclude<ExtArgs> | null
+    /**
+     * Filter, which SettlementDocument to fetch.
+     */
+    where?: SettlementDocumentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SettlementDocuments to fetch.
+     */
+    orderBy?: SettlementDocumentOrderByWithRelationInput | SettlementDocumentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SettlementDocuments.
+     */
+    cursor?: SettlementDocumentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SettlementDocuments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SettlementDocuments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SettlementDocuments.
+     */
+    distinct?: SettlementDocumentScalarFieldEnum | SettlementDocumentScalarFieldEnum[]
+  }
+
+  /**
+   * SettlementDocument findMany
+   */
+  export type SettlementDocumentFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementDocument
+     */
+    select?: SettlementDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementDocument
+     */
+    omit?: SettlementDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementDocumentInclude<ExtArgs> | null
+    /**
+     * Filter, which SettlementDocuments to fetch.
+     */
+    where?: SettlementDocumentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SettlementDocuments to fetch.
+     */
+    orderBy?: SettlementDocumentOrderByWithRelationInput | SettlementDocumentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SettlementDocuments.
+     */
+    cursor?: SettlementDocumentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SettlementDocuments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SettlementDocuments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SettlementDocuments.
+     */
+    distinct?: SettlementDocumentScalarFieldEnum | SettlementDocumentScalarFieldEnum[]
+  }
+
+  /**
+   * SettlementDocument create
+   */
+  export type SettlementDocumentCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementDocument
+     */
+    select?: SettlementDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementDocument
+     */
+    omit?: SettlementDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementDocumentInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SettlementDocument.
+     */
+    data: XOR<SettlementDocumentCreateInput, SettlementDocumentUncheckedCreateInput>
+  }
+
+  /**
+   * SettlementDocument createMany
+   */
+  export type SettlementDocumentCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SettlementDocuments.
+     */
+    data: SettlementDocumentCreateManyInput | SettlementDocumentCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SettlementDocument update
+   */
+  export type SettlementDocumentUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementDocument
+     */
+    select?: SettlementDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementDocument
+     */
+    omit?: SettlementDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementDocumentInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SettlementDocument.
+     */
+    data: XOR<SettlementDocumentUpdateInput, SettlementDocumentUncheckedUpdateInput>
+    /**
+     * Choose, which SettlementDocument to update.
+     */
+    where: SettlementDocumentWhereUniqueInput
+  }
+
+  /**
+   * SettlementDocument updateMany
+   */
+  export type SettlementDocumentUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SettlementDocuments.
+     */
+    data: XOR<SettlementDocumentUpdateManyMutationInput, SettlementDocumentUncheckedUpdateManyInput>
+    /**
+     * Filter which SettlementDocuments to update
+     */
+    where?: SettlementDocumentWhereInput
+    /**
+     * Limit how many SettlementDocuments to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SettlementDocument upsert
+   */
+  export type SettlementDocumentUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementDocument
+     */
+    select?: SettlementDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementDocument
+     */
+    omit?: SettlementDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementDocumentInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SettlementDocument to update in case it exists.
+     */
+    where: SettlementDocumentWhereUniqueInput
+    /**
+     * In case the SettlementDocument found by the `where` argument doesn't exist, create a new SettlementDocument with this data.
+     */
+    create: XOR<SettlementDocumentCreateInput, SettlementDocumentUncheckedCreateInput>
+    /**
+     * In case the SettlementDocument was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SettlementDocumentUpdateInput, SettlementDocumentUncheckedUpdateInput>
+  }
+
+  /**
+   * SettlementDocument delete
+   */
+  export type SettlementDocumentDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementDocument
+     */
+    select?: SettlementDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementDocument
+     */
+    omit?: SettlementDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementDocumentInclude<ExtArgs> | null
+    /**
+     * Filter which SettlementDocument to delete.
+     */
+    where: SettlementDocumentWhereUniqueInput
+  }
+
+  /**
+   * SettlementDocument deleteMany
+   */
+  export type SettlementDocumentDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SettlementDocuments to delete
+     */
+    where?: SettlementDocumentWhereInput
+    /**
+     * Limit how many SettlementDocuments to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SettlementDocument.uploadedBy
+   */
+  export type SettlementDocument$uploadedByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the User
+     */
+    omit?: UserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * SettlementDocument without action
+   */
+  export type SettlementDocumentDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementDocument
+     */
+    select?: SettlementDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementDocument
+     */
+    omit?: SettlementDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementDocumentInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SettlementSnapshot
+   */
+
+  export type AggregateSettlementSnapshot = {
+    _count: SettlementSnapshotCountAggregateOutputType | null
+    _min: SettlementSnapshotMinAggregateOutputType | null
+    _max: SettlementSnapshotMaxAggregateOutputType | null
+  }
+
+  export type SettlementSnapshotMinAggregateOutputType = {
+    id: string | null
+    settlementId: string | null
+    createdAt: Date | null
+  }
+
+  export type SettlementSnapshotMaxAggregateOutputType = {
+    id: string | null
+    settlementId: string | null
+    createdAt: Date | null
+  }
+
+  export type SettlementSnapshotCountAggregateOutputType = {
+    id: number
+    settlementId: number
+    dailySheet: number
+    monthlyFees: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type SettlementSnapshotMinAggregateInputType = {
+    id?: true
+    settlementId?: true
+    createdAt?: true
+  }
+
+  export type SettlementSnapshotMaxAggregateInputType = {
+    id?: true
+    settlementId?: true
+    createdAt?: true
+  }
+
+  export type SettlementSnapshotCountAggregateInputType = {
+    id?: true
+    settlementId?: true
+    dailySheet?: true
+    monthlyFees?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type SettlementSnapshotAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SettlementSnapshot to aggregate.
+     */
+    where?: SettlementSnapshotWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SettlementSnapshots to fetch.
+     */
+    orderBy?: SettlementSnapshotOrderByWithRelationInput | SettlementSnapshotOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SettlementSnapshotWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SettlementSnapshots from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SettlementSnapshots.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SettlementSnapshots
+    **/
+    _count?: true | SettlementSnapshotCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SettlementSnapshotMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SettlementSnapshotMaxAggregateInputType
+  }
+
+  export type GetSettlementSnapshotAggregateType<T extends SettlementSnapshotAggregateArgs> = {
+        [P in keyof T & keyof AggregateSettlementSnapshot]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSettlementSnapshot[P]>
+      : GetScalarType<T[P], AggregateSettlementSnapshot[P]>
+  }
+
+
+
+
+  export type SettlementSnapshotGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SettlementSnapshotWhereInput
+    orderBy?: SettlementSnapshotOrderByWithAggregationInput | SettlementSnapshotOrderByWithAggregationInput[]
+    by: SettlementSnapshotScalarFieldEnum[] | SettlementSnapshotScalarFieldEnum
+    having?: SettlementSnapshotScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SettlementSnapshotCountAggregateInputType | true
+    _min?: SettlementSnapshotMinAggregateInputType
+    _max?: SettlementSnapshotMaxAggregateInputType
+  }
+
+  export type SettlementSnapshotGroupByOutputType = {
+    id: string
+    settlementId: string
+    dailySheet: JsonValue
+    monthlyFees: JsonValue
+    createdAt: Date
+    _count: SettlementSnapshotCountAggregateOutputType | null
+    _min: SettlementSnapshotMinAggregateOutputType | null
+    _max: SettlementSnapshotMaxAggregateOutputType | null
+  }
+
+  type GetSettlementSnapshotGroupByPayload<T extends SettlementSnapshotGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SettlementSnapshotGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SettlementSnapshotGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SettlementSnapshotGroupByOutputType[P]>
+            : GetScalarType<T[P], SettlementSnapshotGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SettlementSnapshotSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    settlementId?: boolean
+    dailySheet?: boolean
+    monthlyFees?: boolean
+    createdAt?: boolean
+    settlement?: boolean | SettlementDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["settlementSnapshot"]>
+
+
+
+  export type SettlementSnapshotSelectScalar = {
+    id?: boolean
+    settlementId?: boolean
+    dailySheet?: boolean
+    monthlyFees?: boolean
+    createdAt?: boolean
+  }
+
+  export type SettlementSnapshotOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "settlementId" | "dailySheet" | "monthlyFees" | "createdAt", ExtArgs["result"]["settlementSnapshot"]>
+  export type SettlementSnapshotInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    settlement?: boolean | SettlementDefaultArgs<ExtArgs>
+  }
+
+  export type $SettlementSnapshotPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SettlementSnapshot"
+    objects: {
+      settlement: Prisma.$SettlementPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      settlementId: string
+      /**
+       * كشف الحضور اليومي كما كان — حصصُه وحضورُ كلِّ مسجَّل
+       */
+      dailySheet: Prisma.JsonValue
+      /**
+       * كشف دفع الحقوق الشهري كما كان — الحصص والحالة المالية
+       */
+      monthlyFees: Prisma.JsonValue
+      createdAt: Date
+    }, ExtArgs["result"]["settlementSnapshot"]>
+    composites: {}
+  }
+
+  type SettlementSnapshotGetPayload<S extends boolean | null | undefined | SettlementSnapshotDefaultArgs> = $Result.GetResult<Prisma.$SettlementSnapshotPayload, S>
+
+  type SettlementSnapshotCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SettlementSnapshotFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SettlementSnapshotCountAggregateInputType | true
+    }
+
+  export interface SettlementSnapshotDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SettlementSnapshot'], meta: { name: 'SettlementSnapshot' } }
+    /**
+     * Find zero or one SettlementSnapshot that matches the filter.
+     * @param {SettlementSnapshotFindUniqueArgs} args - Arguments to find a SettlementSnapshot
+     * @example
+     * // Get one SettlementSnapshot
+     * const settlementSnapshot = await prisma.settlementSnapshot.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SettlementSnapshotFindUniqueArgs>(args: SelectSubset<T, SettlementSnapshotFindUniqueArgs<ExtArgs>>): Prisma__SettlementSnapshotClient<$Result.GetResult<Prisma.$SettlementSnapshotPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SettlementSnapshot that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SettlementSnapshotFindUniqueOrThrowArgs} args - Arguments to find a SettlementSnapshot
+     * @example
+     * // Get one SettlementSnapshot
+     * const settlementSnapshot = await prisma.settlementSnapshot.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SettlementSnapshotFindUniqueOrThrowArgs>(args: SelectSubset<T, SettlementSnapshotFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SettlementSnapshotClient<$Result.GetResult<Prisma.$SettlementSnapshotPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SettlementSnapshot that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementSnapshotFindFirstArgs} args - Arguments to find a SettlementSnapshot
+     * @example
+     * // Get one SettlementSnapshot
+     * const settlementSnapshot = await prisma.settlementSnapshot.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SettlementSnapshotFindFirstArgs>(args?: SelectSubset<T, SettlementSnapshotFindFirstArgs<ExtArgs>>): Prisma__SettlementSnapshotClient<$Result.GetResult<Prisma.$SettlementSnapshotPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SettlementSnapshot that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementSnapshotFindFirstOrThrowArgs} args - Arguments to find a SettlementSnapshot
+     * @example
+     * // Get one SettlementSnapshot
+     * const settlementSnapshot = await prisma.settlementSnapshot.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SettlementSnapshotFindFirstOrThrowArgs>(args?: SelectSubset<T, SettlementSnapshotFindFirstOrThrowArgs<ExtArgs>>): Prisma__SettlementSnapshotClient<$Result.GetResult<Prisma.$SettlementSnapshotPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SettlementSnapshots that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementSnapshotFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SettlementSnapshots
+     * const settlementSnapshots = await prisma.settlementSnapshot.findMany()
+     * 
+     * // Get first 10 SettlementSnapshots
+     * const settlementSnapshots = await prisma.settlementSnapshot.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const settlementSnapshotWithIdOnly = await prisma.settlementSnapshot.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SettlementSnapshotFindManyArgs>(args?: SelectSubset<T, SettlementSnapshotFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SettlementSnapshotPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SettlementSnapshot.
+     * @param {SettlementSnapshotCreateArgs} args - Arguments to create a SettlementSnapshot.
+     * @example
+     * // Create one SettlementSnapshot
+     * const SettlementSnapshot = await prisma.settlementSnapshot.create({
+     *   data: {
+     *     // ... data to create a SettlementSnapshot
+     *   }
+     * })
+     * 
+     */
+    create<T extends SettlementSnapshotCreateArgs>(args: SelectSubset<T, SettlementSnapshotCreateArgs<ExtArgs>>): Prisma__SettlementSnapshotClient<$Result.GetResult<Prisma.$SettlementSnapshotPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SettlementSnapshots.
+     * @param {SettlementSnapshotCreateManyArgs} args - Arguments to create many SettlementSnapshots.
+     * @example
+     * // Create many SettlementSnapshots
+     * const settlementSnapshot = await prisma.settlementSnapshot.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SettlementSnapshotCreateManyArgs>(args?: SelectSubset<T, SettlementSnapshotCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SettlementSnapshot.
+     * @param {SettlementSnapshotDeleteArgs} args - Arguments to delete one SettlementSnapshot.
+     * @example
+     * // Delete one SettlementSnapshot
+     * const SettlementSnapshot = await prisma.settlementSnapshot.delete({
+     *   where: {
+     *     // ... filter to delete one SettlementSnapshot
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SettlementSnapshotDeleteArgs>(args: SelectSubset<T, SettlementSnapshotDeleteArgs<ExtArgs>>): Prisma__SettlementSnapshotClient<$Result.GetResult<Prisma.$SettlementSnapshotPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SettlementSnapshot.
+     * @param {SettlementSnapshotUpdateArgs} args - Arguments to update one SettlementSnapshot.
+     * @example
+     * // Update one SettlementSnapshot
+     * const settlementSnapshot = await prisma.settlementSnapshot.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SettlementSnapshotUpdateArgs>(args: SelectSubset<T, SettlementSnapshotUpdateArgs<ExtArgs>>): Prisma__SettlementSnapshotClient<$Result.GetResult<Prisma.$SettlementSnapshotPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SettlementSnapshots.
+     * @param {SettlementSnapshotDeleteManyArgs} args - Arguments to filter SettlementSnapshots to delete.
+     * @example
+     * // Delete a few SettlementSnapshots
+     * const { count } = await prisma.settlementSnapshot.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SettlementSnapshotDeleteManyArgs>(args?: SelectSubset<T, SettlementSnapshotDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SettlementSnapshots.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementSnapshotUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SettlementSnapshots
+     * const settlementSnapshot = await prisma.settlementSnapshot.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SettlementSnapshotUpdateManyArgs>(args: SelectSubset<T, SettlementSnapshotUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SettlementSnapshot.
+     * @param {SettlementSnapshotUpsertArgs} args - Arguments to update or create a SettlementSnapshot.
+     * @example
+     * // Update or create a SettlementSnapshot
+     * const settlementSnapshot = await prisma.settlementSnapshot.upsert({
+     *   create: {
+     *     // ... data to create a SettlementSnapshot
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SettlementSnapshot we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SettlementSnapshotUpsertArgs>(args: SelectSubset<T, SettlementSnapshotUpsertArgs<ExtArgs>>): Prisma__SettlementSnapshotClient<$Result.GetResult<Prisma.$SettlementSnapshotPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SettlementSnapshots.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementSnapshotCountArgs} args - Arguments to filter SettlementSnapshots to count.
+     * @example
+     * // Count the number of SettlementSnapshots
+     * const count = await prisma.settlementSnapshot.count({
+     *   where: {
+     *     // ... the filter for the SettlementSnapshots we want to count
+     *   }
+     * })
+    **/
+    count<T extends SettlementSnapshotCountArgs>(
+      args?: Subset<T, SettlementSnapshotCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SettlementSnapshotCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SettlementSnapshot.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementSnapshotAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SettlementSnapshotAggregateArgs>(args: Subset<T, SettlementSnapshotAggregateArgs>): Prisma.PrismaPromise<GetSettlementSnapshotAggregateType<T>>
+
+    /**
+     * Group by SettlementSnapshot.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SettlementSnapshotGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SettlementSnapshotGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SettlementSnapshotGroupByArgs['orderBy'] }
+        : { orderBy?: SettlementSnapshotGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SettlementSnapshotGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSettlementSnapshotGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SettlementSnapshot model
+   */
+  readonly fields: SettlementSnapshotFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SettlementSnapshot.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SettlementSnapshotClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    settlement<T extends SettlementDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SettlementDefaultArgs<ExtArgs>>): Prisma__SettlementClient<$Result.GetResult<Prisma.$SettlementPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SettlementSnapshot model
+   */
+  interface SettlementSnapshotFieldRefs {
+    readonly id: FieldRef<"SettlementSnapshot", 'String'>
+    readonly settlementId: FieldRef<"SettlementSnapshot", 'String'>
+    readonly dailySheet: FieldRef<"SettlementSnapshot", 'Json'>
+    readonly monthlyFees: FieldRef<"SettlementSnapshot", 'Json'>
+    readonly createdAt: FieldRef<"SettlementSnapshot", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SettlementSnapshot findUnique
+   */
+  export type SettlementSnapshotFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementSnapshot
+     */
+    select?: SettlementSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementSnapshot
+     */
+    omit?: SettlementSnapshotOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementSnapshotInclude<ExtArgs> | null
+    /**
+     * Filter, which SettlementSnapshot to fetch.
+     */
+    where: SettlementSnapshotWhereUniqueInput
+  }
+
+  /**
+   * SettlementSnapshot findUniqueOrThrow
+   */
+  export type SettlementSnapshotFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementSnapshot
+     */
+    select?: SettlementSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementSnapshot
+     */
+    omit?: SettlementSnapshotOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementSnapshotInclude<ExtArgs> | null
+    /**
+     * Filter, which SettlementSnapshot to fetch.
+     */
+    where: SettlementSnapshotWhereUniqueInput
+  }
+
+  /**
+   * SettlementSnapshot findFirst
+   */
+  export type SettlementSnapshotFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementSnapshot
+     */
+    select?: SettlementSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementSnapshot
+     */
+    omit?: SettlementSnapshotOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementSnapshotInclude<ExtArgs> | null
+    /**
+     * Filter, which SettlementSnapshot to fetch.
+     */
+    where?: SettlementSnapshotWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SettlementSnapshots to fetch.
+     */
+    orderBy?: SettlementSnapshotOrderByWithRelationInput | SettlementSnapshotOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SettlementSnapshots.
+     */
+    cursor?: SettlementSnapshotWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SettlementSnapshots from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SettlementSnapshots.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SettlementSnapshots.
+     */
+    distinct?: SettlementSnapshotScalarFieldEnum | SettlementSnapshotScalarFieldEnum[]
+  }
+
+  /**
+   * SettlementSnapshot findFirstOrThrow
+   */
+  export type SettlementSnapshotFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementSnapshot
+     */
+    select?: SettlementSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementSnapshot
+     */
+    omit?: SettlementSnapshotOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementSnapshotInclude<ExtArgs> | null
+    /**
+     * Filter, which SettlementSnapshot to fetch.
+     */
+    where?: SettlementSnapshotWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SettlementSnapshots to fetch.
+     */
+    orderBy?: SettlementSnapshotOrderByWithRelationInput | SettlementSnapshotOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SettlementSnapshots.
+     */
+    cursor?: SettlementSnapshotWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SettlementSnapshots from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SettlementSnapshots.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SettlementSnapshots.
+     */
+    distinct?: SettlementSnapshotScalarFieldEnum | SettlementSnapshotScalarFieldEnum[]
+  }
+
+  /**
+   * SettlementSnapshot findMany
+   */
+  export type SettlementSnapshotFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementSnapshot
+     */
+    select?: SettlementSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementSnapshot
+     */
+    omit?: SettlementSnapshotOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementSnapshotInclude<ExtArgs> | null
+    /**
+     * Filter, which SettlementSnapshots to fetch.
+     */
+    where?: SettlementSnapshotWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SettlementSnapshots to fetch.
+     */
+    orderBy?: SettlementSnapshotOrderByWithRelationInput | SettlementSnapshotOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SettlementSnapshots.
+     */
+    cursor?: SettlementSnapshotWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SettlementSnapshots from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SettlementSnapshots.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SettlementSnapshots.
+     */
+    distinct?: SettlementSnapshotScalarFieldEnum | SettlementSnapshotScalarFieldEnum[]
+  }
+
+  /**
+   * SettlementSnapshot create
+   */
+  export type SettlementSnapshotCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementSnapshot
+     */
+    select?: SettlementSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementSnapshot
+     */
+    omit?: SettlementSnapshotOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementSnapshotInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SettlementSnapshot.
+     */
+    data: XOR<SettlementSnapshotCreateInput, SettlementSnapshotUncheckedCreateInput>
+  }
+
+  /**
+   * SettlementSnapshot createMany
+   */
+  export type SettlementSnapshotCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SettlementSnapshots.
+     */
+    data: SettlementSnapshotCreateManyInput | SettlementSnapshotCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SettlementSnapshot update
+   */
+  export type SettlementSnapshotUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementSnapshot
+     */
+    select?: SettlementSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementSnapshot
+     */
+    omit?: SettlementSnapshotOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementSnapshotInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SettlementSnapshot.
+     */
+    data: XOR<SettlementSnapshotUpdateInput, SettlementSnapshotUncheckedUpdateInput>
+    /**
+     * Choose, which SettlementSnapshot to update.
+     */
+    where: SettlementSnapshotWhereUniqueInput
+  }
+
+  /**
+   * SettlementSnapshot updateMany
+   */
+  export type SettlementSnapshotUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SettlementSnapshots.
+     */
+    data: XOR<SettlementSnapshotUpdateManyMutationInput, SettlementSnapshotUncheckedUpdateManyInput>
+    /**
+     * Filter which SettlementSnapshots to update
+     */
+    where?: SettlementSnapshotWhereInput
+    /**
+     * Limit how many SettlementSnapshots to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SettlementSnapshot upsert
+   */
+  export type SettlementSnapshotUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementSnapshot
+     */
+    select?: SettlementSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementSnapshot
+     */
+    omit?: SettlementSnapshotOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementSnapshotInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SettlementSnapshot to update in case it exists.
+     */
+    where: SettlementSnapshotWhereUniqueInput
+    /**
+     * In case the SettlementSnapshot found by the `where` argument doesn't exist, create a new SettlementSnapshot with this data.
+     */
+    create: XOR<SettlementSnapshotCreateInput, SettlementSnapshotUncheckedCreateInput>
+    /**
+     * In case the SettlementSnapshot was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SettlementSnapshotUpdateInput, SettlementSnapshotUncheckedUpdateInput>
+  }
+
+  /**
+   * SettlementSnapshot delete
+   */
+  export type SettlementSnapshotDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementSnapshot
+     */
+    select?: SettlementSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementSnapshot
+     */
+    omit?: SettlementSnapshotOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementSnapshotInclude<ExtArgs> | null
+    /**
+     * Filter which SettlementSnapshot to delete.
+     */
+    where: SettlementSnapshotWhereUniqueInput
+  }
+
+  /**
+   * SettlementSnapshot deleteMany
+   */
+  export type SettlementSnapshotDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SettlementSnapshots to delete
+     */
+    where?: SettlementSnapshotWhereInput
+    /**
+     * Limit how many SettlementSnapshots to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SettlementSnapshot without action
+   */
+  export type SettlementSnapshotDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SettlementSnapshot
+     */
+    select?: SettlementSnapshotSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SettlementSnapshot
+     */
+    omit?: SettlementSnapshotOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SettlementSnapshotInclude<ExtArgs> | null
   }
 
 
@@ -42808,6 +45304,7 @@ export namespace Prisma {
     code: 'code',
     description: 'description',
     color: 'color',
+    imagePath: 'imagePath',
     isActive: 'isActive',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -42895,6 +45392,7 @@ export namespace Prisma {
     lastName: 'lastName',
     gender: 'gender',
     birthDate: 'birthDate',
+    birthPlace: 'birthPlace',
     avatar: 'avatar',
     phone: 'phone',
     parentPhone: 'parentPhone',
@@ -42902,6 +45400,9 @@ export namespace Prisma {
     schoolName: 'schoolName',
     emergencyPhone: 'emergencyPhone',
     registrationDate: 'registrationDate',
+    registrationFeePaid: 'registrationFeePaid',
+    registrationFeeAmount: 'registrationFeeAmount',
+    registrationFeePaidAt: 'registrationFeePaidAt',
     isActive: 'isActive',
     note: 'note',
     levelId: 'levelId',
@@ -42947,6 +45448,14 @@ export namespace Prisma {
     teachingAssignmentId: 'teachingAssignmentId',
     enrolledAt: 'enrolledAt',
     eligibleFrom: 'eligibleFrom',
+    note: 'note',
+    transferPeerAssignmentId: 'transferPeerAssignmentId',
+    transferSheetId: 'transferSheetId',
+    transferPeerSheetId: 'transferPeerSheetId',
+    transferAt: 'transferAt',
+    pendingTransferToId: 'pendingTransferToId',
+    pendingTransferAt: 'pendingTransferAt',
+    pendingTransferSheetId: 'pendingTransferSheetId',
     isActive: 'isActive'
   };
 
@@ -42984,6 +45493,7 @@ export namespace Prisma {
 
   export const AttendanceSheetScalarFieldEnum: {
     id: 'id',
+    code: 'code',
     teachingAssignmentId: 'teachingAssignmentId',
     academicYearId: 'academicYearId',
     number: 'number',
@@ -43226,6 +45736,31 @@ export namespace Prisma {
   export type SettlementLineScalarFieldEnum = (typeof SettlementLineScalarFieldEnum)[keyof typeof SettlementLineScalarFieldEnum]
 
 
+  export const SettlementDocumentScalarFieldEnum: {
+    id: 'id',
+    settlementId: 'settlementId',
+    pageNumber: 'pageNumber',
+    filePath: 'filePath',
+    fileName: 'fileName',
+    note: 'note',
+    uploadedById: 'uploadedById',
+    createdAt: 'createdAt'
+  };
+
+  export type SettlementDocumentScalarFieldEnum = (typeof SettlementDocumentScalarFieldEnum)[keyof typeof SettlementDocumentScalarFieldEnum]
+
+
+  export const SettlementSnapshotScalarFieldEnum: {
+    id: 'id',
+    settlementId: 'settlementId',
+    dailySheet: 'dailySheet',
+    monthlyFees: 'monthlyFees',
+    createdAt: 'createdAt'
+  };
+
+  export type SettlementSnapshotScalarFieldEnum = (typeof SettlementSnapshotScalarFieldEnum)[keyof typeof SettlementSnapshotScalarFieldEnum]
+
+
   export const FinancialAuditLogScalarFieldEnum: {
     id: 'id',
     entity: 'entity',
@@ -43322,6 +45857,13 @@ export namespace Prisma {
   export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+  export const JsonNullValueInput: {
+    JsonNull: typeof JsonNull
+  };
+
+  export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
   export const SettingOrderByRelevanceFieldEnum: {
     key: 'key',
     value: 'value'
@@ -43377,7 +45919,8 @@ export namespace Prisma {
     name: 'name',
     code: 'code',
     description: 'description',
-    color: 'color'
+    color: 'color',
+    imagePath: 'imagePath'
   };
 
   export type SubjectOrderByRelevanceFieldEnum = (typeof SubjectOrderByRelevanceFieldEnum)[keyof typeof SubjectOrderByRelevanceFieldEnum]
@@ -43436,6 +45979,7 @@ export namespace Prisma {
     studentNumber: 'studentNumber',
     firstName: 'firstName',
     lastName: 'lastName',
+    birthPlace: 'birthPlace',
     avatar: 'avatar',
     phone: 'phone',
     parentPhone: 'parentPhone',
@@ -43476,7 +46020,13 @@ export namespace Prisma {
   export const StudentEnrollmentOrderByRelevanceFieldEnum: {
     id: 'id',
     studentId: 'studentId',
-    teachingAssignmentId: 'teachingAssignmentId'
+    teachingAssignmentId: 'teachingAssignmentId',
+    note: 'note',
+    transferPeerAssignmentId: 'transferPeerAssignmentId',
+    transferSheetId: 'transferSheetId',
+    transferPeerSheetId: 'transferPeerSheetId',
+    pendingTransferToId: 'pendingTransferToId',
+    pendingTransferSheetId: 'pendingTransferSheetId'
   };
 
   export type StudentEnrollmentOrderByRelevanceFieldEnum = (typeof StudentEnrollmentOrderByRelevanceFieldEnum)[keyof typeof StudentEnrollmentOrderByRelevanceFieldEnum]
@@ -43504,6 +46054,7 @@ export namespace Prisma {
 
   export const AttendanceSheetOrderByRelevanceFieldEnum: {
     id: 'id',
+    code: 'code',
     teachingAssignmentId: 'teachingAssignmentId',
     academicYearId: 'academicYearId',
     label: 'label',
@@ -43653,6 +46204,43 @@ export namespace Prisma {
   };
 
   export type SettlementLineOrderByRelevanceFieldEnum = (typeof SettlementLineOrderByRelevanceFieldEnum)[keyof typeof SettlementLineOrderByRelevanceFieldEnum]
+
+
+  export const SettlementDocumentOrderByRelevanceFieldEnum: {
+    id: 'id',
+    settlementId: 'settlementId',
+    filePath: 'filePath',
+    fileName: 'fileName',
+    note: 'note',
+    uploadedById: 'uploadedById'
+  };
+
+  export type SettlementDocumentOrderByRelevanceFieldEnum = (typeof SettlementDocumentOrderByRelevanceFieldEnum)[keyof typeof SettlementDocumentOrderByRelevanceFieldEnum]
+
+
+  export const JsonNullValueFilter: {
+    DbNull: typeof DbNull,
+    JsonNull: typeof JsonNull,
+    AnyNull: typeof AnyNull
+  };
+
+  export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+  export const QueryMode: {
+    default: 'default',
+    insensitive: 'insensitive'
+  };
+
+  export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+  export const SettlementSnapshotOrderByRelevanceFieldEnum: {
+    id: 'id',
+    settlementId: 'settlementId'
+  };
+
+  export type SettlementSnapshotOrderByRelevanceFieldEnum = (typeof SettlementSnapshotOrderByRelevanceFieldEnum)[keyof typeof SettlementSnapshotOrderByRelevanceFieldEnum]
 
 
   export const FinancialAuditLogOrderByRelevanceFieldEnum: {
@@ -43879,6 +46467,20 @@ export namespace Prisma {
    * Reference to a field of type 'SettlementStatus'
    */
   export type EnumSettlementStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SettlementStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'Json'
+   */
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+  /**
+   * Reference to a field of type 'QueryMode'
+   */
+  export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -44293,6 +46895,7 @@ export namespace Prisma {
     code?: StringNullableFilter<"Subject"> | string | null
     description?: StringNullableFilter<"Subject"> | string | null
     color?: StringNullableFilter<"Subject"> | string | null
+    imagePath?: StringNullableFilter<"Subject"> | string | null
     isActive?: BoolFilter<"Subject"> | boolean
     createdAt?: DateTimeFilter<"Subject"> | Date | string
     updatedAt?: DateTimeFilter<"Subject"> | Date | string
@@ -44307,6 +46910,7 @@ export namespace Prisma {
     code?: SortOrderInput | SortOrder
     description?: SortOrderInput | SortOrder
     color?: SortOrderInput | SortOrder
+    imagePath?: SortOrderInput | SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -44325,6 +46929,7 @@ export namespace Prisma {
     NOT?: SubjectWhereInput | SubjectWhereInput[]
     description?: StringNullableFilter<"Subject"> | string | null
     color?: StringNullableFilter<"Subject"> | string | null
+    imagePath?: StringNullableFilter<"Subject"> | string | null
     isActive?: BoolFilter<"Subject"> | boolean
     createdAt?: DateTimeFilter<"Subject"> | Date | string
     updatedAt?: DateTimeFilter<"Subject"> | Date | string
@@ -44339,6 +46944,7 @@ export namespace Prisma {
     code?: SortOrderInput | SortOrder
     description?: SortOrderInput | SortOrder
     color?: SortOrderInput | SortOrder
+    imagePath?: SortOrderInput | SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -44356,6 +46962,7 @@ export namespace Prisma {
     code?: StringNullableWithAggregatesFilter<"Subject"> | string | null
     description?: StringNullableWithAggregatesFilter<"Subject"> | string | null
     color?: StringNullableWithAggregatesFilter<"Subject"> | string | null
+    imagePath?: StringNullableWithAggregatesFilter<"Subject"> | string | null
     isActive?: BoolWithAggregatesFilter<"Subject"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Subject"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Subject"> | Date | string
@@ -44777,6 +47384,7 @@ export namespace Prisma {
     lastName?: StringFilter<"Student"> | string
     gender?: EnumGenderFilter<"Student"> | $Enums.Gender
     birthDate?: DateTimeNullableFilter<"Student"> | Date | string | null
+    birthPlace?: StringNullableFilter<"Student"> | string | null
     avatar?: StringNullableFilter<"Student"> | string | null
     phone?: StringNullableFilter<"Student"> | string | null
     parentPhone?: StringFilter<"Student"> | string
@@ -44784,6 +47392,9 @@ export namespace Prisma {
     schoolName?: StringNullableFilter<"Student"> | string | null
     emergencyPhone?: StringNullableFilter<"Student"> | string | null
     registrationDate?: DateTimeFilter<"Student"> | Date | string
+    registrationFeePaid?: BoolFilter<"Student"> | boolean
+    registrationFeeAmount?: DecimalNullableFilter<"Student"> | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: DateTimeNullableFilter<"Student"> | Date | string | null
     isActive?: BoolFilter<"Student"> | boolean
     note?: StringNullableFilter<"Student"> | string | null
     levelId?: StringNullableFilter<"Student"> | string | null
@@ -44801,6 +47412,7 @@ export namespace Prisma {
     lastName?: SortOrder
     gender?: SortOrder
     birthDate?: SortOrderInput | SortOrder
+    birthPlace?: SortOrderInput | SortOrder
     avatar?: SortOrderInput | SortOrder
     phone?: SortOrderInput | SortOrder
     parentPhone?: SortOrder
@@ -44808,6 +47420,9 @@ export namespace Prisma {
     schoolName?: SortOrderInput | SortOrder
     emergencyPhone?: SortOrderInput | SortOrder
     registrationDate?: SortOrder
+    registrationFeePaid?: SortOrder
+    registrationFeeAmount?: SortOrderInput | SortOrder
+    registrationFeePaidAt?: SortOrderInput | SortOrder
     isActive?: SortOrder
     note?: SortOrderInput | SortOrder
     levelId?: SortOrderInput | SortOrder
@@ -44829,6 +47444,7 @@ export namespace Prisma {
     lastName?: StringFilter<"Student"> | string
     gender?: EnumGenderFilter<"Student"> | $Enums.Gender
     birthDate?: DateTimeNullableFilter<"Student"> | Date | string | null
+    birthPlace?: StringNullableFilter<"Student"> | string | null
     avatar?: StringNullableFilter<"Student"> | string | null
     phone?: StringNullableFilter<"Student"> | string | null
     parentPhone?: StringFilter<"Student"> | string
@@ -44836,6 +47452,9 @@ export namespace Prisma {
     schoolName?: StringNullableFilter<"Student"> | string | null
     emergencyPhone?: StringNullableFilter<"Student"> | string | null
     registrationDate?: DateTimeFilter<"Student"> | Date | string
+    registrationFeePaid?: BoolFilter<"Student"> | boolean
+    registrationFeeAmount?: DecimalNullableFilter<"Student"> | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: DateTimeNullableFilter<"Student"> | Date | string | null
     isActive?: BoolFilter<"Student"> | boolean
     note?: StringNullableFilter<"Student"> | string | null
     levelId?: StringNullableFilter<"Student"> | string | null
@@ -44853,6 +47472,7 @@ export namespace Prisma {
     lastName?: SortOrder
     gender?: SortOrder
     birthDate?: SortOrderInput | SortOrder
+    birthPlace?: SortOrderInput | SortOrder
     avatar?: SortOrderInput | SortOrder
     phone?: SortOrderInput | SortOrder
     parentPhone?: SortOrder
@@ -44860,14 +47480,19 @@ export namespace Prisma {
     schoolName?: SortOrderInput | SortOrder
     emergencyPhone?: SortOrderInput | SortOrder
     registrationDate?: SortOrder
+    registrationFeePaid?: SortOrder
+    registrationFeeAmount?: SortOrderInput | SortOrder
+    registrationFeePaidAt?: SortOrderInput | SortOrder
     isActive?: SortOrder
     note?: SortOrderInput | SortOrder
     levelId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: StudentCountOrderByAggregateInput
+    _avg?: StudentAvgOrderByAggregateInput
     _max?: StudentMaxOrderByAggregateInput
     _min?: StudentMinOrderByAggregateInput
+    _sum?: StudentSumOrderByAggregateInput
   }
 
   export type StudentScalarWhereWithAggregatesInput = {
@@ -44880,6 +47505,7 @@ export namespace Prisma {
     lastName?: StringWithAggregatesFilter<"Student"> | string
     gender?: EnumGenderWithAggregatesFilter<"Student"> | $Enums.Gender
     birthDate?: DateTimeNullableWithAggregatesFilter<"Student"> | Date | string | null
+    birthPlace?: StringNullableWithAggregatesFilter<"Student"> | string | null
     avatar?: StringNullableWithAggregatesFilter<"Student"> | string | null
     phone?: StringNullableWithAggregatesFilter<"Student"> | string | null
     parentPhone?: StringWithAggregatesFilter<"Student"> | string
@@ -44887,6 +47513,9 @@ export namespace Prisma {
     schoolName?: StringNullableWithAggregatesFilter<"Student"> | string | null
     emergencyPhone?: StringNullableWithAggregatesFilter<"Student"> | string | null
     registrationDate?: DateTimeWithAggregatesFilter<"Student"> | Date | string
+    registrationFeePaid?: BoolWithAggregatesFilter<"Student"> | boolean
+    registrationFeeAmount?: DecimalNullableWithAggregatesFilter<"Student"> | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: DateTimeNullableWithAggregatesFilter<"Student"> | Date | string | null
     isActive?: BoolWithAggregatesFilter<"Student"> | boolean
     note?: StringNullableWithAggregatesFilter<"Student"> | string | null
     levelId?: StringNullableWithAggregatesFilter<"Student"> | string | null
@@ -45076,6 +47705,14 @@ export namespace Prisma {
     teachingAssignmentId?: StringFilter<"StudentEnrollment"> | string
     enrolledAt?: DateTimeFilter<"StudentEnrollment"> | Date | string
     eligibleFrom?: DateTimeNullableFilter<"StudentEnrollment"> | Date | string | null
+    note?: StringNullableFilter<"StudentEnrollment"> | string | null
+    transferPeerAssignmentId?: StringNullableFilter<"StudentEnrollment"> | string | null
+    transferSheetId?: StringNullableFilter<"StudentEnrollment"> | string | null
+    transferPeerSheetId?: StringNullableFilter<"StudentEnrollment"> | string | null
+    transferAt?: DateTimeNullableFilter<"StudentEnrollment"> | Date | string | null
+    pendingTransferToId?: StringNullableFilter<"StudentEnrollment"> | string | null
+    pendingTransferAt?: DateTimeNullableFilter<"StudentEnrollment"> | Date | string | null
+    pendingTransferSheetId?: StringNullableFilter<"StudentEnrollment"> | string | null
     isActive?: BoolFilter<"StudentEnrollment"> | boolean
     student?: XOR<StudentScalarRelationFilter, StudentWhereInput>
     teachingAssignment?: XOR<TeachingAssignmentScalarRelationFilter, TeachingAssignmentWhereInput>
@@ -45089,6 +47726,14 @@ export namespace Prisma {
     teachingAssignmentId?: SortOrder
     enrolledAt?: SortOrder
     eligibleFrom?: SortOrderInput | SortOrder
+    note?: SortOrderInput | SortOrder
+    transferPeerAssignmentId?: SortOrderInput | SortOrder
+    transferSheetId?: SortOrderInput | SortOrder
+    transferPeerSheetId?: SortOrderInput | SortOrder
+    transferAt?: SortOrderInput | SortOrder
+    pendingTransferToId?: SortOrderInput | SortOrder
+    pendingTransferAt?: SortOrderInput | SortOrder
+    pendingTransferSheetId?: SortOrderInput | SortOrder
     isActive?: SortOrder
     student?: StudentOrderByWithRelationInput
     teachingAssignment?: TeachingAssignmentOrderByWithRelationInput
@@ -45107,6 +47752,14 @@ export namespace Prisma {
     teachingAssignmentId?: StringFilter<"StudentEnrollment"> | string
     enrolledAt?: DateTimeFilter<"StudentEnrollment"> | Date | string
     eligibleFrom?: DateTimeNullableFilter<"StudentEnrollment"> | Date | string | null
+    note?: StringNullableFilter<"StudentEnrollment"> | string | null
+    transferPeerAssignmentId?: StringNullableFilter<"StudentEnrollment"> | string | null
+    transferSheetId?: StringNullableFilter<"StudentEnrollment"> | string | null
+    transferPeerSheetId?: StringNullableFilter<"StudentEnrollment"> | string | null
+    transferAt?: DateTimeNullableFilter<"StudentEnrollment"> | Date | string | null
+    pendingTransferToId?: StringNullableFilter<"StudentEnrollment"> | string | null
+    pendingTransferAt?: DateTimeNullableFilter<"StudentEnrollment"> | Date | string | null
+    pendingTransferSheetId?: StringNullableFilter<"StudentEnrollment"> | string | null
     isActive?: BoolFilter<"StudentEnrollment"> | boolean
     student?: XOR<StudentScalarRelationFilter, StudentWhereInput>
     teachingAssignment?: XOR<TeachingAssignmentScalarRelationFilter, TeachingAssignmentWhereInput>
@@ -45120,6 +47773,14 @@ export namespace Prisma {
     teachingAssignmentId?: SortOrder
     enrolledAt?: SortOrder
     eligibleFrom?: SortOrderInput | SortOrder
+    note?: SortOrderInput | SortOrder
+    transferPeerAssignmentId?: SortOrderInput | SortOrder
+    transferSheetId?: SortOrderInput | SortOrder
+    transferPeerSheetId?: SortOrderInput | SortOrder
+    transferAt?: SortOrderInput | SortOrder
+    pendingTransferToId?: SortOrderInput | SortOrder
+    pendingTransferAt?: SortOrderInput | SortOrder
+    pendingTransferSheetId?: SortOrderInput | SortOrder
     isActive?: SortOrder
     _count?: StudentEnrollmentCountOrderByAggregateInput
     _max?: StudentEnrollmentMaxOrderByAggregateInput
@@ -45135,6 +47796,14 @@ export namespace Prisma {
     teachingAssignmentId?: StringWithAggregatesFilter<"StudentEnrollment"> | string
     enrolledAt?: DateTimeWithAggregatesFilter<"StudentEnrollment"> | Date | string
     eligibleFrom?: DateTimeNullableWithAggregatesFilter<"StudentEnrollment"> | Date | string | null
+    note?: StringNullableWithAggregatesFilter<"StudentEnrollment"> | string | null
+    transferPeerAssignmentId?: StringNullableWithAggregatesFilter<"StudentEnrollment"> | string | null
+    transferSheetId?: StringNullableWithAggregatesFilter<"StudentEnrollment"> | string | null
+    transferPeerSheetId?: StringNullableWithAggregatesFilter<"StudentEnrollment"> | string | null
+    transferAt?: DateTimeNullableWithAggregatesFilter<"StudentEnrollment"> | Date | string | null
+    pendingTransferToId?: StringNullableWithAggregatesFilter<"StudentEnrollment"> | string | null
+    pendingTransferAt?: DateTimeNullableWithAggregatesFilter<"StudentEnrollment"> | Date | string | null
+    pendingTransferSheetId?: StringNullableWithAggregatesFilter<"StudentEnrollment"> | string | null
     isActive?: BoolWithAggregatesFilter<"StudentEnrollment"> | boolean
   }
 
@@ -45312,6 +47981,7 @@ export namespace Prisma {
     OR?: AttendanceSheetWhereInput[]
     NOT?: AttendanceSheetWhereInput | AttendanceSheetWhereInput[]
     id?: StringFilter<"AttendanceSheet"> | string
+    code?: StringFilter<"AttendanceSheet"> | string
     teachingAssignmentId?: StringFilter<"AttendanceSheet"> | string
     academicYearId?: StringFilter<"AttendanceSheet"> | string
     number?: IntFilter<"AttendanceSheet"> | number
@@ -45329,6 +47999,7 @@ export namespace Prisma {
 
   export type AttendanceSheetOrderByWithRelationInput = {
     id?: SortOrder
+    code?: SortOrder
     teachingAssignmentId?: SortOrder
     academicYearId?: SortOrder
     number?: SortOrder
@@ -45347,6 +48018,7 @@ export namespace Prisma {
 
   export type AttendanceSheetWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    code?: string
     teachingAssignmentId_number?: AttendanceSheetTeachingAssignmentIdNumberCompoundUniqueInput
     AND?: AttendanceSheetWhereInput | AttendanceSheetWhereInput[]
     OR?: AttendanceSheetWhereInput[]
@@ -45364,10 +48036,11 @@ export namespace Prisma {
     sessions?: SessionListRelationFilter
     settlements?: SettlementListRelationFilter
     invoices?: InvoiceListRelationFilter
-  }, "id" | "teachingAssignmentId_number">
+  }, "id" | "code" | "teachingAssignmentId_number">
 
   export type AttendanceSheetOrderByWithAggregationInput = {
     id?: SortOrder
+    code?: SortOrder
     teachingAssignmentId?: SortOrder
     academicYearId?: SortOrder
     number?: SortOrder
@@ -45388,6 +48061,7 @@ export namespace Prisma {
     OR?: AttendanceSheetScalarWhereWithAggregatesInput[]
     NOT?: AttendanceSheetScalarWhereWithAggregatesInput | AttendanceSheetScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"AttendanceSheet"> | string
+    code?: StringWithAggregatesFilter<"AttendanceSheet"> | string
     teachingAssignmentId?: StringWithAggregatesFilter<"AttendanceSheet"> | string
     academicYearId?: StringWithAggregatesFilter<"AttendanceSheet"> | string
     number?: IntWithAggregatesFilter<"AttendanceSheet"> | number
@@ -45494,6 +48168,7 @@ export namespace Prisma {
     receipts?: ReceiptListRelationFilter
     cancelledReceipts?: ReceiptListRelationFilter
     documents?: StudentDocumentListRelationFilter
+    settlementDocs?: SettlementDocumentListRelationFilter
     confirmedSettlements?: SettlementListRelationFilter
     paidSettlements?: SettlementListRelationFilter
     cancelledSettlements?: SettlementListRelationFilter
@@ -45526,6 +48201,7 @@ export namespace Prisma {
     receipts?: ReceiptOrderByRelationAggregateInput
     cancelledReceipts?: ReceiptOrderByRelationAggregateInput
     documents?: StudentDocumentOrderByRelationAggregateInput
+    settlementDocs?: SettlementDocumentOrderByRelationAggregateInput
     confirmedSettlements?: SettlementOrderByRelationAggregateInput
     paidSettlements?: SettlementOrderByRelationAggregateInput
     cancelledSettlements?: SettlementOrderByRelationAggregateInput
@@ -45562,6 +48238,7 @@ export namespace Prisma {
     receipts?: ReceiptListRelationFilter
     cancelledReceipts?: ReceiptListRelationFilter
     documents?: StudentDocumentListRelationFilter
+    settlementDocs?: SettlementDocumentListRelationFilter
     confirmedSettlements?: SettlementListRelationFilter
     paidSettlements?: SettlementListRelationFilter
     cancelledSettlements?: SettlementListRelationFilter
@@ -46428,6 +49105,8 @@ export namespace Prisma {
     paidBy?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     cancelledBy?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     lines?: SettlementLineListRelationFilter
+    documents?: SettlementDocumentListRelationFilter
+    snapshot?: XOR<SettlementSnapshotNullableScalarRelationFilter, SettlementSnapshotWhereInput> | null
     debtSharesOrigin?: TeacherDebtShareListRelationFilter
     debtSharesCollected?: TeacherDebtShareListRelationFilter
     teacherAllocations?: TeacherPaymentAllocationListRelationFilter
@@ -46480,6 +49159,8 @@ export namespace Prisma {
     paidBy?: UserOrderByWithRelationInput
     cancelledBy?: UserOrderByWithRelationInput
     lines?: SettlementLineOrderByRelationAggregateInput
+    documents?: SettlementDocumentOrderByRelationAggregateInput
+    snapshot?: SettlementSnapshotOrderByWithRelationInput
     debtSharesOrigin?: TeacherDebtShareOrderByRelationAggregateInput
     debtSharesCollected?: TeacherDebtShareOrderByRelationAggregateInput
     teacherAllocations?: TeacherPaymentAllocationOrderByRelationAggregateInput
@@ -46537,6 +49218,8 @@ export namespace Prisma {
     paidBy?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     cancelledBy?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     lines?: SettlementLineListRelationFilter
+    documents?: SettlementDocumentListRelationFilter
+    snapshot?: XOR<SettlementSnapshotNullableScalarRelationFilter, SettlementSnapshotWhereInput> | null
     debtSharesOrigin?: TeacherDebtShareListRelationFilter
     debtSharesCollected?: TeacherDebtShareListRelationFilter
     teacherAllocations?: TeacherPaymentAllocationListRelationFilter
@@ -46709,6 +49392,138 @@ export namespace Prisma {
     rate?: DecimalWithAggregatesFilter<"SettlementLine"> | Decimal | DecimalJsLike | number | string
     lineTotal?: DecimalWithAggregatesFilter<"SettlementLine"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeWithAggregatesFilter<"SettlementLine"> | Date | string
+  }
+
+  export type SettlementDocumentWhereInput = {
+    AND?: SettlementDocumentWhereInput | SettlementDocumentWhereInput[]
+    OR?: SettlementDocumentWhereInput[]
+    NOT?: SettlementDocumentWhereInput | SettlementDocumentWhereInput[]
+    id?: StringFilter<"SettlementDocument"> | string
+    settlementId?: StringFilter<"SettlementDocument"> | string
+    pageNumber?: IntFilter<"SettlementDocument"> | number
+    filePath?: StringFilter<"SettlementDocument"> | string
+    fileName?: StringNullableFilter<"SettlementDocument"> | string | null
+    note?: StringNullableFilter<"SettlementDocument"> | string | null
+    uploadedById?: StringNullableFilter<"SettlementDocument"> | string | null
+    createdAt?: DateTimeFilter<"SettlementDocument"> | Date | string
+    settlement?: XOR<SettlementScalarRelationFilter, SettlementWhereInput>
+    uploadedBy?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
+  }
+
+  export type SettlementDocumentOrderByWithRelationInput = {
+    id?: SortOrder
+    settlementId?: SortOrder
+    pageNumber?: SortOrder
+    filePath?: SortOrder
+    fileName?: SortOrderInput | SortOrder
+    note?: SortOrderInput | SortOrder
+    uploadedById?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    settlement?: SettlementOrderByWithRelationInput
+    uploadedBy?: UserOrderByWithRelationInput
+    _relevance?: SettlementDocumentOrderByRelevanceInput
+  }
+
+  export type SettlementDocumentWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: SettlementDocumentWhereInput | SettlementDocumentWhereInput[]
+    OR?: SettlementDocumentWhereInput[]
+    NOT?: SettlementDocumentWhereInput | SettlementDocumentWhereInput[]
+    settlementId?: StringFilter<"SettlementDocument"> | string
+    pageNumber?: IntFilter<"SettlementDocument"> | number
+    filePath?: StringFilter<"SettlementDocument"> | string
+    fileName?: StringNullableFilter<"SettlementDocument"> | string | null
+    note?: StringNullableFilter<"SettlementDocument"> | string | null
+    uploadedById?: StringNullableFilter<"SettlementDocument"> | string | null
+    createdAt?: DateTimeFilter<"SettlementDocument"> | Date | string
+    settlement?: XOR<SettlementScalarRelationFilter, SettlementWhereInput>
+    uploadedBy?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
+  }, "id">
+
+  export type SettlementDocumentOrderByWithAggregationInput = {
+    id?: SortOrder
+    settlementId?: SortOrder
+    pageNumber?: SortOrder
+    filePath?: SortOrder
+    fileName?: SortOrderInput | SortOrder
+    note?: SortOrderInput | SortOrder
+    uploadedById?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: SettlementDocumentCountOrderByAggregateInput
+    _avg?: SettlementDocumentAvgOrderByAggregateInput
+    _max?: SettlementDocumentMaxOrderByAggregateInput
+    _min?: SettlementDocumentMinOrderByAggregateInput
+    _sum?: SettlementDocumentSumOrderByAggregateInput
+  }
+
+  export type SettlementDocumentScalarWhereWithAggregatesInput = {
+    AND?: SettlementDocumentScalarWhereWithAggregatesInput | SettlementDocumentScalarWhereWithAggregatesInput[]
+    OR?: SettlementDocumentScalarWhereWithAggregatesInput[]
+    NOT?: SettlementDocumentScalarWhereWithAggregatesInput | SettlementDocumentScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SettlementDocument"> | string
+    settlementId?: StringWithAggregatesFilter<"SettlementDocument"> | string
+    pageNumber?: IntWithAggregatesFilter<"SettlementDocument"> | number
+    filePath?: StringWithAggregatesFilter<"SettlementDocument"> | string
+    fileName?: StringNullableWithAggregatesFilter<"SettlementDocument"> | string | null
+    note?: StringNullableWithAggregatesFilter<"SettlementDocument"> | string | null
+    uploadedById?: StringNullableWithAggregatesFilter<"SettlementDocument"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"SettlementDocument"> | Date | string
+  }
+
+  export type SettlementSnapshotWhereInput = {
+    AND?: SettlementSnapshotWhereInput | SettlementSnapshotWhereInput[]
+    OR?: SettlementSnapshotWhereInput[]
+    NOT?: SettlementSnapshotWhereInput | SettlementSnapshotWhereInput[]
+    id?: StringFilter<"SettlementSnapshot"> | string
+    settlementId?: StringFilter<"SettlementSnapshot"> | string
+    dailySheet?: JsonFilter<"SettlementSnapshot">
+    monthlyFees?: JsonFilter<"SettlementSnapshot">
+    createdAt?: DateTimeFilter<"SettlementSnapshot"> | Date | string
+    settlement?: XOR<SettlementScalarRelationFilter, SettlementWhereInput>
+  }
+
+  export type SettlementSnapshotOrderByWithRelationInput = {
+    id?: SortOrder
+    settlementId?: SortOrder
+    dailySheet?: SortOrder
+    monthlyFees?: SortOrder
+    createdAt?: SortOrder
+    settlement?: SettlementOrderByWithRelationInput
+    _relevance?: SettlementSnapshotOrderByRelevanceInput
+  }
+
+  export type SettlementSnapshotWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    settlementId?: string
+    AND?: SettlementSnapshotWhereInput | SettlementSnapshotWhereInput[]
+    OR?: SettlementSnapshotWhereInput[]
+    NOT?: SettlementSnapshotWhereInput | SettlementSnapshotWhereInput[]
+    dailySheet?: JsonFilter<"SettlementSnapshot">
+    monthlyFees?: JsonFilter<"SettlementSnapshot">
+    createdAt?: DateTimeFilter<"SettlementSnapshot"> | Date | string
+    settlement?: XOR<SettlementScalarRelationFilter, SettlementWhereInput>
+  }, "id" | "settlementId">
+
+  export type SettlementSnapshotOrderByWithAggregationInput = {
+    id?: SortOrder
+    settlementId?: SortOrder
+    dailySheet?: SortOrder
+    monthlyFees?: SortOrder
+    createdAt?: SortOrder
+    _count?: SettlementSnapshotCountOrderByAggregateInput
+    _max?: SettlementSnapshotMaxOrderByAggregateInput
+    _min?: SettlementSnapshotMinOrderByAggregateInput
+  }
+
+  export type SettlementSnapshotScalarWhereWithAggregatesInput = {
+    AND?: SettlementSnapshotScalarWhereWithAggregatesInput | SettlementSnapshotScalarWhereWithAggregatesInput[]
+    OR?: SettlementSnapshotScalarWhereWithAggregatesInput[]
+    NOT?: SettlementSnapshotScalarWhereWithAggregatesInput | SettlementSnapshotScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SettlementSnapshot"> | string
+    settlementId?: StringWithAggregatesFilter<"SettlementSnapshot"> | string
+    dailySheet?: JsonWithAggregatesFilter<"SettlementSnapshot">
+    monthlyFees?: JsonWithAggregatesFilter<"SettlementSnapshot">
+    createdAt?: DateTimeWithAggregatesFilter<"SettlementSnapshot"> | Date | string
   }
 
   export type FinancialAuditLogWhereInput = {
@@ -47610,6 +50425,7 @@ export namespace Prisma {
     code?: string | null
     description?: string | null
     color?: string | null
+    imagePath?: string | null
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -47624,6 +50440,7 @@ export namespace Prisma {
     code?: string | null
     description?: string | null
     color?: string | null
+    imagePath?: string | null
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -47638,6 +50455,7 @@ export namespace Prisma {
     code?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
+    imagePath?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -47652,6 +50470,7 @@ export namespace Prisma {
     code?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
+    imagePath?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -47666,6 +50485,7 @@ export namespace Prisma {
     code?: string | null
     description?: string | null
     color?: string | null
+    imagePath?: string | null
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -47677,6 +50497,7 @@ export namespace Prisma {
     code?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
+    imagePath?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -47688,6 +50509,7 @@ export namespace Prisma {
     code?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
+    imagePath?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -48145,6 +50967,7 @@ export namespace Prisma {
     lastName: string
     gender: $Enums.Gender
     birthDate?: Date | string | null
+    birthPlace?: string | null
     avatar?: string | null
     phone?: string | null
     parentPhone: string
@@ -48152,6 +50975,9 @@ export namespace Prisma {
     schoolName?: string | null
     emergencyPhone?: string | null
     registrationDate?: Date | string
+    registrationFeePaid?: boolean
+    registrationFeeAmount?: Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: Date | string | null
     isActive?: boolean
     note?: string | null
     createdAt?: Date | string
@@ -48168,6 +50994,7 @@ export namespace Prisma {
     lastName: string
     gender: $Enums.Gender
     birthDate?: Date | string | null
+    birthPlace?: string | null
     avatar?: string | null
     phone?: string | null
     parentPhone: string
@@ -48175,6 +51002,9 @@ export namespace Prisma {
     schoolName?: string | null
     emergencyPhone?: string | null
     registrationDate?: Date | string
+    registrationFeePaid?: boolean
+    registrationFeeAmount?: Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: Date | string | null
     isActive?: boolean
     note?: string | null
     levelId?: string | null
@@ -48191,6 +51021,7 @@ export namespace Prisma {
     lastName?: StringFieldUpdateOperationsInput | string
     gender?: EnumGenderFieldUpdateOperationsInput | $Enums.Gender
     birthDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    birthPlace?: NullableStringFieldUpdateOperationsInput | string | null
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     parentPhone?: StringFieldUpdateOperationsInput | string
@@ -48198,6 +51029,9 @@ export namespace Prisma {
     schoolName?: NullableStringFieldUpdateOperationsInput | string | null
     emergencyPhone?: NullableStringFieldUpdateOperationsInput | string | null
     registrationDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    registrationFeePaid?: BoolFieldUpdateOperationsInput | boolean
+    registrationFeeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     note?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -48214,6 +51048,7 @@ export namespace Prisma {
     lastName?: StringFieldUpdateOperationsInput | string
     gender?: EnumGenderFieldUpdateOperationsInput | $Enums.Gender
     birthDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    birthPlace?: NullableStringFieldUpdateOperationsInput | string | null
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     parentPhone?: StringFieldUpdateOperationsInput | string
@@ -48221,6 +51056,9 @@ export namespace Prisma {
     schoolName?: NullableStringFieldUpdateOperationsInput | string | null
     emergencyPhone?: NullableStringFieldUpdateOperationsInput | string | null
     registrationDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    registrationFeePaid?: BoolFieldUpdateOperationsInput | boolean
+    registrationFeeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     note?: NullableStringFieldUpdateOperationsInput | string | null
     levelId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48237,6 +51075,7 @@ export namespace Prisma {
     lastName: string
     gender: $Enums.Gender
     birthDate?: Date | string | null
+    birthPlace?: string | null
     avatar?: string | null
     phone?: string | null
     parentPhone: string
@@ -48244,6 +51083,9 @@ export namespace Prisma {
     schoolName?: string | null
     emergencyPhone?: string | null
     registrationDate?: Date | string
+    registrationFeePaid?: boolean
+    registrationFeeAmount?: Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: Date | string | null
     isActive?: boolean
     note?: string | null
     levelId?: string | null
@@ -48258,6 +51100,7 @@ export namespace Prisma {
     lastName?: StringFieldUpdateOperationsInput | string
     gender?: EnumGenderFieldUpdateOperationsInput | $Enums.Gender
     birthDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    birthPlace?: NullableStringFieldUpdateOperationsInput | string | null
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     parentPhone?: StringFieldUpdateOperationsInput | string
@@ -48265,6 +51108,9 @@ export namespace Prisma {
     schoolName?: NullableStringFieldUpdateOperationsInput | string | null
     emergencyPhone?: NullableStringFieldUpdateOperationsInput | string | null
     registrationDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    registrationFeePaid?: BoolFieldUpdateOperationsInput | boolean
+    registrationFeeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     note?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -48278,6 +51124,7 @@ export namespace Prisma {
     lastName?: StringFieldUpdateOperationsInput | string
     gender?: EnumGenderFieldUpdateOperationsInput | $Enums.Gender
     birthDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    birthPlace?: NullableStringFieldUpdateOperationsInput | string | null
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     parentPhone?: StringFieldUpdateOperationsInput | string
@@ -48285,6 +51132,9 @@ export namespace Prisma {
     schoolName?: NullableStringFieldUpdateOperationsInput | string | null
     emergencyPhone?: NullableStringFieldUpdateOperationsInput | string | null
     registrationDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    registrationFeePaid?: BoolFieldUpdateOperationsInput | boolean
+    registrationFeeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     note?: NullableStringFieldUpdateOperationsInput | string | null
     levelId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48467,6 +51317,14 @@ export namespace Prisma {
     id?: string
     enrolledAt?: Date | string
     eligibleFrom?: Date | string | null
+    note?: string | null
+    transferPeerAssignmentId?: string | null
+    transferSheetId?: string | null
+    transferPeerSheetId?: string | null
+    transferAt?: Date | string | null
+    pendingTransferToId?: string | null
+    pendingTransferAt?: Date | string | null
+    pendingTransferSheetId?: string | null
     isActive?: boolean
     student: StudentCreateNestedOneWithoutEnrollmentsInput
     teachingAssignment: TeachingAssignmentCreateNestedOneWithoutEnrollmentsInput
@@ -48480,6 +51338,14 @@ export namespace Prisma {
     teachingAssignmentId: string
     enrolledAt?: Date | string
     eligibleFrom?: Date | string | null
+    note?: string | null
+    transferPeerAssignmentId?: string | null
+    transferSheetId?: string | null
+    transferPeerSheetId?: string | null
+    transferAt?: Date | string | null
+    pendingTransferToId?: string | null
+    pendingTransferAt?: Date | string | null
+    pendingTransferSheetId?: string | null
     isActive?: boolean
     invoices?: InvoiceUncheckedCreateNestedManyWithoutStudentEnrollmentInput
     attendances?: AttendanceUncheckedCreateNestedManyWithoutStudentEnrollmentInput
@@ -48489,6 +51355,14 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     student?: StudentUpdateOneRequiredWithoutEnrollmentsNestedInput
     teachingAssignment?: TeachingAssignmentUpdateOneRequiredWithoutEnrollmentsNestedInput
@@ -48502,6 +51376,14 @@ export namespace Prisma {
     teachingAssignmentId?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     invoices?: InvoiceUncheckedUpdateManyWithoutStudentEnrollmentNestedInput
     attendances?: AttendanceUncheckedUpdateManyWithoutStudentEnrollmentNestedInput
@@ -48513,6 +51395,14 @@ export namespace Prisma {
     teachingAssignmentId: string
     enrolledAt?: Date | string
     eligibleFrom?: Date | string | null
+    note?: string | null
+    transferPeerAssignmentId?: string | null
+    transferSheetId?: string | null
+    transferPeerSheetId?: string | null
+    transferAt?: Date | string | null
+    pendingTransferToId?: string | null
+    pendingTransferAt?: Date | string | null
+    pendingTransferSheetId?: string | null
     isActive?: boolean
   }
 
@@ -48520,6 +51410,14 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
   }
 
@@ -48529,6 +51427,14 @@ export namespace Prisma {
     teachingAssignmentId?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
   }
 
@@ -48702,6 +51608,7 @@ export namespace Prisma {
 
   export type AttendanceSheetCreateInput = {
     id?: string
+    code: string
     number: number
     label?: string | null
     sessionCount: number
@@ -48717,6 +51624,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedCreateInput = {
     id?: string
+    code: string
     teachingAssignmentId: string
     academicYearId: string
     number: number
@@ -48732,6 +51640,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     sessionCount?: IntFieldUpdateOperationsInput | number
@@ -48747,6 +51656,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     teachingAssignmentId?: StringFieldUpdateOperationsInput | string
     academicYearId?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
@@ -48762,6 +51672,7 @@ export namespace Prisma {
 
   export type AttendanceSheetCreateManyInput = {
     id?: string
+    code: string
     teachingAssignmentId: string
     academicYearId: string
     number: number
@@ -48774,6 +51685,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     sessionCount?: IntFieldUpdateOperationsInput | number
@@ -48784,6 +51696,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     teachingAssignmentId?: StringFieldUpdateOperationsInput | string
     academicYearId?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
@@ -48884,6 +51797,7 @@ export namespace Prisma {
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
@@ -48915,6 +51829,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
@@ -48946,6 +51861,7 @@ export namespace Prisma {
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
@@ -48977,6 +51893,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
@@ -49891,6 +52808,8 @@ export namespace Prisma {
     paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
     cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
     lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
@@ -49935,6 +52854,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
@@ -49979,6 +52900,8 @@ export namespace Prisma {
     paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
     cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
     lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
@@ -50023,6 +52946,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
@@ -50219,6 +53144,136 @@ export namespace Prisma {
     countedStudents?: IntFieldUpdateOperationsInput | number
     rate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     lineTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SettlementDocumentCreateInput = {
+    id?: string
+    pageNumber?: number
+    filePath: string
+    fileName?: string | null
+    note?: string | null
+    createdAt?: Date | string
+    settlement: SettlementCreateNestedOneWithoutDocumentsInput
+    uploadedBy?: UserCreateNestedOneWithoutSettlementDocsInput
+  }
+
+  export type SettlementDocumentUncheckedCreateInput = {
+    id?: string
+    settlementId: string
+    pageNumber?: number
+    filePath: string
+    fileName?: string | null
+    note?: string | null
+    uploadedById?: string | null
+    createdAt?: Date | string
+  }
+
+  export type SettlementDocumentUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    pageNumber?: IntFieldUpdateOperationsInput | number
+    filePath?: StringFieldUpdateOperationsInput | string
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settlement?: SettlementUpdateOneRequiredWithoutDocumentsNestedInput
+    uploadedBy?: UserUpdateOneWithoutSettlementDocsNestedInput
+  }
+
+  export type SettlementDocumentUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    settlementId?: StringFieldUpdateOperationsInput | string
+    pageNumber?: IntFieldUpdateOperationsInput | number
+    filePath?: StringFieldUpdateOperationsInput | string
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    uploadedById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SettlementDocumentCreateManyInput = {
+    id?: string
+    settlementId: string
+    pageNumber?: number
+    filePath: string
+    fileName?: string | null
+    note?: string | null
+    uploadedById?: string | null
+    createdAt?: Date | string
+  }
+
+  export type SettlementDocumentUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    pageNumber?: IntFieldUpdateOperationsInput | number
+    filePath?: StringFieldUpdateOperationsInput | string
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SettlementDocumentUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    settlementId?: StringFieldUpdateOperationsInput | string
+    pageNumber?: IntFieldUpdateOperationsInput | number
+    filePath?: StringFieldUpdateOperationsInput | string
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    uploadedById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SettlementSnapshotCreateInput = {
+    id?: string
+    dailySheet: JsonNullValueInput | InputJsonValue
+    monthlyFees: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    settlement: SettlementCreateNestedOneWithoutSnapshotInput
+  }
+
+  export type SettlementSnapshotUncheckedCreateInput = {
+    id?: string
+    settlementId: string
+    dailySheet: JsonNullValueInput | InputJsonValue
+    monthlyFees: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type SettlementSnapshotUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    dailySheet?: JsonNullValueInput | InputJsonValue
+    monthlyFees?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settlement?: SettlementUpdateOneRequiredWithoutSnapshotNestedInput
+  }
+
+  export type SettlementSnapshotUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    settlementId?: StringFieldUpdateOperationsInput | string
+    dailySheet?: JsonNullValueInput | InputJsonValue
+    monthlyFees?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SettlementSnapshotCreateManyInput = {
+    id?: string
+    settlementId: string
+    dailySheet: JsonNullValueInput | InputJsonValue
+    monthlyFees: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type SettlementSnapshotUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    dailySheet?: JsonNullValueInput | InputJsonValue
+    monthlyFees?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SettlementSnapshotUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    settlementId?: StringFieldUpdateOperationsInput | string
+    dailySheet?: JsonNullValueInput | InputJsonValue
+    monthlyFees?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -51251,6 +54306,7 @@ export namespace Prisma {
     code?: SortOrder
     description?: SortOrder
     color?: SortOrder
+    imagePath?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -51262,6 +54318,7 @@ export namespace Prisma {
     code?: SortOrder
     description?: SortOrder
     color?: SortOrder
+    imagePath?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -51273,6 +54330,7 @@ export namespace Prisma {
     code?: SortOrder
     description?: SortOrder
     color?: SortOrder
+    imagePath?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -51762,6 +54820,7 @@ export namespace Prisma {
     lastName?: SortOrder
     gender?: SortOrder
     birthDate?: SortOrder
+    birthPlace?: SortOrder
     avatar?: SortOrder
     phone?: SortOrder
     parentPhone?: SortOrder
@@ -51769,11 +54828,18 @@ export namespace Prisma {
     schoolName?: SortOrder
     emergencyPhone?: SortOrder
     registrationDate?: SortOrder
+    registrationFeePaid?: SortOrder
+    registrationFeeAmount?: SortOrder
+    registrationFeePaidAt?: SortOrder
     isActive?: SortOrder
     note?: SortOrder
     levelId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type StudentAvgOrderByAggregateInput = {
+    registrationFeeAmount?: SortOrder
   }
 
   export type StudentMaxOrderByAggregateInput = {
@@ -51783,6 +54849,7 @@ export namespace Prisma {
     lastName?: SortOrder
     gender?: SortOrder
     birthDate?: SortOrder
+    birthPlace?: SortOrder
     avatar?: SortOrder
     phone?: SortOrder
     parentPhone?: SortOrder
@@ -51790,6 +54857,9 @@ export namespace Prisma {
     schoolName?: SortOrder
     emergencyPhone?: SortOrder
     registrationDate?: SortOrder
+    registrationFeePaid?: SortOrder
+    registrationFeeAmount?: SortOrder
+    registrationFeePaidAt?: SortOrder
     isActive?: SortOrder
     note?: SortOrder
     levelId?: SortOrder
@@ -51804,6 +54874,7 @@ export namespace Prisma {
     lastName?: SortOrder
     gender?: SortOrder
     birthDate?: SortOrder
+    birthPlace?: SortOrder
     avatar?: SortOrder
     phone?: SortOrder
     parentPhone?: SortOrder
@@ -51811,11 +54882,18 @@ export namespace Prisma {
     schoolName?: SortOrder
     emergencyPhone?: SortOrder
     registrationDate?: SortOrder
+    registrationFeePaid?: SortOrder
+    registrationFeeAmount?: SortOrder
+    registrationFeePaidAt?: SortOrder
     isActive?: SortOrder
     note?: SortOrder
     levelId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type StudentSumOrderByAggregateInput = {
+    registrationFeeAmount?: SortOrder
   }
 
   export type StudentScalarRelationFilter = {
@@ -51963,6 +55041,14 @@ export namespace Prisma {
     teachingAssignmentId?: SortOrder
     enrolledAt?: SortOrder
     eligibleFrom?: SortOrder
+    note?: SortOrder
+    transferPeerAssignmentId?: SortOrder
+    transferSheetId?: SortOrder
+    transferPeerSheetId?: SortOrder
+    transferAt?: SortOrder
+    pendingTransferToId?: SortOrder
+    pendingTransferAt?: SortOrder
+    pendingTransferSheetId?: SortOrder
     isActive?: SortOrder
   }
 
@@ -51972,6 +55058,14 @@ export namespace Prisma {
     teachingAssignmentId?: SortOrder
     enrolledAt?: SortOrder
     eligibleFrom?: SortOrder
+    note?: SortOrder
+    transferPeerAssignmentId?: SortOrder
+    transferSheetId?: SortOrder
+    transferPeerSheetId?: SortOrder
+    transferAt?: SortOrder
+    pendingTransferToId?: SortOrder
+    pendingTransferAt?: SortOrder
+    pendingTransferSheetId?: SortOrder
     isActive?: SortOrder
   }
 
@@ -51981,6 +55075,14 @@ export namespace Prisma {
     teachingAssignmentId?: SortOrder
     enrolledAt?: SortOrder
     eligibleFrom?: SortOrder
+    note?: SortOrder
+    transferPeerAssignmentId?: SortOrder
+    transferSheetId?: SortOrder
+    transferPeerSheetId?: SortOrder
+    transferAt?: SortOrder
+    pendingTransferToId?: SortOrder
+    pendingTransferAt?: SortOrder
+    pendingTransferSheetId?: SortOrder
     isActive?: SortOrder
   }
 
@@ -52171,6 +55273,7 @@ export namespace Prisma {
 
   export type AttendanceSheetCountOrderByAggregateInput = {
     id?: SortOrder
+    code?: SortOrder
     teachingAssignmentId?: SortOrder
     academicYearId?: SortOrder
     number?: SortOrder
@@ -52188,6 +55291,7 @@ export namespace Prisma {
 
   export type AttendanceSheetMaxOrderByAggregateInput = {
     id?: SortOrder
+    code?: SortOrder
     teachingAssignmentId?: SortOrder
     academicYearId?: SortOrder
     number?: SortOrder
@@ -52200,6 +55304,7 @@ export namespace Prisma {
 
   export type AttendanceSheetMinOrderByAggregateInput = {
     id?: SortOrder
+    code?: SortOrder
     teachingAssignmentId?: SortOrder
     academicYearId?: SortOrder
     number?: SortOrder
@@ -52300,6 +55405,12 @@ export namespace Prisma {
     none?: ReceiptWhereInput
   }
 
+  export type SettlementDocumentListRelationFilter = {
+    every?: SettlementDocumentWhereInput
+    some?: SettlementDocumentWhereInput
+    none?: SettlementDocumentWhereInput
+  }
+
   export type FinancialAuditLogListRelationFilter = {
     every?: FinancialAuditLogWhereInput
     some?: FinancialAuditLogWhereInput
@@ -52311,6 +55422,10 @@ export namespace Prisma {
   }
 
   export type ReceiptOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SettlementDocumentOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -53097,6 +56212,11 @@ export namespace Prisma {
     isNot?: SettlementPolicyWhereInput
   }
 
+  export type SettlementSnapshotNullableScalarRelationFilter = {
+    is?: SettlementSnapshotWhereInput | null
+    isNot?: SettlementSnapshotWhereInput | null
+  }
+
   export type TeacherPaymentAllocationListRelationFilter = {
     every?: TeacherPaymentAllocationWhereInput
     some?: TeacherPaymentAllocationWhereInput
@@ -53349,6 +56469,128 @@ export namespace Prisma {
     countedStudents?: SortOrder
     rate?: SortOrder
     lineTotal?: SortOrder
+  }
+
+  export type SettlementDocumentOrderByRelevanceInput = {
+    fields: SettlementDocumentOrderByRelevanceFieldEnum | SettlementDocumentOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SettlementDocumentCountOrderByAggregateInput = {
+    id?: SortOrder
+    settlementId?: SortOrder
+    pageNumber?: SortOrder
+    filePath?: SortOrder
+    fileName?: SortOrder
+    note?: SortOrder
+    uploadedById?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SettlementDocumentAvgOrderByAggregateInput = {
+    pageNumber?: SortOrder
+  }
+
+  export type SettlementDocumentMaxOrderByAggregateInput = {
+    id?: SortOrder
+    settlementId?: SortOrder
+    pageNumber?: SortOrder
+    filePath?: SortOrder
+    fileName?: SortOrder
+    note?: SortOrder
+    uploadedById?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SettlementDocumentMinOrderByAggregateInput = {
+    id?: SortOrder
+    settlementId?: SortOrder
+    pageNumber?: SortOrder
+    filePath?: SortOrder
+    fileName?: SortOrder
+    note?: SortOrder
+    uploadedById?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SettlementDocumentSumOrderByAggregateInput = {
+    pageNumber?: SortOrder
+  }
+  export type JsonFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
+  export type SettlementSnapshotOrderByRelevanceInput = {
+    fields: SettlementSnapshotOrderByRelevanceFieldEnum | SettlementSnapshotOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type SettlementSnapshotCountOrderByAggregateInput = {
+    id?: SortOrder
+    settlementId?: SortOrder
+    dailySheet?: SortOrder
+    monthlyFees?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SettlementSnapshotMaxOrderByAggregateInput = {
+    id?: SortOrder
+    settlementId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SettlementSnapshotMinOrderByAggregateInput = {
+    id?: SortOrder
+    settlementId?: SortOrder
+    createdAt?: SortOrder
+  }
+  export type JsonWithAggregatesFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedJsonFilter<$PrismaModel>
+    _max?: NestedJsonFilter<$PrismaModel>
   }
 
   export type EnumFinancialAuditActionFilter<$PrismaModel = never> = {
@@ -55943,6 +59185,13 @@ export namespace Prisma {
     connect?: StudentDocumentWhereUniqueInput | StudentDocumentWhereUniqueInput[]
   }
 
+  export type SettlementDocumentCreateNestedManyWithoutUploadedByInput = {
+    create?: XOR<SettlementDocumentCreateWithoutUploadedByInput, SettlementDocumentUncheckedCreateWithoutUploadedByInput> | SettlementDocumentCreateWithoutUploadedByInput[] | SettlementDocumentUncheckedCreateWithoutUploadedByInput[]
+    connectOrCreate?: SettlementDocumentCreateOrConnectWithoutUploadedByInput | SettlementDocumentCreateOrConnectWithoutUploadedByInput[]
+    createMany?: SettlementDocumentCreateManyUploadedByInputEnvelope
+    connect?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+  }
+
   export type SettlementCreateNestedManyWithoutConfirmedByInput = {
     create?: XOR<SettlementCreateWithoutConfirmedByInput, SettlementUncheckedCreateWithoutConfirmedByInput> | SettlementCreateWithoutConfirmedByInput[] | SettlementUncheckedCreateWithoutConfirmedByInput[]
     connectOrCreate?: SettlementCreateOrConnectWithoutConfirmedByInput | SettlementCreateOrConnectWithoutConfirmedByInput[]
@@ -56039,6 +59288,13 @@ export namespace Prisma {
     connectOrCreate?: StudentDocumentCreateOrConnectWithoutUploadedByInput | StudentDocumentCreateOrConnectWithoutUploadedByInput[]
     createMany?: StudentDocumentCreateManyUploadedByInputEnvelope
     connect?: StudentDocumentWhereUniqueInput | StudentDocumentWhereUniqueInput[]
+  }
+
+  export type SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput = {
+    create?: XOR<SettlementDocumentCreateWithoutUploadedByInput, SettlementDocumentUncheckedCreateWithoutUploadedByInput> | SettlementDocumentCreateWithoutUploadedByInput[] | SettlementDocumentUncheckedCreateWithoutUploadedByInput[]
+    connectOrCreate?: SettlementDocumentCreateOrConnectWithoutUploadedByInput | SettlementDocumentCreateOrConnectWithoutUploadedByInput[]
+    createMany?: SettlementDocumentCreateManyUploadedByInputEnvelope
+    connect?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
   }
 
   export type SettlementUncheckedCreateNestedManyWithoutConfirmedByInput = {
@@ -56194,6 +59450,20 @@ export namespace Prisma {
     update?: StudentDocumentUpdateWithWhereUniqueWithoutUploadedByInput | StudentDocumentUpdateWithWhereUniqueWithoutUploadedByInput[]
     updateMany?: StudentDocumentUpdateManyWithWhereWithoutUploadedByInput | StudentDocumentUpdateManyWithWhereWithoutUploadedByInput[]
     deleteMany?: StudentDocumentScalarWhereInput | StudentDocumentScalarWhereInput[]
+  }
+
+  export type SettlementDocumentUpdateManyWithoutUploadedByNestedInput = {
+    create?: XOR<SettlementDocumentCreateWithoutUploadedByInput, SettlementDocumentUncheckedCreateWithoutUploadedByInput> | SettlementDocumentCreateWithoutUploadedByInput[] | SettlementDocumentUncheckedCreateWithoutUploadedByInput[]
+    connectOrCreate?: SettlementDocumentCreateOrConnectWithoutUploadedByInput | SettlementDocumentCreateOrConnectWithoutUploadedByInput[]
+    upsert?: SettlementDocumentUpsertWithWhereUniqueWithoutUploadedByInput | SettlementDocumentUpsertWithWhereUniqueWithoutUploadedByInput[]
+    createMany?: SettlementDocumentCreateManyUploadedByInputEnvelope
+    set?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    disconnect?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    delete?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    connect?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    update?: SettlementDocumentUpdateWithWhereUniqueWithoutUploadedByInput | SettlementDocumentUpdateWithWhereUniqueWithoutUploadedByInput[]
+    updateMany?: SettlementDocumentUpdateManyWithWhereWithoutUploadedByInput | SettlementDocumentUpdateManyWithWhereWithoutUploadedByInput[]
+    deleteMany?: SettlementDocumentScalarWhereInput | SettlementDocumentScalarWhereInput[]
   }
 
   export type SettlementUpdateManyWithoutConfirmedByNestedInput = {
@@ -56390,6 +59660,20 @@ export namespace Prisma {
     update?: StudentDocumentUpdateWithWhereUniqueWithoutUploadedByInput | StudentDocumentUpdateWithWhereUniqueWithoutUploadedByInput[]
     updateMany?: StudentDocumentUpdateManyWithWhereWithoutUploadedByInput | StudentDocumentUpdateManyWithWhereWithoutUploadedByInput[]
     deleteMany?: StudentDocumentScalarWhereInput | StudentDocumentScalarWhereInput[]
+  }
+
+  export type SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput = {
+    create?: XOR<SettlementDocumentCreateWithoutUploadedByInput, SettlementDocumentUncheckedCreateWithoutUploadedByInput> | SettlementDocumentCreateWithoutUploadedByInput[] | SettlementDocumentUncheckedCreateWithoutUploadedByInput[]
+    connectOrCreate?: SettlementDocumentCreateOrConnectWithoutUploadedByInput | SettlementDocumentCreateOrConnectWithoutUploadedByInput[]
+    upsert?: SettlementDocumentUpsertWithWhereUniqueWithoutUploadedByInput | SettlementDocumentUpsertWithWhereUniqueWithoutUploadedByInput[]
+    createMany?: SettlementDocumentCreateManyUploadedByInputEnvelope
+    set?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    disconnect?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    delete?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    connect?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    update?: SettlementDocumentUpdateWithWhereUniqueWithoutUploadedByInput | SettlementDocumentUpdateWithWhereUniqueWithoutUploadedByInput[]
+    updateMany?: SettlementDocumentUpdateManyWithWhereWithoutUploadedByInput | SettlementDocumentUpdateManyWithWhereWithoutUploadedByInput[]
+    deleteMany?: SettlementDocumentScalarWhereInput | SettlementDocumentScalarWhereInput[]
   }
 
   export type SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput = {
@@ -57223,6 +60507,19 @@ export namespace Prisma {
     connect?: SettlementLineWhereUniqueInput | SettlementLineWhereUniqueInput[]
   }
 
+  export type SettlementDocumentCreateNestedManyWithoutSettlementInput = {
+    create?: XOR<SettlementDocumentCreateWithoutSettlementInput, SettlementDocumentUncheckedCreateWithoutSettlementInput> | SettlementDocumentCreateWithoutSettlementInput[] | SettlementDocumentUncheckedCreateWithoutSettlementInput[]
+    connectOrCreate?: SettlementDocumentCreateOrConnectWithoutSettlementInput | SettlementDocumentCreateOrConnectWithoutSettlementInput[]
+    createMany?: SettlementDocumentCreateManySettlementInputEnvelope
+    connect?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+  }
+
+  export type SettlementSnapshotCreateNestedOneWithoutSettlementInput = {
+    create?: XOR<SettlementSnapshotCreateWithoutSettlementInput, SettlementSnapshotUncheckedCreateWithoutSettlementInput>
+    connectOrCreate?: SettlementSnapshotCreateOrConnectWithoutSettlementInput
+    connect?: SettlementSnapshotWhereUniqueInput
+  }
+
   export type TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput = {
     create?: XOR<TeacherDebtShareCreateWithoutOriginalSettlementInput, TeacherDebtShareUncheckedCreateWithoutOriginalSettlementInput> | TeacherDebtShareCreateWithoutOriginalSettlementInput[] | TeacherDebtShareUncheckedCreateWithoutOriginalSettlementInput[]
     connectOrCreate?: TeacherDebtShareCreateOrConnectWithoutOriginalSettlementInput | TeacherDebtShareCreateOrConnectWithoutOriginalSettlementInput[]
@@ -57249,6 +60546,19 @@ export namespace Prisma {
     connectOrCreate?: SettlementLineCreateOrConnectWithoutSettlementInput | SettlementLineCreateOrConnectWithoutSettlementInput[]
     createMany?: SettlementLineCreateManySettlementInputEnvelope
     connect?: SettlementLineWhereUniqueInput | SettlementLineWhereUniqueInput[]
+  }
+
+  export type SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput = {
+    create?: XOR<SettlementDocumentCreateWithoutSettlementInput, SettlementDocumentUncheckedCreateWithoutSettlementInput> | SettlementDocumentCreateWithoutSettlementInput[] | SettlementDocumentUncheckedCreateWithoutSettlementInput[]
+    connectOrCreate?: SettlementDocumentCreateOrConnectWithoutSettlementInput | SettlementDocumentCreateOrConnectWithoutSettlementInput[]
+    createMany?: SettlementDocumentCreateManySettlementInputEnvelope
+    connect?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+  }
+
+  export type SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput = {
+    create?: XOR<SettlementSnapshotCreateWithoutSettlementInput, SettlementSnapshotUncheckedCreateWithoutSettlementInput>
+    connectOrCreate?: SettlementSnapshotCreateOrConnectWithoutSettlementInput
+    connect?: SettlementSnapshotWhereUniqueInput
   }
 
   export type TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput = {
@@ -57360,6 +60670,30 @@ export namespace Prisma {
     deleteMany?: SettlementLineScalarWhereInput | SettlementLineScalarWhereInput[]
   }
 
+  export type SettlementDocumentUpdateManyWithoutSettlementNestedInput = {
+    create?: XOR<SettlementDocumentCreateWithoutSettlementInput, SettlementDocumentUncheckedCreateWithoutSettlementInput> | SettlementDocumentCreateWithoutSettlementInput[] | SettlementDocumentUncheckedCreateWithoutSettlementInput[]
+    connectOrCreate?: SettlementDocumentCreateOrConnectWithoutSettlementInput | SettlementDocumentCreateOrConnectWithoutSettlementInput[]
+    upsert?: SettlementDocumentUpsertWithWhereUniqueWithoutSettlementInput | SettlementDocumentUpsertWithWhereUniqueWithoutSettlementInput[]
+    createMany?: SettlementDocumentCreateManySettlementInputEnvelope
+    set?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    disconnect?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    delete?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    connect?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    update?: SettlementDocumentUpdateWithWhereUniqueWithoutSettlementInput | SettlementDocumentUpdateWithWhereUniqueWithoutSettlementInput[]
+    updateMany?: SettlementDocumentUpdateManyWithWhereWithoutSettlementInput | SettlementDocumentUpdateManyWithWhereWithoutSettlementInput[]
+    deleteMany?: SettlementDocumentScalarWhereInput | SettlementDocumentScalarWhereInput[]
+  }
+
+  export type SettlementSnapshotUpdateOneWithoutSettlementNestedInput = {
+    create?: XOR<SettlementSnapshotCreateWithoutSettlementInput, SettlementSnapshotUncheckedCreateWithoutSettlementInput>
+    connectOrCreate?: SettlementSnapshotCreateOrConnectWithoutSettlementInput
+    upsert?: SettlementSnapshotUpsertWithoutSettlementInput
+    disconnect?: SettlementSnapshotWhereInput | boolean
+    delete?: SettlementSnapshotWhereInput | boolean
+    connect?: SettlementSnapshotWhereUniqueInput
+    update?: XOR<XOR<SettlementSnapshotUpdateToOneWithWhereWithoutSettlementInput, SettlementSnapshotUpdateWithoutSettlementInput>, SettlementSnapshotUncheckedUpdateWithoutSettlementInput>
+  }
+
   export type TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput = {
     create?: XOR<TeacherDebtShareCreateWithoutOriginalSettlementInput, TeacherDebtShareUncheckedCreateWithoutOriginalSettlementInput> | TeacherDebtShareCreateWithoutOriginalSettlementInput[] | TeacherDebtShareUncheckedCreateWithoutOriginalSettlementInput[]
     connectOrCreate?: TeacherDebtShareCreateOrConnectWithoutOriginalSettlementInput | TeacherDebtShareCreateOrConnectWithoutOriginalSettlementInput[]
@@ -57414,6 +60748,30 @@ export namespace Prisma {
     update?: SettlementLineUpdateWithWhereUniqueWithoutSettlementInput | SettlementLineUpdateWithWhereUniqueWithoutSettlementInput[]
     updateMany?: SettlementLineUpdateManyWithWhereWithoutSettlementInput | SettlementLineUpdateManyWithWhereWithoutSettlementInput[]
     deleteMany?: SettlementLineScalarWhereInput | SettlementLineScalarWhereInput[]
+  }
+
+  export type SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput = {
+    create?: XOR<SettlementDocumentCreateWithoutSettlementInput, SettlementDocumentUncheckedCreateWithoutSettlementInput> | SettlementDocumentCreateWithoutSettlementInput[] | SettlementDocumentUncheckedCreateWithoutSettlementInput[]
+    connectOrCreate?: SettlementDocumentCreateOrConnectWithoutSettlementInput | SettlementDocumentCreateOrConnectWithoutSettlementInput[]
+    upsert?: SettlementDocumentUpsertWithWhereUniqueWithoutSettlementInput | SettlementDocumentUpsertWithWhereUniqueWithoutSettlementInput[]
+    createMany?: SettlementDocumentCreateManySettlementInputEnvelope
+    set?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    disconnect?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    delete?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    connect?: SettlementDocumentWhereUniqueInput | SettlementDocumentWhereUniqueInput[]
+    update?: SettlementDocumentUpdateWithWhereUniqueWithoutSettlementInput | SettlementDocumentUpdateWithWhereUniqueWithoutSettlementInput[]
+    updateMany?: SettlementDocumentUpdateManyWithWhereWithoutSettlementInput | SettlementDocumentUpdateManyWithWhereWithoutSettlementInput[]
+    deleteMany?: SettlementDocumentScalarWhereInput | SettlementDocumentScalarWhereInput[]
+  }
+
+  export type SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput = {
+    create?: XOR<SettlementSnapshotCreateWithoutSettlementInput, SettlementSnapshotUncheckedCreateWithoutSettlementInput>
+    connectOrCreate?: SettlementSnapshotCreateOrConnectWithoutSettlementInput
+    upsert?: SettlementSnapshotUpsertWithoutSettlementInput
+    disconnect?: SettlementSnapshotWhereInput | boolean
+    delete?: SettlementSnapshotWhereInput | boolean
+    connect?: SettlementSnapshotWhereUniqueInput
+    update?: XOR<XOR<SettlementSnapshotUpdateToOneWithWhereWithoutSettlementInput, SettlementSnapshotUpdateWithoutSettlementInput>, SettlementSnapshotUncheckedUpdateWithoutSettlementInput>
   }
 
   export type TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput = {
@@ -57486,6 +60844,50 @@ export namespace Prisma {
     delete?: SessionWhereInput | boolean
     connect?: SessionWhereUniqueInput
     update?: XOR<XOR<SessionUpdateToOneWithWhereWithoutSettlementLinesInput, SessionUpdateWithoutSettlementLinesInput>, SessionUncheckedUpdateWithoutSettlementLinesInput>
+  }
+
+  export type SettlementCreateNestedOneWithoutDocumentsInput = {
+    create?: XOR<SettlementCreateWithoutDocumentsInput, SettlementUncheckedCreateWithoutDocumentsInput>
+    connectOrCreate?: SettlementCreateOrConnectWithoutDocumentsInput
+    connect?: SettlementWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutSettlementDocsInput = {
+    create?: XOR<UserCreateWithoutSettlementDocsInput, UserUncheckedCreateWithoutSettlementDocsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSettlementDocsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type SettlementUpdateOneRequiredWithoutDocumentsNestedInput = {
+    create?: XOR<SettlementCreateWithoutDocumentsInput, SettlementUncheckedCreateWithoutDocumentsInput>
+    connectOrCreate?: SettlementCreateOrConnectWithoutDocumentsInput
+    upsert?: SettlementUpsertWithoutDocumentsInput
+    connect?: SettlementWhereUniqueInput
+    update?: XOR<XOR<SettlementUpdateToOneWithWhereWithoutDocumentsInput, SettlementUpdateWithoutDocumentsInput>, SettlementUncheckedUpdateWithoutDocumentsInput>
+  }
+
+  export type UserUpdateOneWithoutSettlementDocsNestedInput = {
+    create?: XOR<UserCreateWithoutSettlementDocsInput, UserUncheckedCreateWithoutSettlementDocsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSettlementDocsInput
+    upsert?: UserUpsertWithoutSettlementDocsInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSettlementDocsInput, UserUpdateWithoutSettlementDocsInput>, UserUncheckedUpdateWithoutSettlementDocsInput>
+  }
+
+  export type SettlementCreateNestedOneWithoutSnapshotInput = {
+    create?: XOR<SettlementCreateWithoutSnapshotInput, SettlementUncheckedCreateWithoutSnapshotInput>
+    connectOrCreate?: SettlementCreateOrConnectWithoutSnapshotInput
+    connect?: SettlementWhereUniqueInput
+  }
+
+  export type SettlementUpdateOneRequiredWithoutSnapshotNestedInput = {
+    create?: XOR<SettlementCreateWithoutSnapshotInput, SettlementUncheckedCreateWithoutSnapshotInput>
+    connectOrCreate?: SettlementCreateOrConnectWithoutSnapshotInput
+    upsert?: SettlementUpsertWithoutSnapshotInput
+    connect?: SettlementWhereUniqueInput
+    update?: XOR<XOR<SettlementUpdateToOneWithWhereWithoutSnapshotInput, SettlementUpdateWithoutSnapshotInput>, SettlementUncheckedUpdateWithoutSnapshotInput>
   }
 
   export type UserCreateNestedOneWithoutAuditLogsInput = {
@@ -58419,6 +61821,29 @@ export namespace Prisma {
     _min?: NestedEnumSettlementStatusFilter<$PrismaModel>
     _max?: NestedEnumSettlementStatusFilter<$PrismaModel>
   }
+  export type NestedJsonFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type NestedJsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
 
   export type NestedEnumFinancialAuditActionFilter<$PrismaModel = never> = {
     equals?: $Enums.FinancialAuditAction | EnumFinancialAuditActionFieldRefInput<$PrismaModel>
@@ -58613,6 +62038,7 @@ export namespace Prisma {
 
   export type AttendanceSheetCreateWithoutAcademicYearInput = {
     id?: string
+    code: string
     number: number
     label?: string | null
     sessionCount: number
@@ -58627,6 +62053,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedCreateWithoutAcademicYearInput = {
     id?: string
+    code: string
     teachingAssignmentId: string
     number: number
     label?: string | null
@@ -58747,6 +62174,8 @@ export namespace Prisma {
     paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
     cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
     lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
@@ -58790,6 +62219,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
@@ -58974,6 +62405,7 @@ export namespace Prisma {
     OR?: AttendanceSheetScalarWhereInput[]
     NOT?: AttendanceSheetScalarWhereInput | AttendanceSheetScalarWhereInput[]
     id?: StringFilter<"AttendanceSheet"> | string
+    code?: StringFilter<"AttendanceSheet"> | string
     teachingAssignmentId?: StringFilter<"AttendanceSheet"> | string
     academicYearId?: StringFilter<"AttendanceSheet"> | string
     number?: IntFilter<"AttendanceSheet"> | number
@@ -59351,6 +62783,7 @@ export namespace Prisma {
     lastName: string
     gender: $Enums.Gender
     birthDate?: Date | string | null
+    birthPlace?: string | null
     avatar?: string | null
     phone?: string | null
     parentPhone: string
@@ -59358,6 +62791,9 @@ export namespace Prisma {
     schoolName?: string | null
     emergencyPhone?: string | null
     registrationDate?: Date | string
+    registrationFeePaid?: boolean
+    registrationFeeAmount?: Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: Date | string | null
     isActive?: boolean
     note?: string | null
     createdAt?: Date | string
@@ -59373,6 +62809,7 @@ export namespace Prisma {
     lastName: string
     gender: $Enums.Gender
     birthDate?: Date | string | null
+    birthPlace?: string | null
     avatar?: string | null
     phone?: string | null
     parentPhone: string
@@ -59380,6 +62817,9 @@ export namespace Prisma {
     schoolName?: string | null
     emergencyPhone?: string | null
     registrationDate?: Date | string
+    registrationFeePaid?: boolean
+    registrationFeeAmount?: Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: Date | string | null
     isActive?: boolean
     note?: string | null
     createdAt?: Date | string
@@ -59503,6 +62943,7 @@ export namespace Prisma {
     lastName?: StringFilter<"Student"> | string
     gender?: EnumGenderFilter<"Student"> | $Enums.Gender
     birthDate?: DateTimeNullableFilter<"Student"> | Date | string | null
+    birthPlace?: StringNullableFilter<"Student"> | string | null
     avatar?: StringNullableFilter<"Student"> | string | null
     phone?: StringNullableFilter<"Student"> | string | null
     parentPhone?: StringFilter<"Student"> | string
@@ -59510,6 +62951,9 @@ export namespace Prisma {
     schoolName?: StringNullableFilter<"Student"> | string | null
     emergencyPhone?: StringNullableFilter<"Student"> | string | null
     registrationDate?: DateTimeFilter<"Student"> | Date | string
+    registrationFeePaid?: BoolFilter<"Student"> | boolean
+    registrationFeeAmount?: DecimalNullableFilter<"Student"> | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: DateTimeNullableFilter<"Student"> | Date | string | null
     isActive?: BoolFilter<"Student"> | boolean
     note?: StringNullableFilter<"Student"> | string | null
     levelId?: StringNullableFilter<"Student"> | string | null
@@ -60306,6 +63750,7 @@ export namespace Prisma {
     code?: string | null
     description?: string | null
     color?: string | null
+    imagePath?: string | null
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -60319,6 +63764,7 @@ export namespace Prisma {
     code?: string | null
     description?: string | null
     color?: string | null
+    imagePath?: string | null
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -60482,6 +63928,7 @@ export namespace Prisma {
     code?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
+    imagePath?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -60495,6 +63942,7 @@ export namespace Prisma {
     code?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
+    imagePath?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -60743,6 +64191,8 @@ export namespace Prisma {
     paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
     cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
     lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
@@ -60786,6 +64236,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
@@ -61117,6 +64569,14 @@ export namespace Prisma {
     id?: string
     enrolledAt?: Date | string
     eligibleFrom?: Date | string | null
+    note?: string | null
+    transferPeerAssignmentId?: string | null
+    transferSheetId?: string | null
+    transferPeerSheetId?: string | null
+    transferAt?: Date | string | null
+    pendingTransferToId?: string | null
+    pendingTransferAt?: Date | string | null
+    pendingTransferSheetId?: string | null
     isActive?: boolean
     teachingAssignment: TeachingAssignmentCreateNestedOneWithoutEnrollmentsInput
     invoices?: InvoiceCreateNestedManyWithoutStudentEnrollmentInput
@@ -61128,6 +64588,14 @@ export namespace Prisma {
     teachingAssignmentId: string
     enrolledAt?: Date | string
     eligibleFrom?: Date | string | null
+    note?: string | null
+    transferPeerAssignmentId?: string | null
+    transferSheetId?: string | null
+    transferPeerSheetId?: string | null
+    transferAt?: Date | string | null
+    pendingTransferToId?: string | null
+    pendingTransferAt?: Date | string | null
+    pendingTransferSheetId?: string | null
     isActive?: boolean
     invoices?: InvoiceUncheckedCreateNestedManyWithoutStudentEnrollmentInput
     attendances?: AttendanceUncheckedCreateNestedManyWithoutStudentEnrollmentInput
@@ -61235,6 +64703,14 @@ export namespace Prisma {
     teachingAssignmentId?: StringFilter<"StudentEnrollment"> | string
     enrolledAt?: DateTimeFilter<"StudentEnrollment"> | Date | string
     eligibleFrom?: DateTimeNullableFilter<"StudentEnrollment"> | Date | string | null
+    note?: StringNullableFilter<"StudentEnrollment"> | string | null
+    transferPeerAssignmentId?: StringNullableFilter<"StudentEnrollment"> | string | null
+    transferSheetId?: StringNullableFilter<"StudentEnrollment"> | string | null
+    transferPeerSheetId?: StringNullableFilter<"StudentEnrollment"> | string | null
+    transferAt?: DateTimeNullableFilter<"StudentEnrollment"> | Date | string | null
+    pendingTransferToId?: StringNullableFilter<"StudentEnrollment"> | string | null
+    pendingTransferAt?: DateTimeNullableFilter<"StudentEnrollment"> | Date | string | null
+    pendingTransferSheetId?: StringNullableFilter<"StudentEnrollment"> | string | null
     isActive?: BoolFilter<"StudentEnrollment"> | boolean
   }
 
@@ -61276,6 +64752,7 @@ export namespace Prisma {
     lastName: string
     gender: $Enums.Gender
     birthDate?: Date | string | null
+    birthPlace?: string | null
     avatar?: string | null
     phone?: string | null
     parentPhone: string
@@ -61283,6 +64760,9 @@ export namespace Prisma {
     schoolName?: string | null
     emergencyPhone?: string | null
     registrationDate?: Date | string
+    registrationFeePaid?: boolean
+    registrationFeeAmount?: Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: Date | string | null
     isActive?: boolean
     note?: string | null
     createdAt?: Date | string
@@ -61298,6 +64778,7 @@ export namespace Prisma {
     lastName: string
     gender: $Enums.Gender
     birthDate?: Date | string | null
+    birthPlace?: string | null
     avatar?: string | null
     phone?: string | null
     parentPhone: string
@@ -61305,6 +64786,9 @@ export namespace Prisma {
     schoolName?: string | null
     emergencyPhone?: string | null
     registrationDate?: Date | string
+    registrationFeePaid?: boolean
+    registrationFeeAmount?: Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: Date | string | null
     isActive?: boolean
     note?: string | null
     levelId?: string | null
@@ -61339,6 +64823,7 @@ export namespace Prisma {
     cancelledPayments?: PaymentCreateNestedManyWithoutCancelledByInput
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
@@ -61369,6 +64854,7 @@ export namespace Prisma {
     cancelledPayments?: PaymentUncheckedCreateNestedManyWithoutCancelledByInput
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
@@ -61401,6 +64887,7 @@ export namespace Prisma {
     lastName?: StringFieldUpdateOperationsInput | string
     gender?: EnumGenderFieldUpdateOperationsInput | $Enums.Gender
     birthDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    birthPlace?: NullableStringFieldUpdateOperationsInput | string | null
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     parentPhone?: StringFieldUpdateOperationsInput | string
@@ -61408,6 +64895,9 @@ export namespace Prisma {
     schoolName?: NullableStringFieldUpdateOperationsInput | string | null
     emergencyPhone?: NullableStringFieldUpdateOperationsInput | string | null
     registrationDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    registrationFeePaid?: BoolFieldUpdateOperationsInput | boolean
+    registrationFeeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     note?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61423,6 +64913,7 @@ export namespace Prisma {
     lastName?: StringFieldUpdateOperationsInput | string
     gender?: EnumGenderFieldUpdateOperationsInput | $Enums.Gender
     birthDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    birthPlace?: NullableStringFieldUpdateOperationsInput | string | null
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     parentPhone?: StringFieldUpdateOperationsInput | string
@@ -61430,6 +64921,9 @@ export namespace Prisma {
     schoolName?: NullableStringFieldUpdateOperationsInput | string | null
     emergencyPhone?: NullableStringFieldUpdateOperationsInput | string | null
     registrationDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    registrationFeePaid?: BoolFieldUpdateOperationsInput | boolean
+    registrationFeeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     note?: NullableStringFieldUpdateOperationsInput | string | null
     levelId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -61470,6 +64964,7 @@ export namespace Prisma {
     cancelledPayments?: PaymentUpdateManyWithoutCancelledByNestedInput
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
@@ -61500,6 +64995,7 @@ export namespace Prisma {
     cancelledPayments?: PaymentUncheckedUpdateManyWithoutCancelledByNestedInput
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
@@ -61566,6 +65062,7 @@ export namespace Prisma {
     code?: string | null
     description?: string | null
     color?: string | null
+    imagePath?: string | null
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -61579,6 +65076,7 @@ export namespace Prisma {
     code?: string | null
     description?: string | null
     color?: string | null
+    imagePath?: string | null
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -61699,6 +65197,14 @@ export namespace Prisma {
     id?: string
     enrolledAt?: Date | string
     eligibleFrom?: Date | string | null
+    note?: string | null
+    transferPeerAssignmentId?: string | null
+    transferSheetId?: string | null
+    transferPeerSheetId?: string | null
+    transferAt?: Date | string | null
+    pendingTransferToId?: string | null
+    pendingTransferAt?: Date | string | null
+    pendingTransferSheetId?: string | null
     isActive?: boolean
     student: StudentCreateNestedOneWithoutEnrollmentsInput
     invoices?: InvoiceCreateNestedManyWithoutStudentEnrollmentInput
@@ -61710,6 +65216,14 @@ export namespace Prisma {
     studentId: string
     enrolledAt?: Date | string
     eligibleFrom?: Date | string | null
+    note?: string | null
+    transferPeerAssignmentId?: string | null
+    transferSheetId?: string | null
+    transferPeerSheetId?: string | null
+    transferAt?: Date | string | null
+    pendingTransferToId?: string | null
+    pendingTransferAt?: Date | string | null
+    pendingTransferSheetId?: string | null
     isActive?: boolean
     invoices?: InvoiceUncheckedCreateNestedManyWithoutStudentEnrollmentInput
     attendances?: AttendanceUncheckedCreateNestedManyWithoutStudentEnrollmentInput
@@ -61727,6 +65241,7 @@ export namespace Prisma {
 
   export type AttendanceSheetCreateWithoutTeachingAssignmentInput = {
     id?: string
+    code: string
     number: number
     label?: string | null
     sessionCount: number
@@ -61741,6 +65256,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedCreateWithoutTeachingAssignmentInput = {
     id?: string
+    code: string
     academicYearId: string
     number: number
     label?: string | null
@@ -61801,6 +65317,8 @@ export namespace Prisma {
     paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
     cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
     lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
@@ -61844,6 +65362,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
@@ -61933,6 +65453,7 @@ export namespace Prisma {
     code?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
+    imagePath?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61946,6 +65467,7 @@ export namespace Prisma {
     code?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
+    imagePath?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -62108,6 +65630,7 @@ export namespace Prisma {
     lastName: string
     gender: $Enums.Gender
     birthDate?: Date | string | null
+    birthPlace?: string | null
     avatar?: string | null
     phone?: string | null
     parentPhone: string
@@ -62115,6 +65638,9 @@ export namespace Prisma {
     schoolName?: string | null
     emergencyPhone?: string | null
     registrationDate?: Date | string
+    registrationFeePaid?: boolean
+    registrationFeeAmount?: Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: Date | string | null
     isActive?: boolean
     note?: string | null
     createdAt?: Date | string
@@ -62130,6 +65656,7 @@ export namespace Prisma {
     lastName: string
     gender: $Enums.Gender
     birthDate?: Date | string | null
+    birthPlace?: string | null
     avatar?: string | null
     phone?: string | null
     parentPhone: string
@@ -62137,6 +65664,9 @@ export namespace Prisma {
     schoolName?: string | null
     emergencyPhone?: string | null
     registrationDate?: Date | string
+    registrationFeePaid?: boolean
+    registrationFeeAmount?: Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: Date | string | null
     isActive?: boolean
     note?: string | null
     levelId?: string | null
@@ -62293,6 +65823,7 @@ export namespace Prisma {
     lastName?: StringFieldUpdateOperationsInput | string
     gender?: EnumGenderFieldUpdateOperationsInput | $Enums.Gender
     birthDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    birthPlace?: NullableStringFieldUpdateOperationsInput | string | null
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     parentPhone?: StringFieldUpdateOperationsInput | string
@@ -62300,6 +65831,9 @@ export namespace Prisma {
     schoolName?: NullableStringFieldUpdateOperationsInput | string | null
     emergencyPhone?: NullableStringFieldUpdateOperationsInput | string | null
     registrationDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    registrationFeePaid?: BoolFieldUpdateOperationsInput | boolean
+    registrationFeeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     note?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -62315,6 +65849,7 @@ export namespace Prisma {
     lastName?: StringFieldUpdateOperationsInput | string
     gender?: EnumGenderFieldUpdateOperationsInput | $Enums.Gender
     birthDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    birthPlace?: NullableStringFieldUpdateOperationsInput | string | null
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     parentPhone?: StringFieldUpdateOperationsInput | string
@@ -62322,6 +65857,9 @@ export namespace Prisma {
     schoolName?: NullableStringFieldUpdateOperationsInput | string | null
     emergencyPhone?: NullableStringFieldUpdateOperationsInput | string | null
     registrationDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    registrationFeePaid?: BoolFieldUpdateOperationsInput | boolean
+    registrationFeeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     note?: NullableStringFieldUpdateOperationsInput | string | null
     levelId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -62718,6 +66256,7 @@ export namespace Prisma {
 
   export type AttendanceSheetCreateWithoutSessionsInput = {
     id?: string
+    code: string
     number: number
     label?: string | null
     sessionCount: number
@@ -62732,6 +66271,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedCreateWithoutSessionsInput = {
     id?: string
+    code: string
     teachingAssignmentId: string
     academicYearId: string
     number: number
@@ -62855,6 +66395,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUpdateWithoutSessionsInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     sessionCount?: IntFieldUpdateOperationsInput | number
@@ -62869,6 +66410,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedUpdateWithoutSessionsInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     teachingAssignmentId?: StringFieldUpdateOperationsInput | string
     academicYearId?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
@@ -63076,6 +66618,8 @@ export namespace Prisma {
     paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
     cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
     lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
@@ -63119,6 +66663,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
@@ -63336,6 +66882,14 @@ export namespace Prisma {
     id?: string
     enrolledAt?: Date | string
     eligibleFrom?: Date | string | null
+    note?: string | null
+    transferPeerAssignmentId?: string | null
+    transferSheetId?: string | null
+    transferPeerSheetId?: string | null
+    transferAt?: Date | string | null
+    pendingTransferToId?: string | null
+    pendingTransferAt?: Date | string | null
+    pendingTransferSheetId?: string | null
     isActive?: boolean
     student: StudentCreateNestedOneWithoutEnrollmentsInput
     teachingAssignment: TeachingAssignmentCreateNestedOneWithoutEnrollmentsInput
@@ -63348,6 +66902,14 @@ export namespace Prisma {
     teachingAssignmentId: string
     enrolledAt?: Date | string
     eligibleFrom?: Date | string | null
+    note?: string | null
+    transferPeerAssignmentId?: string | null
+    transferSheetId?: string | null
+    transferPeerSheetId?: string | null
+    transferAt?: Date | string | null
+    pendingTransferToId?: string | null
+    pendingTransferAt?: Date | string | null
+    pendingTransferSheetId?: string | null
     isActive?: boolean
     invoices?: InvoiceUncheckedCreateNestedManyWithoutStudentEnrollmentInput
   }
@@ -63403,6 +66965,14 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     student?: StudentUpdateOneRequiredWithoutEnrollmentsNestedInput
     teachingAssignment?: TeachingAssignmentUpdateOneRequiredWithoutEnrollmentsNestedInput
@@ -63415,6 +66985,14 @@ export namespace Prisma {
     teachingAssignmentId?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     invoices?: InvoiceUncheckedUpdateManyWithoutStudentEnrollmentNestedInput
   }
@@ -63809,6 +67387,36 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type SettlementDocumentCreateWithoutUploadedByInput = {
+    id?: string
+    pageNumber?: number
+    filePath: string
+    fileName?: string | null
+    note?: string | null
+    createdAt?: Date | string
+    settlement: SettlementCreateNestedOneWithoutDocumentsInput
+  }
+
+  export type SettlementDocumentUncheckedCreateWithoutUploadedByInput = {
+    id?: string
+    settlementId: string
+    pageNumber?: number
+    filePath: string
+    fileName?: string | null
+    note?: string | null
+    createdAt?: Date | string
+  }
+
+  export type SettlementDocumentCreateOrConnectWithoutUploadedByInput = {
+    where: SettlementDocumentWhereUniqueInput
+    create: XOR<SettlementDocumentCreateWithoutUploadedByInput, SettlementDocumentUncheckedCreateWithoutUploadedByInput>
+  }
+
+  export type SettlementDocumentCreateManyUploadedByInputEnvelope = {
+    data: SettlementDocumentCreateManyUploadedByInput | SettlementDocumentCreateManyUploadedByInput[]
+    skipDuplicates?: boolean
+  }
+
   export type SettlementCreateWithoutConfirmedByInput = {
     id?: string
     settlementNumber: string
@@ -63847,6 +67455,8 @@ export namespace Prisma {
     paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
     cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
     lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
@@ -63890,6 +67500,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
@@ -63943,6 +67555,8 @@ export namespace Prisma {
     confirmedBy?: UserCreateNestedOneWithoutConfirmedSettlementsInput
     cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
     lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
@@ -63986,6 +67600,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
@@ -64039,6 +67655,8 @@ export namespace Prisma {
     confirmedBy?: UserCreateNestedOneWithoutConfirmedSettlementsInput
     paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
     lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
@@ -64082,6 +67700,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
@@ -64459,6 +68079,36 @@ export namespace Prisma {
     data: XOR<StudentDocumentUpdateManyMutationInput, StudentDocumentUncheckedUpdateManyWithoutUploadedByInput>
   }
 
+  export type SettlementDocumentUpsertWithWhereUniqueWithoutUploadedByInput = {
+    where: SettlementDocumentWhereUniqueInput
+    update: XOR<SettlementDocumentUpdateWithoutUploadedByInput, SettlementDocumentUncheckedUpdateWithoutUploadedByInput>
+    create: XOR<SettlementDocumentCreateWithoutUploadedByInput, SettlementDocumentUncheckedCreateWithoutUploadedByInput>
+  }
+
+  export type SettlementDocumentUpdateWithWhereUniqueWithoutUploadedByInput = {
+    where: SettlementDocumentWhereUniqueInput
+    data: XOR<SettlementDocumentUpdateWithoutUploadedByInput, SettlementDocumentUncheckedUpdateWithoutUploadedByInput>
+  }
+
+  export type SettlementDocumentUpdateManyWithWhereWithoutUploadedByInput = {
+    where: SettlementDocumentScalarWhereInput
+    data: XOR<SettlementDocumentUpdateManyMutationInput, SettlementDocumentUncheckedUpdateManyWithoutUploadedByInput>
+  }
+
+  export type SettlementDocumentScalarWhereInput = {
+    AND?: SettlementDocumentScalarWhereInput | SettlementDocumentScalarWhereInput[]
+    OR?: SettlementDocumentScalarWhereInput[]
+    NOT?: SettlementDocumentScalarWhereInput | SettlementDocumentScalarWhereInput[]
+    id?: StringFilter<"SettlementDocument"> | string
+    settlementId?: StringFilter<"SettlementDocument"> | string
+    pageNumber?: IntFilter<"SettlementDocument"> | number
+    filePath?: StringFilter<"SettlementDocument"> | string
+    fileName?: StringNullableFilter<"SettlementDocument"> | string | null
+    note?: StringNullableFilter<"SettlementDocument"> | string | null
+    uploadedById?: StringNullableFilter<"SettlementDocument"> | string | null
+    createdAt?: DateTimeFilter<"SettlementDocument"> | Date | string
+  }
+
   export type SettlementUpsertWithWhereUniqueWithoutConfirmedByInput = {
     where: SettlementWhereUniqueInput
     update: XOR<SettlementUpdateWithoutConfirmedByInput, SettlementUncheckedUpdateWithoutConfirmedByInput>
@@ -64608,6 +68258,7 @@ export namespace Prisma {
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
@@ -64638,6 +68289,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
@@ -64886,6 +68538,14 @@ export namespace Prisma {
     id?: string
     enrolledAt?: Date | string
     eligibleFrom?: Date | string | null
+    note?: string | null
+    transferPeerAssignmentId?: string | null
+    transferSheetId?: string | null
+    transferPeerSheetId?: string | null
+    transferAt?: Date | string | null
+    pendingTransferToId?: string | null
+    pendingTransferAt?: Date | string | null
+    pendingTransferSheetId?: string | null
     isActive?: boolean
     student: StudentCreateNestedOneWithoutEnrollmentsInput
     teachingAssignment: TeachingAssignmentCreateNestedOneWithoutEnrollmentsInput
@@ -64898,6 +68558,14 @@ export namespace Prisma {
     teachingAssignmentId: string
     enrolledAt?: Date | string
     eligibleFrom?: Date | string | null
+    note?: string | null
+    transferPeerAssignmentId?: string | null
+    transferSheetId?: string | null
+    transferPeerSheetId?: string | null
+    transferAt?: Date | string | null
+    pendingTransferToId?: string | null
+    pendingTransferAt?: Date | string | null
+    pendingTransferSheetId?: string | null
     isActive?: boolean
     attendances?: AttendanceUncheckedCreateNestedManyWithoutStudentEnrollmentInput
   }
@@ -64950,6 +68618,7 @@ export namespace Prisma {
 
   export type AttendanceSheetCreateWithoutInvoicesInput = {
     id?: string
+    code: string
     number: number
     label?: string | null
     sessionCount: number
@@ -64964,6 +68633,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedCreateWithoutInvoicesInput = {
     id?: string
+    code: string
     teachingAssignmentId: string
     academicYearId: string
     number: number
@@ -65002,6 +68672,7 @@ export namespace Prisma {
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
@@ -65032,6 +68703,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
@@ -65067,6 +68739,7 @@ export namespace Prisma {
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
@@ -65097,6 +68770,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
@@ -65182,6 +68856,14 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     student?: StudentUpdateOneRequiredWithoutEnrollmentsNestedInput
     teachingAssignment?: TeachingAssignmentUpdateOneRequiredWithoutEnrollmentsNestedInput
@@ -65194,6 +68876,14 @@ export namespace Prisma {
     teachingAssignmentId?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     attendances?: AttendanceUncheckedUpdateManyWithoutStudentEnrollmentNestedInput
   }
@@ -65258,6 +68948,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUpdateWithoutInvoicesInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     sessionCount?: IntFieldUpdateOperationsInput | number
@@ -65272,6 +68963,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedUpdateWithoutInvoicesInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     teachingAssignmentId?: StringFieldUpdateOperationsInput | string
     academicYearId?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
@@ -65316,6 +69008,7 @@ export namespace Prisma {
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
@@ -65346,6 +69039,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
@@ -65387,6 +69081,7 @@ export namespace Prisma {
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
@@ -65417,6 +69112,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
@@ -65504,6 +69200,7 @@ export namespace Prisma {
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
@@ -65534,6 +69231,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
@@ -65569,6 +69267,7 @@ export namespace Prisma {
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
@@ -65599,6 +69298,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
@@ -65734,6 +69434,7 @@ export namespace Prisma {
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
@@ -65764,6 +69465,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
@@ -65805,6 +69507,7 @@ export namespace Prisma {
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
@@ -65835,6 +69538,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
@@ -66189,6 +69893,7 @@ export namespace Prisma {
     cancelledPayments?: PaymentCreateNestedManyWithoutCancelledByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
@@ -66219,6 +69924,7 @@ export namespace Prisma {
     cancelledPayments?: PaymentUncheckedCreateNestedManyWithoutCancelledByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
@@ -66254,6 +69960,7 @@ export namespace Prisma {
     cancelledPayments?: PaymentCreateNestedManyWithoutCancelledByInput
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
@@ -66284,6 +69991,7 @@ export namespace Prisma {
     cancelledPayments?: PaymentUncheckedCreateNestedManyWithoutCancelledByInput
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
@@ -66377,6 +70085,7 @@ export namespace Prisma {
     cancelledPayments?: PaymentUpdateManyWithoutCancelledByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
@@ -66407,6 +70116,7 @@ export namespace Prisma {
     cancelledPayments?: PaymentUncheckedUpdateManyWithoutCancelledByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
@@ -66448,6 +70158,7 @@ export namespace Prisma {
     cancelledPayments?: PaymentUpdateManyWithoutCancelledByNestedInput
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
@@ -66478,6 +70189,7 @@ export namespace Prisma {
     cancelledPayments?: PaymentUncheckedUpdateManyWithoutCancelledByNestedInput
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
@@ -66534,6 +70246,7 @@ export namespace Prisma {
     code?: string | null
     description?: string | null
     color?: string | null
+    imagePath?: string | null
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -66547,6 +70260,7 @@ export namespace Prisma {
     code?: string | null
     description?: string | null
     color?: string | null
+    imagePath?: string | null
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -66679,6 +70393,8 @@ export namespace Prisma {
     paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
     cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
     lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
@@ -66722,6 +70438,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
@@ -66801,6 +70519,7 @@ export namespace Prisma {
     code?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
+    imagePath?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -66814,6 +70533,7 @@ export namespace Prisma {
     code?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
+    imagePath?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -66966,6 +70686,7 @@ export namespace Prisma {
 
   export type AttendanceSheetCreateWithoutSettlementsInput = {
     id?: string
+    code: string
     number: number
     label?: string | null
     sessionCount: number
@@ -66980,6 +70701,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedCreateWithoutSettlementsInput = {
     id?: string
+    code: string
     teachingAssignmentId: string
     academicYearId: string
     number: number
@@ -67166,6 +70888,7 @@ export namespace Prisma {
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
     auditLogs?: FinancialAuditLogCreateNestedManyWithoutUserInput
@@ -67196,6 +70919,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
     auditLogs?: FinancialAuditLogUncheckedCreateNestedManyWithoutUserInput
@@ -67231,6 +70955,7 @@ export namespace Prisma {
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
     auditLogs?: FinancialAuditLogCreateNestedManyWithoutUserInput
@@ -67261,6 +70986,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
     auditLogs?: FinancialAuditLogUncheckedCreateNestedManyWithoutUserInput
@@ -67296,6 +71022,7 @@ export namespace Prisma {
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     auditLogs?: FinancialAuditLogCreateNestedManyWithoutUserInput
@@ -67326,6 +71053,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     auditLogs?: FinancialAuditLogUncheckedCreateNestedManyWithoutUserInput
@@ -67369,6 +71097,55 @@ export namespace Prisma {
   export type SettlementLineCreateManySettlementInputEnvelope = {
     data: SettlementLineCreateManySettlementInput | SettlementLineCreateManySettlementInput[]
     skipDuplicates?: boolean
+  }
+
+  export type SettlementDocumentCreateWithoutSettlementInput = {
+    id?: string
+    pageNumber?: number
+    filePath: string
+    fileName?: string | null
+    note?: string | null
+    createdAt?: Date | string
+    uploadedBy?: UserCreateNestedOneWithoutSettlementDocsInput
+  }
+
+  export type SettlementDocumentUncheckedCreateWithoutSettlementInput = {
+    id?: string
+    pageNumber?: number
+    filePath: string
+    fileName?: string | null
+    note?: string | null
+    uploadedById?: string | null
+    createdAt?: Date | string
+  }
+
+  export type SettlementDocumentCreateOrConnectWithoutSettlementInput = {
+    where: SettlementDocumentWhereUniqueInput
+    create: XOR<SettlementDocumentCreateWithoutSettlementInput, SettlementDocumentUncheckedCreateWithoutSettlementInput>
+  }
+
+  export type SettlementDocumentCreateManySettlementInputEnvelope = {
+    data: SettlementDocumentCreateManySettlementInput | SettlementDocumentCreateManySettlementInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SettlementSnapshotCreateWithoutSettlementInput = {
+    id?: string
+    dailySheet: JsonNullValueInput | InputJsonValue
+    monthlyFees: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type SettlementSnapshotUncheckedCreateWithoutSettlementInput = {
+    id?: string
+    dailySheet: JsonNullValueInput | InputJsonValue
+    monthlyFees: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type SettlementSnapshotCreateOrConnectWithoutSettlementInput = {
+    where: SettlementSnapshotWhereUniqueInput
+    create: XOR<SettlementSnapshotCreateWithoutSettlementInput, SettlementSnapshotUncheckedCreateWithoutSettlementInput>
   }
 
   export type TeacherDebtShareCreateWithoutOriginalSettlementInput = {
@@ -67559,6 +71336,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUpdateWithoutSettlementsInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     sessionCount?: IntFieldUpdateOperationsInput | number
@@ -67573,6 +71351,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedUpdateWithoutSettlementsInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     teachingAssignmentId?: StringFieldUpdateOperationsInput | string
     academicYearId?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
@@ -67783,6 +71562,7 @@ export namespace Prisma {
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
     auditLogs?: FinancialAuditLogUpdateManyWithoutUserNestedInput
@@ -67813,6 +71593,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
     auditLogs?: FinancialAuditLogUncheckedUpdateManyWithoutUserNestedInput
@@ -67854,6 +71635,7 @@ export namespace Prisma {
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
     auditLogs?: FinancialAuditLogUpdateManyWithoutUserNestedInput
@@ -67884,6 +71666,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
     auditLogs?: FinancialAuditLogUncheckedUpdateManyWithoutUserNestedInput
@@ -67925,6 +71708,7 @@ export namespace Prisma {
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     auditLogs?: FinancialAuditLogUpdateManyWithoutUserNestedInput
@@ -67955,6 +71739,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     auditLogs?: FinancialAuditLogUncheckedUpdateManyWithoutUserNestedInput
@@ -67977,6 +71762,47 @@ export namespace Prisma {
   export type SettlementLineUpdateManyWithWhereWithoutSettlementInput = {
     where: SettlementLineScalarWhereInput
     data: XOR<SettlementLineUpdateManyMutationInput, SettlementLineUncheckedUpdateManyWithoutSettlementInput>
+  }
+
+  export type SettlementDocumentUpsertWithWhereUniqueWithoutSettlementInput = {
+    where: SettlementDocumentWhereUniqueInput
+    update: XOR<SettlementDocumentUpdateWithoutSettlementInput, SettlementDocumentUncheckedUpdateWithoutSettlementInput>
+    create: XOR<SettlementDocumentCreateWithoutSettlementInput, SettlementDocumentUncheckedCreateWithoutSettlementInput>
+  }
+
+  export type SettlementDocumentUpdateWithWhereUniqueWithoutSettlementInput = {
+    where: SettlementDocumentWhereUniqueInput
+    data: XOR<SettlementDocumentUpdateWithoutSettlementInput, SettlementDocumentUncheckedUpdateWithoutSettlementInput>
+  }
+
+  export type SettlementDocumentUpdateManyWithWhereWithoutSettlementInput = {
+    where: SettlementDocumentScalarWhereInput
+    data: XOR<SettlementDocumentUpdateManyMutationInput, SettlementDocumentUncheckedUpdateManyWithoutSettlementInput>
+  }
+
+  export type SettlementSnapshotUpsertWithoutSettlementInput = {
+    update: XOR<SettlementSnapshotUpdateWithoutSettlementInput, SettlementSnapshotUncheckedUpdateWithoutSettlementInput>
+    create: XOR<SettlementSnapshotCreateWithoutSettlementInput, SettlementSnapshotUncheckedCreateWithoutSettlementInput>
+    where?: SettlementSnapshotWhereInput
+  }
+
+  export type SettlementSnapshotUpdateToOneWithWhereWithoutSettlementInput = {
+    where?: SettlementSnapshotWhereInput
+    data: XOR<SettlementSnapshotUpdateWithoutSettlementInput, SettlementSnapshotUncheckedUpdateWithoutSettlementInput>
+  }
+
+  export type SettlementSnapshotUpdateWithoutSettlementInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    dailySheet?: JsonNullValueInput | InputJsonValue
+    monthlyFees?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SettlementSnapshotUncheckedUpdateWithoutSettlementInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    dailySheet?: JsonNullValueInput | InputJsonValue
+    monthlyFees?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TeacherDebtShareUpsertWithWhereUniqueWithoutOriginalSettlementInput = {
@@ -68076,6 +71902,8 @@ export namespace Prisma {
     confirmedBy?: UserCreateNestedOneWithoutConfirmedSettlementsInput
     paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
     cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
@@ -68119,6 +71947,8 @@ export namespace Prisma {
     cancelReason?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
@@ -68209,6 +72039,8 @@ export namespace Prisma {
     confirmedBy?: UserUpdateOneWithoutConfirmedSettlementsNestedInput
     paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
     cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
@@ -68252,6 +72084,8 @@ export namespace Prisma {
     cancelReason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
@@ -68294,6 +72128,538 @@ export namespace Prisma {
     attendances?: AttendanceUncheckedUpdateManyWithoutSessionNestedInput
   }
 
+  export type SettlementCreateWithoutDocumentsInput = {
+    id?: string
+    settlementNumber: string
+    revision?: number
+    methodSnapshot: $Enums.SettlementMethod
+    countBasisSnapshot: $Enums.SettlementCountBasis
+    roundingModeSnapshot: $Enums.RoundingMode
+    roundingPrecisionSnapshot: number
+    percentageSnapshot?: Decimal | DecimalJsLike | number | string | null
+    perStudentSnapshot?: Decimal | DecimalJsLike | number | string | null
+    perSessionSnapshot?: Decimal | DecimalJsLike | number | string | null
+    tuitionSnapshot: Decimal | DecimalJsLike | number | string
+    approvedSessionsSnapshot: number
+    completedSessionsSnapshot: number
+    studentCountSnapshot: number
+    paidStudentCountSnapshot: number
+    attendedUnitsSnapshot: number
+    grossTuitionSnapshot: Decimal | DecimalJsLike | number | string
+    collectedSnapshot: Decimal | DecimalJsLike | number | string
+    remainingSnapshot: Decimal | DecimalJsLike | number | string
+    teacherAmount: Decimal | DecimalJsLike | number | string
+    status?: $Enums.SettlementStatus
+    computedAt?: Date | string
+    confirmedAt?: Date | string | null
+    paidAt?: Date | string | null
+    note?: string | null
+    cancelledAt?: Date | string | null
+    cancelReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    teachingAssignment: TeachingAssignmentCreateNestedOneWithoutSettlementsInput
+    attendanceSheet: AttendanceSheetCreateNestedOneWithoutSettlementsInput
+    academicYear: AcademicYearCreateNestedOneWithoutSettlementsInput
+    teacher: TeacherCreateNestedOneWithoutSettlementsInput
+    policy: SettlementPolicyCreateNestedOneWithoutSettlementsInput
+    confirmedBy?: UserCreateNestedOneWithoutConfirmedSettlementsInput
+    paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
+    cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
+    lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
+    debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
+    debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
+    teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
+  }
+
+  export type SettlementUncheckedCreateWithoutDocumentsInput = {
+    id?: string
+    settlementNumber: string
+    teachingAssignmentId: string
+    attendanceSheetId: string
+    academicYearId: string
+    teacherId: string
+    policyId: string
+    revision?: number
+    methodSnapshot: $Enums.SettlementMethod
+    countBasisSnapshot: $Enums.SettlementCountBasis
+    roundingModeSnapshot: $Enums.RoundingMode
+    roundingPrecisionSnapshot: number
+    percentageSnapshot?: Decimal | DecimalJsLike | number | string | null
+    perStudentSnapshot?: Decimal | DecimalJsLike | number | string | null
+    perSessionSnapshot?: Decimal | DecimalJsLike | number | string | null
+    tuitionSnapshot: Decimal | DecimalJsLike | number | string
+    approvedSessionsSnapshot: number
+    completedSessionsSnapshot: number
+    studentCountSnapshot: number
+    paidStudentCountSnapshot: number
+    attendedUnitsSnapshot: number
+    grossTuitionSnapshot: Decimal | DecimalJsLike | number | string
+    collectedSnapshot: Decimal | DecimalJsLike | number | string
+    remainingSnapshot: Decimal | DecimalJsLike | number | string
+    teacherAmount: Decimal | DecimalJsLike | number | string
+    status?: $Enums.SettlementStatus
+    computedAt?: Date | string
+    confirmedAt?: Date | string | null
+    confirmedById?: string | null
+    paidAt?: Date | string | null
+    paidById?: string | null
+    note?: string | null
+    cancelledAt?: Date | string | null
+    cancelledById?: string | null
+    cancelReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
+    debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
+    debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
+    teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
+  }
+
+  export type SettlementCreateOrConnectWithoutDocumentsInput = {
+    where: SettlementWhereUniqueInput
+    create: XOR<SettlementCreateWithoutDocumentsInput, SettlementUncheckedCreateWithoutDocumentsInput>
+  }
+
+  export type UserCreateWithoutSettlementDocsInput = {
+    id?: string
+    username: string
+    email?: string | null
+    password: string
+    firstName: string
+    lastName: string
+    phone?: string | null
+    avatar?: string | null
+    gender?: $Enums.Gender
+    isActive?: boolean
+    lastLoginAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    role: RoleCreateNestedOneWithoutUsersInput
+    invoices?: InvoiceCreateNestedManyWithoutCreatedByInput
+    cancelledInvoices?: InvoiceCreateNestedManyWithoutCancelledByInput
+    payments?: PaymentCreateNestedManyWithoutReceivedByInput
+    cancelledPayments?: PaymentCreateNestedManyWithoutCancelledByInput
+    receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
+    cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
+    documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
+    paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
+    cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
+    auditLogs?: FinancialAuditLogCreateNestedManyWithoutUserInput
+    debtSharesApproved?: TeacherDebtShareCreateNestedManyWithoutApprovedByInput
+    teacherPaymentsPaid?: TeacherPaymentCreateNestedManyWithoutPaidByInput
+    teacherPaymentsCancelled?: TeacherPaymentCreateNestedManyWithoutCancelledByInput
+  }
+
+  export type UserUncheckedCreateWithoutSettlementDocsInput = {
+    id?: string
+    username: string
+    email?: string | null
+    password: string
+    firstName: string
+    lastName: string
+    phone?: string | null
+    avatar?: string | null
+    gender?: $Enums.Gender
+    isActive?: boolean
+    lastLoginAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    roleId: string
+    invoices?: InvoiceUncheckedCreateNestedManyWithoutCreatedByInput
+    cancelledInvoices?: InvoiceUncheckedCreateNestedManyWithoutCancelledByInput
+    payments?: PaymentUncheckedCreateNestedManyWithoutReceivedByInput
+    cancelledPayments?: PaymentUncheckedCreateNestedManyWithoutCancelledByInput
+    receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
+    cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
+    documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
+    paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
+    cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
+    auditLogs?: FinancialAuditLogUncheckedCreateNestedManyWithoutUserInput
+    debtSharesApproved?: TeacherDebtShareUncheckedCreateNestedManyWithoutApprovedByInput
+    teacherPaymentsPaid?: TeacherPaymentUncheckedCreateNestedManyWithoutPaidByInput
+    teacherPaymentsCancelled?: TeacherPaymentUncheckedCreateNestedManyWithoutCancelledByInput
+  }
+
+  export type UserCreateOrConnectWithoutSettlementDocsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutSettlementDocsInput, UserUncheckedCreateWithoutSettlementDocsInput>
+  }
+
+  export type SettlementUpsertWithoutDocumentsInput = {
+    update: XOR<SettlementUpdateWithoutDocumentsInput, SettlementUncheckedUpdateWithoutDocumentsInput>
+    create: XOR<SettlementCreateWithoutDocumentsInput, SettlementUncheckedCreateWithoutDocumentsInput>
+    where?: SettlementWhereInput
+  }
+
+  export type SettlementUpdateToOneWithWhereWithoutDocumentsInput = {
+    where?: SettlementWhereInput
+    data: XOR<SettlementUpdateWithoutDocumentsInput, SettlementUncheckedUpdateWithoutDocumentsInput>
+  }
+
+  export type SettlementUpdateWithoutDocumentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    settlementNumber?: StringFieldUpdateOperationsInput | string
+    revision?: IntFieldUpdateOperationsInput | number
+    methodSnapshot?: EnumSettlementMethodFieldUpdateOperationsInput | $Enums.SettlementMethod
+    countBasisSnapshot?: EnumSettlementCountBasisFieldUpdateOperationsInput | $Enums.SettlementCountBasis
+    roundingModeSnapshot?: EnumRoundingModeFieldUpdateOperationsInput | $Enums.RoundingMode
+    roundingPrecisionSnapshot?: IntFieldUpdateOperationsInput | number
+    percentageSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    perStudentSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    perSessionSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tuitionSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    approvedSessionsSnapshot?: IntFieldUpdateOperationsInput | number
+    completedSessionsSnapshot?: IntFieldUpdateOperationsInput | number
+    studentCountSnapshot?: IntFieldUpdateOperationsInput | number
+    paidStudentCountSnapshot?: IntFieldUpdateOperationsInput | number
+    attendedUnitsSnapshot?: IntFieldUpdateOperationsInput | number
+    grossTuitionSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    collectedSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    teacherAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumSettlementStatusFieldUpdateOperationsInput | $Enums.SettlementStatus
+    computedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancelReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    teachingAssignment?: TeachingAssignmentUpdateOneRequiredWithoutSettlementsNestedInput
+    attendanceSheet?: AttendanceSheetUpdateOneRequiredWithoutSettlementsNestedInput
+    academicYear?: AcademicYearUpdateOneRequiredWithoutSettlementsNestedInput
+    teacher?: TeacherUpdateOneRequiredWithoutSettlementsNestedInput
+    policy?: SettlementPolicyUpdateOneRequiredWithoutSettlementsNestedInput
+    confirmedBy?: UserUpdateOneWithoutConfirmedSettlementsNestedInput
+    paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
+    cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
+    lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
+    debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
+    debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
+    teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
+  }
+
+  export type SettlementUncheckedUpdateWithoutDocumentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    settlementNumber?: StringFieldUpdateOperationsInput | string
+    teachingAssignmentId?: StringFieldUpdateOperationsInput | string
+    attendanceSheetId?: StringFieldUpdateOperationsInput | string
+    academicYearId?: StringFieldUpdateOperationsInput | string
+    teacherId?: StringFieldUpdateOperationsInput | string
+    policyId?: StringFieldUpdateOperationsInput | string
+    revision?: IntFieldUpdateOperationsInput | number
+    methodSnapshot?: EnumSettlementMethodFieldUpdateOperationsInput | $Enums.SettlementMethod
+    countBasisSnapshot?: EnumSettlementCountBasisFieldUpdateOperationsInput | $Enums.SettlementCountBasis
+    roundingModeSnapshot?: EnumRoundingModeFieldUpdateOperationsInput | $Enums.RoundingMode
+    roundingPrecisionSnapshot?: IntFieldUpdateOperationsInput | number
+    percentageSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    perStudentSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    perSessionSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tuitionSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    approvedSessionsSnapshot?: IntFieldUpdateOperationsInput | number
+    completedSessionsSnapshot?: IntFieldUpdateOperationsInput | number
+    studentCountSnapshot?: IntFieldUpdateOperationsInput | number
+    paidStudentCountSnapshot?: IntFieldUpdateOperationsInput | number
+    attendedUnitsSnapshot?: IntFieldUpdateOperationsInput | number
+    grossTuitionSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    collectedSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    teacherAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumSettlementStatusFieldUpdateOperationsInput | $Enums.SettlementStatus
+    computedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableStringFieldUpdateOperationsInput | string | null
+    paidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paidById?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancelledById?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
+    debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
+    debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
+    teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
+  }
+
+  export type UserUpsertWithoutSettlementDocsInput = {
+    update: XOR<UserUpdateWithoutSettlementDocsInput, UserUncheckedUpdateWithoutSettlementDocsInput>
+    create: XOR<UserCreateWithoutSettlementDocsInput, UserUncheckedCreateWithoutSettlementDocsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutSettlementDocsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutSettlementDocsInput, UserUncheckedUpdateWithoutSettlementDocsInput>
+  }
+
+  export type UserUpdateWithoutSettlementDocsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    avatar?: NullableStringFieldUpdateOperationsInput | string | null
+    gender?: EnumGenderFieldUpdateOperationsInput | $Enums.Gender
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    role?: RoleUpdateOneRequiredWithoutUsersNestedInput
+    invoices?: InvoiceUpdateManyWithoutCreatedByNestedInput
+    cancelledInvoices?: InvoiceUpdateManyWithoutCancelledByNestedInput
+    payments?: PaymentUpdateManyWithoutReceivedByNestedInput
+    cancelledPayments?: PaymentUpdateManyWithoutCancelledByNestedInput
+    receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
+    cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
+    documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
+    paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
+    cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
+    auditLogs?: FinancialAuditLogUpdateManyWithoutUserNestedInput
+    debtSharesApproved?: TeacherDebtShareUpdateManyWithoutApprovedByNestedInput
+    teacherPaymentsPaid?: TeacherPaymentUpdateManyWithoutPaidByNestedInput
+    teacherPaymentsCancelled?: TeacherPaymentUpdateManyWithoutCancelledByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutSettlementDocsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    username?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
+    avatar?: NullableStringFieldUpdateOperationsInput | string | null
+    gender?: EnumGenderFieldUpdateOperationsInput | $Enums.Gender
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    roleId?: StringFieldUpdateOperationsInput | string
+    invoices?: InvoiceUncheckedUpdateManyWithoutCreatedByNestedInput
+    cancelledInvoices?: InvoiceUncheckedUpdateManyWithoutCancelledByNestedInput
+    payments?: PaymentUncheckedUpdateManyWithoutReceivedByNestedInput
+    cancelledPayments?: PaymentUncheckedUpdateManyWithoutCancelledByNestedInput
+    receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
+    cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
+    documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
+    paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
+    cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
+    auditLogs?: FinancialAuditLogUncheckedUpdateManyWithoutUserNestedInput
+    debtSharesApproved?: TeacherDebtShareUncheckedUpdateManyWithoutApprovedByNestedInput
+    teacherPaymentsPaid?: TeacherPaymentUncheckedUpdateManyWithoutPaidByNestedInput
+    teacherPaymentsCancelled?: TeacherPaymentUncheckedUpdateManyWithoutCancelledByNestedInput
+  }
+
+  export type SettlementCreateWithoutSnapshotInput = {
+    id?: string
+    settlementNumber: string
+    revision?: number
+    methodSnapshot: $Enums.SettlementMethod
+    countBasisSnapshot: $Enums.SettlementCountBasis
+    roundingModeSnapshot: $Enums.RoundingMode
+    roundingPrecisionSnapshot: number
+    percentageSnapshot?: Decimal | DecimalJsLike | number | string | null
+    perStudentSnapshot?: Decimal | DecimalJsLike | number | string | null
+    perSessionSnapshot?: Decimal | DecimalJsLike | number | string | null
+    tuitionSnapshot: Decimal | DecimalJsLike | number | string
+    approvedSessionsSnapshot: number
+    completedSessionsSnapshot: number
+    studentCountSnapshot: number
+    paidStudentCountSnapshot: number
+    attendedUnitsSnapshot: number
+    grossTuitionSnapshot: Decimal | DecimalJsLike | number | string
+    collectedSnapshot: Decimal | DecimalJsLike | number | string
+    remainingSnapshot: Decimal | DecimalJsLike | number | string
+    teacherAmount: Decimal | DecimalJsLike | number | string
+    status?: $Enums.SettlementStatus
+    computedAt?: Date | string
+    confirmedAt?: Date | string | null
+    paidAt?: Date | string | null
+    note?: string | null
+    cancelledAt?: Date | string | null
+    cancelReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    teachingAssignment: TeachingAssignmentCreateNestedOneWithoutSettlementsInput
+    attendanceSheet: AttendanceSheetCreateNestedOneWithoutSettlementsInput
+    academicYear: AcademicYearCreateNestedOneWithoutSettlementsInput
+    teacher: TeacherCreateNestedOneWithoutSettlementsInput
+    policy: SettlementPolicyCreateNestedOneWithoutSettlementsInput
+    confirmedBy?: UserCreateNestedOneWithoutConfirmedSettlementsInput
+    paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
+    cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
+    lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
+    debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
+    teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
+  }
+
+  export type SettlementUncheckedCreateWithoutSnapshotInput = {
+    id?: string
+    settlementNumber: string
+    teachingAssignmentId: string
+    attendanceSheetId: string
+    academicYearId: string
+    teacherId: string
+    policyId: string
+    revision?: number
+    methodSnapshot: $Enums.SettlementMethod
+    countBasisSnapshot: $Enums.SettlementCountBasis
+    roundingModeSnapshot: $Enums.RoundingMode
+    roundingPrecisionSnapshot: number
+    percentageSnapshot?: Decimal | DecimalJsLike | number | string | null
+    perStudentSnapshot?: Decimal | DecimalJsLike | number | string | null
+    perSessionSnapshot?: Decimal | DecimalJsLike | number | string | null
+    tuitionSnapshot: Decimal | DecimalJsLike | number | string
+    approvedSessionsSnapshot: number
+    completedSessionsSnapshot: number
+    studentCountSnapshot: number
+    paidStudentCountSnapshot: number
+    attendedUnitsSnapshot: number
+    grossTuitionSnapshot: Decimal | DecimalJsLike | number | string
+    collectedSnapshot: Decimal | DecimalJsLike | number | string
+    remainingSnapshot: Decimal | DecimalJsLike | number | string
+    teacherAmount: Decimal | DecimalJsLike | number | string
+    status?: $Enums.SettlementStatus
+    computedAt?: Date | string
+    confirmedAt?: Date | string | null
+    confirmedById?: string | null
+    paidAt?: Date | string | null
+    paidById?: string | null
+    note?: string | null
+    cancelledAt?: Date | string | null
+    cancelledById?: string | null
+    cancelReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
+    debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
+    teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
+  }
+
+  export type SettlementCreateOrConnectWithoutSnapshotInput = {
+    where: SettlementWhereUniqueInput
+    create: XOR<SettlementCreateWithoutSnapshotInput, SettlementUncheckedCreateWithoutSnapshotInput>
+  }
+
+  export type SettlementUpsertWithoutSnapshotInput = {
+    update: XOR<SettlementUpdateWithoutSnapshotInput, SettlementUncheckedUpdateWithoutSnapshotInput>
+    create: XOR<SettlementCreateWithoutSnapshotInput, SettlementUncheckedCreateWithoutSnapshotInput>
+    where?: SettlementWhereInput
+  }
+
+  export type SettlementUpdateToOneWithWhereWithoutSnapshotInput = {
+    where?: SettlementWhereInput
+    data: XOR<SettlementUpdateWithoutSnapshotInput, SettlementUncheckedUpdateWithoutSnapshotInput>
+  }
+
+  export type SettlementUpdateWithoutSnapshotInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    settlementNumber?: StringFieldUpdateOperationsInput | string
+    revision?: IntFieldUpdateOperationsInput | number
+    methodSnapshot?: EnumSettlementMethodFieldUpdateOperationsInput | $Enums.SettlementMethod
+    countBasisSnapshot?: EnumSettlementCountBasisFieldUpdateOperationsInput | $Enums.SettlementCountBasis
+    roundingModeSnapshot?: EnumRoundingModeFieldUpdateOperationsInput | $Enums.RoundingMode
+    roundingPrecisionSnapshot?: IntFieldUpdateOperationsInput | number
+    percentageSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    perStudentSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    perSessionSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tuitionSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    approvedSessionsSnapshot?: IntFieldUpdateOperationsInput | number
+    completedSessionsSnapshot?: IntFieldUpdateOperationsInput | number
+    studentCountSnapshot?: IntFieldUpdateOperationsInput | number
+    paidStudentCountSnapshot?: IntFieldUpdateOperationsInput | number
+    attendedUnitsSnapshot?: IntFieldUpdateOperationsInput | number
+    grossTuitionSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    collectedSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    teacherAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumSettlementStatusFieldUpdateOperationsInput | $Enums.SettlementStatus
+    computedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancelReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    teachingAssignment?: TeachingAssignmentUpdateOneRequiredWithoutSettlementsNestedInput
+    attendanceSheet?: AttendanceSheetUpdateOneRequiredWithoutSettlementsNestedInput
+    academicYear?: AcademicYearUpdateOneRequiredWithoutSettlementsNestedInput
+    teacher?: TeacherUpdateOneRequiredWithoutSettlementsNestedInput
+    policy?: SettlementPolicyUpdateOneRequiredWithoutSettlementsNestedInput
+    confirmedBy?: UserUpdateOneWithoutConfirmedSettlementsNestedInput
+    paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
+    cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
+    lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
+    debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
+    teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
+  }
+
+  export type SettlementUncheckedUpdateWithoutSnapshotInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    settlementNumber?: StringFieldUpdateOperationsInput | string
+    teachingAssignmentId?: StringFieldUpdateOperationsInput | string
+    attendanceSheetId?: StringFieldUpdateOperationsInput | string
+    academicYearId?: StringFieldUpdateOperationsInput | string
+    teacherId?: StringFieldUpdateOperationsInput | string
+    policyId?: StringFieldUpdateOperationsInput | string
+    revision?: IntFieldUpdateOperationsInput | number
+    methodSnapshot?: EnumSettlementMethodFieldUpdateOperationsInput | $Enums.SettlementMethod
+    countBasisSnapshot?: EnumSettlementCountBasisFieldUpdateOperationsInput | $Enums.SettlementCountBasis
+    roundingModeSnapshot?: EnumRoundingModeFieldUpdateOperationsInput | $Enums.RoundingMode
+    roundingPrecisionSnapshot?: IntFieldUpdateOperationsInput | number
+    percentageSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    perStudentSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    perSessionSnapshot?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tuitionSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    approvedSessionsSnapshot?: IntFieldUpdateOperationsInput | number
+    completedSessionsSnapshot?: IntFieldUpdateOperationsInput | number
+    studentCountSnapshot?: IntFieldUpdateOperationsInput | number
+    paidStudentCountSnapshot?: IntFieldUpdateOperationsInput | number
+    attendedUnitsSnapshot?: IntFieldUpdateOperationsInput | number
+    grossTuitionSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    collectedSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    remainingSnapshot?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    teacherAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    status?: EnumSettlementStatusFieldUpdateOperationsInput | $Enums.SettlementStatus
+    computedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableStringFieldUpdateOperationsInput | string | null
+    paidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    paidById?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancelledById?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
+    debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
+    teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
+  }
+
   export type UserCreateWithoutAuditLogsInput = {
     id?: string
     username: string
@@ -68316,6 +72682,7 @@ export namespace Prisma {
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
@@ -68346,6 +72713,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
@@ -68392,6 +72760,7 @@ export namespace Prisma {
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
@@ -68422,6 +72791,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
@@ -68831,6 +73201,8 @@ export namespace Prisma {
     paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
     cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
     lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
     debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
   }
@@ -68874,6 +73246,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
     debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
   }
@@ -68922,6 +73296,8 @@ export namespace Prisma {
     paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
     cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
     lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
     teacherAllocations?: TeacherPaymentAllocationCreateNestedManyWithoutSettlementInput
   }
@@ -68965,6 +73341,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedCreateNestedManyWithoutSettlementInput
   }
@@ -68996,6 +73374,7 @@ export namespace Prisma {
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
@@ -69026,6 +73405,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
@@ -69203,6 +73583,8 @@ export namespace Prisma {
     paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
     cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
     lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
   }
@@ -69246,6 +73628,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
   }
@@ -69300,6 +73684,8 @@ export namespace Prisma {
     paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
     cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
     lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
   }
@@ -69343,6 +73729,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
   }
@@ -69380,6 +73768,7 @@ export namespace Prisma {
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
@@ -69410,6 +73799,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
@@ -69507,6 +73897,7 @@ export namespace Prisma {
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
@@ -69537,6 +73928,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
@@ -69572,6 +73964,7 @@ export namespace Prisma {
     receipts?: ReceiptCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementCreateNestedManyWithoutCancelledByInput
@@ -69602,6 +73995,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedCreateNestedManyWithoutPrintedByInput
     cancelledReceipts?: ReceiptUncheckedCreateNestedManyWithoutCancelledByInput
     documents?: StudentDocumentUncheckedCreateNestedManyWithoutUploadedByInput
+    settlementDocs?: SettlementDocumentUncheckedCreateNestedManyWithoutUploadedByInput
     confirmedSettlements?: SettlementUncheckedCreateNestedManyWithoutConfirmedByInput
     paidSettlements?: SettlementUncheckedCreateNestedManyWithoutPaidByInput
     cancelledSettlements?: SettlementUncheckedCreateNestedManyWithoutCancelledByInput
@@ -69729,6 +74123,7 @@ export namespace Prisma {
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
@@ -69759,6 +74154,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
@@ -69800,6 +74196,7 @@ export namespace Prisma {
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
@@ -69830,6 +74227,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
@@ -69934,6 +74332,8 @@ export namespace Prisma {
     paidBy?: UserCreateNestedOneWithoutPaidSettlementsInput
     cancelledBy?: UserCreateNestedOneWithoutCancelledSettlementsInput
     lines?: SettlementLineCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareCreateNestedManyWithoutCollectionSettlementInput
   }
@@ -69977,6 +74377,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     lines?: SettlementLineUncheckedCreateNestedManyWithoutSettlementInput
+    documents?: SettlementDocumentUncheckedCreateNestedManyWithoutSettlementInput
+    snapshot?: SettlementSnapshotUncheckedCreateNestedOneWithoutSettlementInput
     debtSharesOrigin?: TeacherDebtShareUncheckedCreateNestedManyWithoutOriginalSettlementInput
     debtSharesCollected?: TeacherDebtShareUncheckedCreateNestedManyWithoutCollectionSettlementInput
   }
@@ -70134,6 +74536,8 @@ export namespace Prisma {
     paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
     cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
     lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
   }
@@ -70177,6 +74581,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
   }
@@ -70288,6 +74694,7 @@ export namespace Prisma {
 
   export type AttendanceSheetCreateManyAcademicYearInput = {
     id?: string
+    code: string
     teachingAssignmentId: string
     number: number
     label?: string | null
@@ -70535,6 +74942,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUpdateWithoutAcademicYearInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     sessionCount?: IntFieldUpdateOperationsInput | number
@@ -70549,6 +74957,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedUpdateWithoutAcademicYearInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     teachingAssignmentId?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
@@ -70563,6 +74972,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedUpdateManyWithoutAcademicYearInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     teachingAssignmentId?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
@@ -70684,6 +75094,8 @@ export namespace Prisma {
     paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
     cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
     lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
@@ -70727,6 +75139,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
@@ -70950,6 +75364,7 @@ export namespace Prisma {
     lastName: string
     gender: $Enums.Gender
     birthDate?: Date | string | null
+    birthPlace?: string | null
     avatar?: string | null
     phone?: string | null
     parentPhone: string
@@ -70957,6 +75372,9 @@ export namespace Prisma {
     schoolName?: string | null
     emergencyPhone?: string | null
     registrationDate?: Date | string
+    registrationFeePaid?: boolean
+    registrationFeeAmount?: Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: Date | string | null
     isActive?: boolean
     note?: string | null
     createdAt?: Date | string
@@ -71051,6 +75469,7 @@ export namespace Prisma {
     lastName?: StringFieldUpdateOperationsInput | string
     gender?: EnumGenderFieldUpdateOperationsInput | $Enums.Gender
     birthDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    birthPlace?: NullableStringFieldUpdateOperationsInput | string | null
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     parentPhone?: StringFieldUpdateOperationsInput | string
@@ -71058,6 +75477,9 @@ export namespace Prisma {
     schoolName?: NullableStringFieldUpdateOperationsInput | string | null
     emergencyPhone?: NullableStringFieldUpdateOperationsInput | string | null
     registrationDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    registrationFeePaid?: BoolFieldUpdateOperationsInput | boolean
+    registrationFeeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     note?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -71073,6 +75495,7 @@ export namespace Prisma {
     lastName?: StringFieldUpdateOperationsInput | string
     gender?: EnumGenderFieldUpdateOperationsInput | $Enums.Gender
     birthDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    birthPlace?: NullableStringFieldUpdateOperationsInput | string | null
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     parentPhone?: StringFieldUpdateOperationsInput | string
@@ -71080,6 +75503,9 @@ export namespace Prisma {
     schoolName?: NullableStringFieldUpdateOperationsInput | string | null
     emergencyPhone?: NullableStringFieldUpdateOperationsInput | string | null
     registrationDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    registrationFeePaid?: BoolFieldUpdateOperationsInput | boolean
+    registrationFeeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     note?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -71095,6 +75521,7 @@ export namespace Prisma {
     lastName?: StringFieldUpdateOperationsInput | string
     gender?: EnumGenderFieldUpdateOperationsInput | $Enums.Gender
     birthDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    birthPlace?: NullableStringFieldUpdateOperationsInput | string | null
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     parentPhone?: StringFieldUpdateOperationsInput | string
@@ -71102,6 +75529,9 @@ export namespace Prisma {
     schoolName?: NullableStringFieldUpdateOperationsInput | string | null
     emergencyPhone?: NullableStringFieldUpdateOperationsInput | string | null
     registrationDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    registrationFeePaid?: BoolFieldUpdateOperationsInput | boolean
+    registrationFeeAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    registrationFeePaidAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     note?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -71879,6 +76309,8 @@ export namespace Prisma {
     paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
     cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
     lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
@@ -71922,6 +76354,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
@@ -72133,6 +76567,14 @@ export namespace Prisma {
     teachingAssignmentId: string
     enrolledAt?: Date | string
     eligibleFrom?: Date | string | null
+    note?: string | null
+    transferPeerAssignmentId?: string | null
+    transferSheetId?: string | null
+    transferPeerSheetId?: string | null
+    transferAt?: Date | string | null
+    pendingTransferToId?: string | null
+    pendingTransferAt?: Date | string | null
+    pendingTransferSheetId?: string | null
     isActive?: boolean
   }
 
@@ -72151,6 +76593,14 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     teachingAssignment?: TeachingAssignmentUpdateOneRequiredWithoutEnrollmentsNestedInput
     invoices?: InvoiceUpdateManyWithoutStudentEnrollmentNestedInput
@@ -72162,6 +76612,14 @@ export namespace Prisma {
     teachingAssignmentId?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     invoices?: InvoiceUncheckedUpdateManyWithoutStudentEnrollmentNestedInput
     attendances?: AttendanceUncheckedUpdateManyWithoutStudentEnrollmentNestedInput
@@ -72172,6 +76630,14 @@ export namespace Prisma {
     teachingAssignmentId?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
   }
 
@@ -72223,11 +76689,20 @@ export namespace Prisma {
     studentId: string
     enrolledAt?: Date | string
     eligibleFrom?: Date | string | null
+    note?: string | null
+    transferPeerAssignmentId?: string | null
+    transferSheetId?: string | null
+    transferPeerSheetId?: string | null
+    transferAt?: Date | string | null
+    pendingTransferToId?: string | null
+    pendingTransferAt?: Date | string | null
+    pendingTransferSheetId?: string | null
     isActive?: boolean
   }
 
   export type AttendanceSheetCreateManyTeachingAssignmentInput = {
     id?: string
+    code: string
     academicYearId: string
     number: number
     label?: string | null
@@ -72312,6 +76787,14 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     student?: StudentUpdateOneRequiredWithoutEnrollmentsNestedInput
     invoices?: InvoiceUpdateManyWithoutStudentEnrollmentNestedInput
@@ -72323,6 +76806,14 @@ export namespace Prisma {
     studentId?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
     invoices?: InvoiceUncheckedUpdateManyWithoutStudentEnrollmentNestedInput
     attendances?: AttendanceUncheckedUpdateManyWithoutStudentEnrollmentNestedInput
@@ -72333,11 +76824,20 @@ export namespace Prisma {
     studentId?: StringFieldUpdateOperationsInput | string
     enrolledAt?: DateTimeFieldUpdateOperationsInput | Date | string
     eligibleFrom?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerAssignmentId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferPeerSheetId?: NullableStringFieldUpdateOperationsInput | string | null
+    transferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferToId?: NullableStringFieldUpdateOperationsInput | string | null
+    pendingTransferAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    pendingTransferSheetId?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type AttendanceSheetUpdateWithoutTeachingAssignmentInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
     sessionCount?: IntFieldUpdateOperationsInput | number
@@ -72352,6 +76852,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedUpdateWithoutTeachingAssignmentInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     academicYearId?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
@@ -72366,6 +76867,7 @@ export namespace Prisma {
 
   export type AttendanceSheetUncheckedUpdateManyWithoutTeachingAssignmentInput = {
     id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     academicYearId?: StringFieldUpdateOperationsInput | string
     number?: IntFieldUpdateOperationsInput | number
     label?: NullableStringFieldUpdateOperationsInput | string | null
@@ -72413,6 +76915,8 @@ export namespace Prisma {
     paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
     cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
     lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
@@ -72456,6 +76960,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
@@ -72918,6 +77424,8 @@ export namespace Prisma {
     paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
     cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
     lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
@@ -72961,6 +77469,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
@@ -73201,6 +77711,16 @@ export namespace Prisma {
     note?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+  }
+
+  export type SettlementDocumentCreateManyUploadedByInput = {
+    id?: string
+    settlementId: string
+    pageNumber?: number
+    filePath: string
+    fileName?: string | null
+    note?: string | null
+    createdAt?: Date | string
   }
 
   export type SettlementCreateManyConfirmedByInput = {
@@ -73765,6 +78285,36 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type SettlementDocumentUpdateWithoutUploadedByInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    pageNumber?: IntFieldUpdateOperationsInput | number
+    filePath?: StringFieldUpdateOperationsInput | string
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settlement?: SettlementUpdateOneRequiredWithoutDocumentsNestedInput
+  }
+
+  export type SettlementDocumentUncheckedUpdateWithoutUploadedByInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    settlementId?: StringFieldUpdateOperationsInput | string
+    pageNumber?: IntFieldUpdateOperationsInput | number
+    filePath?: StringFieldUpdateOperationsInput | string
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SettlementDocumentUncheckedUpdateManyWithoutUploadedByInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    settlementId?: StringFieldUpdateOperationsInput | string
+    pageNumber?: IntFieldUpdateOperationsInput | number
+    filePath?: StringFieldUpdateOperationsInput | string
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type SettlementUpdateWithoutConfirmedByInput = {
     id?: StringFieldUpdateOperationsInput | string
     settlementNumber?: StringFieldUpdateOperationsInput | string
@@ -73803,6 +78353,8 @@ export namespace Prisma {
     paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
     cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
     lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
@@ -73846,6 +78398,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
@@ -73928,6 +78482,8 @@ export namespace Prisma {
     confirmedBy?: UserUpdateOneWithoutConfirmedSettlementsNestedInput
     cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
     lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
@@ -73971,6 +78527,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
@@ -74053,6 +78611,8 @@ export namespace Prisma {
     confirmedBy?: UserUpdateOneWithoutConfirmedSettlementsNestedInput
     paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
     lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
@@ -74096,6 +78656,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
@@ -74392,6 +78954,7 @@ export namespace Prisma {
     receipts?: ReceiptUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUpdateManyWithoutCancelledByNestedInput
@@ -74422,6 +78985,7 @@ export namespace Prisma {
     receipts?: ReceiptUncheckedUpdateManyWithoutPrintedByNestedInput
     cancelledReceipts?: ReceiptUncheckedUpdateManyWithoutCancelledByNestedInput
     documents?: StudentDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
+    settlementDocs?: SettlementDocumentUncheckedUpdateManyWithoutUploadedByNestedInput
     confirmedSettlements?: SettlementUncheckedUpdateManyWithoutConfirmedByNestedInput
     paidSettlements?: SettlementUncheckedUpdateManyWithoutPaidByNestedInput
     cancelledSettlements?: SettlementUncheckedUpdateManyWithoutCancelledByNestedInput
@@ -74699,6 +79263,8 @@ export namespace Prisma {
     paidBy?: UserUpdateOneWithoutPaidSettlementsNestedInput
     cancelledBy?: UserUpdateOneWithoutCancelledSettlementsNestedInput
     lines?: SettlementLineUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUpdateManyWithoutSettlementNestedInput
@@ -74742,6 +79308,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lines?: SettlementLineUncheckedUpdateManyWithoutSettlementNestedInput
+    documents?: SettlementDocumentUncheckedUpdateManyWithoutSettlementNestedInput
+    snapshot?: SettlementSnapshotUncheckedUpdateOneWithoutSettlementNestedInput
     debtSharesOrigin?: TeacherDebtShareUncheckedUpdateManyWithoutOriginalSettlementNestedInput
     debtSharesCollected?: TeacherDebtShareUncheckedUpdateManyWithoutCollectionSettlementNestedInput
     teacherAllocations?: TeacherPaymentAllocationUncheckedUpdateManyWithoutSettlementNestedInput
@@ -74794,6 +79362,16 @@ export namespace Prisma {
     countedStudents: number
     rate: Decimal | DecimalJsLike | number | string
     lineTotal: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+  }
+
+  export type SettlementDocumentCreateManySettlementInput = {
+    id?: string
+    pageNumber?: number
+    filePath: string
+    fileName?: string | null
+    note?: string | null
+    uploadedById?: string | null
     createdAt?: Date | string
   }
 
@@ -74878,6 +79456,36 @@ export namespace Prisma {
     countedStudents?: IntFieldUpdateOperationsInput | number
     rate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     lineTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SettlementDocumentUpdateWithoutSettlementInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    pageNumber?: IntFieldUpdateOperationsInput | number
+    filePath?: StringFieldUpdateOperationsInput | string
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    uploadedBy?: UserUpdateOneWithoutSettlementDocsNestedInput
+  }
+
+  export type SettlementDocumentUncheckedUpdateWithoutSettlementInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    pageNumber?: IntFieldUpdateOperationsInput | number
+    filePath?: StringFieldUpdateOperationsInput | string
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    uploadedById?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SettlementDocumentUncheckedUpdateManyWithoutSettlementInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    pageNumber?: IntFieldUpdateOperationsInput | number
+    filePath?: StringFieldUpdateOperationsInput | string
+    fileName?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    uploadedById?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

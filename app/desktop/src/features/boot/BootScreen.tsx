@@ -1,21 +1,62 @@
 import { LAYER } from "../../motion/layers";
+import nexschoolLogo from "../../assets/nexschool/nexschool.png";
 import { useEffect, useRef, useState } from "react";
-import { AmbientBackground } from "../../components/ambient/AmbientBackground";
+import { CinematicEnvironment } from "../../components/environment/CinematicEnvironment";
+import { UserSelectionScreen } from "../../components/user-selection/UserSelectionScreen";
 import { sfx, playAmbient } from "../../lib/sound";
 import { useSchool } from "../../core/stores/school.store";
+import { curve, environment, useHomeRevealed } from "../../motion/home-entrance";
 
 const LOGO_MS = 6000; // الشعار وحده على الأسود (تلاشٍ داخل/خارج)
 const NOTICE_MS = 5000; // جملة التحذير الصحّي
 const SOUND_DELAY_MS = 2000; // الصوت يبدأ بعد ظهور الجملة بثانيتين
 
 /**
- * شاشة بدء التشغيل بثلاث مراحل (نمط PS5):
- * 1) شعار SKK Pos وحده على أسود — 6 ثوانٍ بتلاشٍ داخل ثم خارج.
+ * شاشة بدء التشغيل بأربع مراحل (نمط PS5):
+ * 1) شعار NexSchool وحده على أسود — 6 ثوانٍ بتلاشٍ داخل ثم خارج.
  * 2) جملة تحذير الصحّة والسلامة (الصوت يبدأ بعد ظهورها بثانيتين).
- * 3) كشف سلس للخلفية + «اضغط Enter» — ولا يُدخَل التطبيق إلا بضغط Enter.
+ * 3) كشف سلس للخلفية + «اضغط Enter».
+ * 4) اختيار المستخدم — فوق البيئة نفسها بلا إعادة تركيب.
  */
 export function BootScreen({ onDone }: { onDone: () => void }) {
-  const [phase, setPhase] = useState<"logo" | "notice" | "press">("logo");
+  /*
+   * أربعُ مراحل في مكوّنٍ واحد — واختيارُ المستخدم منها لا صفحةٌ في
+   * الموجّه. والسببُ واحد: `CinematicEnvironment` يُركَّب هنا مرّةً،
+   * فبقاؤه مركَّباً عبر المراحل يعني أنّ الغبار يواصل انجرافه والنغمة
+   * تمتدّ بلا انقطاع. ولو كانت صفحةً في الموجّه لأُعيد تركيبُ اللوحة
+   * وبدأ المشهد من الصفر — وهو نقيضُ «البقاء داخل الفضاء نفسه».
+   */
+  const [phase, setPhase] = useState<"logo" | "notice" | "press" | "users">("logo");
+
+  /**
+   * شدّةُ الفضاء — **تخفت عند نجاح الدخول ولا تنطفئ** (§4).
+   *
+   * كانت تُصفَّر، فتموت الأقراصُ والغبارُ والضبابُ قبل التسليم بثلث
+   * ثانية: يرى المستخدمُ الفضاءَ ينطفئ ثمّ يرى فضاءً آخرَ يُشعَل. وهذا
+   * نقيضُ ما يجب أن تكونه هذه اللحظة — هو لم يغادر المكان، إنّما أُضيء
+   * له ما فيه.
+   *
+   * 0.82: خفوتٌ محسوسٌ يقول «شيءٌ ما يتبدّل»، والجسيماتُ تواصل انجرافها
+   * إلى آخر إطارٍ تُرسم فيه.
+   */
+  const [envIntensity, setEnvIntensity] = useState(1);
+
+  /**
+   * التسليم — الرئيسيةُ **رُسمت**، لا مجرّد رُكّبت.
+   *
+   * والفرقُ بين الأمرين هو كلُّ الفرق بين تسليمٍ نظيفٍ وآخرَ يكشف
+   * مشهداً نصفَ مبنيّ. تركيبُ الرئيسية يحجب الخيطَ ~310ms؛ ولو بدأ
+   * الانسحابُ عنده لمضى على المُركِّب — وهو لا ينتظر الخيطَ المحجوب —
+   * فانكشفت من خلفه رئيسيةٌ لم تُرسم بعد.
+   *
+   * فالإشارةُ هي `revealed`: يرفعها المنسّقُ حين تُعلن الرئيسيةُ
+   * جاهزيّتها في أوّل إطارٍ بعد رسمها. وعندها تتوقّف شاشةُ الإقلاع عن
+   * كونها الشاشة: تصير طبقةً منسحبةً فوق أخرى حيّة. فتُرفع عنها ثلاثةُ
+   * أشياء دفعةً واحدة — سوادُ قاعها (وإلّا حجبت ما تحتها)، والتقاطُها
+   * للمؤشّر (وإلّا ابتلعت أوّل نقرةٍ في الرئيسية §23)، وتماسكُها
+   * البصريّ (تتلاشى).
+   */
+  const departing = useHomeRevealed();
 
   /*
    * الإقلاع يسبق الدخول، وقراءة الهوية تحتاج مصادقة — فتُعرض هنا
@@ -59,29 +100,39 @@ export function BootScreen({ onDone }: { onDone: () => void }) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        sfx("enter", 0.55);
-        onDone();
+        sfx("enter", 0.92);
+        setPhase("users");
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, onDone]);
+  }, [phase]);
 
-  const revealed = phase === "press";
-  // حالة البيئة تتبع مرحلة الإقلاع (بلا إعادة تركيب المكوّن)
-  const ambientState = revealed ? "connecting" : "idle";
+  const revealed = phase === "press" || phase === "users";
 
   return (
-    <div className="fixed inset-0 select-none overflow-hidden bg-black text-white"
-         style={{ zIndex: LAYER.boot }}>
-      {/* البيئة المتحرّكة — تُركَّب مرّة واحدة وتبقى حيّة عبر كل مراحل الإقلاع
-          (لا تُعاد تهيئتها عند تغيّر المرحلة). المراحل السوداء تعلوها ثم تنكشف. */}
-      <AmbientBackground
-        state={ambientState}
-        particleFlowEnabled
-        enableParallax
-        quality="high"
-      />
+    /*
+      القاعُ الأسودُ مشروط، لا ثابت.
+
+      كان `bg-black` صنفاً دائماً — وهو صحيحٌ ما دامت هذه الشاشةُ هي
+      الشاشة. لكنّها صارت تبقى مركَّبةً بعد التسليم لتنسحب فوق الرئيسية،
+      وسوادٌ دائمٌ في قاعها كان سيحجب ما جاءت تكشفه: تتلاشى الطبقاتُ
+      كلُّها فوق سوادٍ لا يتلاشى، فلا يظهر تحتها شيء.
+    */
+    <div className="fixed inset-0 select-none overflow-hidden text-white"
+         style={{
+           zIndex: LAYER.boot,
+           backgroundColor: departing ? "transparent" : "#000",
+           opacity: departing ? 0 : 1,
+           /* البيئةُ تُغلق المشهد: تلحق آخرَ طبقةٍ منسحبة ولا تتخلّف عنها. */
+           transition: `opacity ${environment.fade}ms cubic-bezier(${curve.ambient.join(",")})`,
+           /* أوّلُ نقرةٍ بعد التسليم تخصّ الرئيسية لا هذه الطبقة (§23). */
+           pointerEvents: departing ? "none" : "auto",
+         }}>
+      {/* البيئة السينمائية — تُركَّب مرّة واحدة وتبقى حيّة عبر كل مراحل الإقلاع
+          (لا تُعاد تهيئتها عند تغيّر المرحلة). المراحل السوداء تعلوها ثم تنكشف.
+          و`focusY` موضعُ مفتاح Enter — حوله يُضيء الغبارُ قليلاً. */}
+      <CinematicEnvironment focusY={0.5} intensity={envIntensity} />
 
       {/* ستار أسود يغطّي البيئة أثناء المرحلتين الأوليين ثم ينقشع بنعومة
           (بدل إزالة غطاء معتم فجأة عند تبديل المرحلة). */}
@@ -93,15 +144,38 @@ export function BootScreen({ onDone }: { onDone: () => void }) {
         }}
       />
 
-      {/* ===== المرحلة 1: الشعار وحده على أسود ===== */}
+      {/* ===== المرحلة 1: شعار البرنامج وحده على أسود ===== */}
       {phase === "logo" && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex items-baseline gap-2.5" style={{ animation: `skk-logo-cycle ${LOGO_MS}ms ease-in-out both` }}>
-            <span className="text-8xl font-black tracking-tight">{shortName}</span>
-            <span className="text-8xl font-black" style={{ color: brand }}>
-              {shortSuffix}
-            </span>
-          </div>
+          {/*
+            شعارُ **المنتَج** لا شعارُ المؤسسة — والتفريقُ مقصود.
+
+            لحظةُ الإقلاع تقول «هذا هو البرنامج الذي يعمل»، كما تفعل
+            الأجهزةُ حين تُشعَل. وهويةُ المدرسة تأتي بعدها: اسمُها في
+            جملة التحذير، وشعارُها في شاشة اختيار المستخدم. فلو وُضع
+            شعارُ المدرسة هنا لضاع الفرقُ بين الاثنين ولم يبقَ في
+            الشاشة كلِّها ما يسمّي البرنامج.
+
+            والقياسُ بـ`clamp` لا بقيمةٍ ثابتة: الشعارُ مربّعٌ يملأ
+            ارتفاعَه، وقيمةٌ ثابتة تجعله لطخةً على 4K وبقعةً على 1280.
+          */}
+          <img
+            src={nexschoolLogo}
+            alt="NexSchool"
+            draggable={false}
+            className="select-none"
+            style={{
+              /*
+               * والصورةُ أكبرُ من علامتها: حول العلامة هامشٌ شفّافٌ في
+               * ملفّ PNG يأكل نحوَ الثلث من كلّ ضلع. فالارتفاعُ المكتوب
+               * هنا ارتفاعُ **الصندوق** لا ما يُرى منه، ولذلك يبدو
+               * الشعارُ أصغرَ ممّا يقوله الرقم بمقدارٍ محسوس.
+               */
+              height: "clamp(280px, 48vh, 600px)",
+              width: "auto",
+              animation: `skk-logo-cycle ${LOGO_MS}ms ease-in-out both`,
+            }}
+          />
         </div>
       )}
 
@@ -118,8 +192,16 @@ export function BootScreen({ onDone }: { onDone: () => void }) {
         </div>
       )}
 
+      {/* ===== المرحلة 4: اختيار المستخدم ===== */}
+      {phase === "users" && (
+        <UserSelectionScreen
+          onLeaving={() => setEnvIntensity(environment.intensity)}
+          onAuthenticated={onDone}
+        />
+      )}
+
       {/* ===== المرحلة 3: اضغط Enter (فوق الخلفية المنكشفة) ===== */}
-      {revealed && (
+      {phase === "press" && (
         <div className="relative flex h-full flex-col items-center justify-center">
           {/* الجملة */}
           <p

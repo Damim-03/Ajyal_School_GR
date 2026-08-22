@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   listTeachersController,
   getTeacherController,
+  getTeacherStatementController,
   createTeacherController,
   updateTeacherController,
   deleteTeacherController,
@@ -19,6 +20,7 @@ import {
   updateTeacherSchema,
   teacherIdSchema,
   teacherQuerySchema,
+  teacherStatementQuerySchema,
 } from "./teacher.schema";
 
 const router = Router();
@@ -30,6 +32,21 @@ router.get(
   requirePermission("teacher.view"),
   validateQuery(teacherQuerySchema),
   asyncHandler(listTeachersController),
+);
+
+// --------------------------------------------------
+// GET /api/teachers/:id/statement
+//
+// كشفُ حساب الأستاذ: كشوفُه في السنة بمستحقّها وما قُبض منه، ومعها
+// متأخّراتُه. ويسبق `/:id` لأنّ المسار أطول — ولو تأخّر لالتقطه.
+// --------------------------------------------------
+
+router.get(
+  "/:id/statement",
+  requirePermission("teacher.view"),
+  validateParams(teacherIdSchema),
+  validateQuery(teacherStatementQuerySchema),
+  asyncHandler(getTeacherStatementController),
 );
 
 router.get(

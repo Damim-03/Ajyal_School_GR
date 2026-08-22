@@ -7,6 +7,7 @@ import {
   bulkAttendanceService,
   updateAttendanceService,
   clearSessionAttendanceService,
+  deleteAttendanceService,
 } from "./attendance.service";
 import {
   CreateAttendanceInput,
@@ -66,6 +67,16 @@ export const updateAttendanceController = async (
   );
 
   return ApiResponse.success(res, { attendance }, "Attendance updated");
+};
+
+// DELETE /api/attendance/:id
+export const deleteAttendanceController = async (
+  req: Request,
+  res: Response,
+) => {
+  const result = await deleteAttendanceService(req.params.id as string);
+
+  return ApiResponse.success(res, result, "Attendance cleared");
 };
 
 // DELETE /api/attendance/session/:sessionId

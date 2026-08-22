@@ -14,10 +14,13 @@ import paymentRoutes from "../modules/payment/payment.route";
 import receiptRoutes from "../modules/receipt/receipt.route";
 import settlementPolicyRoutes from "../modules/settlement-policy/settlement-policy.route";
 import settlementRoutes from "../modules/settlement/settlement.route";
+import teacherPaymentRoutes from "../modules/teacher-payment/teacher-payment.route";
+import teacherDebtShareRoutes from "../modules/teacher-debt-share/teacher-debt-share.route";
 import userRoutes from "../modules/user/user.route";
 import roleRoutes, { permissionRouter } from "../modules/role/role.route";
 import reportRoutes from "../modules/report/report.route";
 import uploadRoutes from "../modules/upload/upload.route";
+import maintenanceRoutes from "../modules/maintenance/maintenance.route";
 
 const mainRoute: Router = Router();
 
@@ -68,6 +71,8 @@ mainRoute.use("/receipts", receiptRoutes);
 /* تخليص الأستاذ — السياسات قبل التخليص، فالثاني لا يقوم بغير الأولى */
 mainRoute.use("/settlement-policies", settlementPolicyRoutes);
 mainRoute.use("/settlements", settlementRoutes);
+mainRoute.use("/teacher-payments", teacherPaymentRoutes);
+mainRoute.use("/teacher-debt-shares", teacherDebtShareRoutes);
 
 // --------------------------------------------------
 // Administration
@@ -88,5 +93,11 @@ mainRoute.use("/reports", reportRoutes);
 // --------------------------------------------------
 
 mainRoute.use("/uploads", uploadRoutes);
+
+// --------------------------------------------------
+// الصيانة — النسخ الاحتياطي والاستعادة وإعادة التهيئة
+// --------------------------------------------------
+
+mainRoute.use("/maintenance", maintenanceRoutes);
 
 export default mainRoute;

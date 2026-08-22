@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import {
   ArrowRight,
+  ArrowUpLeft,
   BadgeDollarSign,
   CalendarClock,
   CalendarDays,
@@ -24,11 +25,22 @@ import {
 import { AppHeader } from "../../components/AppHeader";
 import { DateField, todayIso } from "../../components/DateField";
 import { logoSpec, type LogoSpec } from "../../components/print/logo";
+import { dropBlankPages, SHEET_MM, usePagedRows } from "../../components/print/paged-sheet";
+import { printedStamp } from "../../components/print/printed-at";
+import { SheetBarcode } from "../../components/print/SheetBarcode";
 import { SheetPreview } from "../../components/print/SheetPreview";
+import {
+  FilterField,
+  FilterPanel,
+  FilterSelect,
+  type FilterChip,
+} from "../../components/shared/FilterPanel";
+import { SearchBox } from "../../components/shared/SearchBox";
 import { useAcademicYears } from "../../core/api/reference.api";
 import { useAuthStore } from "../../core/stores/auth.store";
 import { useSchool, useSchoolStore } from "../../core/stores/school.store";
 import { MOTION } from "../../motion/system";
+import { cancelPendingTransfer } from "../enrollments/enrollments.api";
 import { PATHS } from "../../routes/paths";
 import { useScreenExit } from "../../lib/screen-transition";
 import { uiSound } from "../../lib/ui-sound";
@@ -40,6 +52,7 @@ import {
   createSheet,
   deleteSheet,
   deriveOptions,
+  filterSummary,
   fullName,
   getSheet,
   isoDate,
@@ -51,6 +64,8 @@ import {
   removeSession,
   resolveAssignment,
   sheetDate,
+  sheetDateShort,
+  sheetCode,
   sheetTitle,
   updateAttendance,
   adoptSession,
@@ -58,6 +73,8 @@ import {
   updateSessionDate,
   updateSheet,
   updateStudentNote,
+  deleteAttendance,
+  listDeparted,
   STATUS_TONE,
   type Assignment,
   type AttendanceRow,
@@ -79,8 +96,14 @@ import {
   type FeeState,
 } from "./fees";
 import { listInvoices, money, type Invoice } from "../finance/finance.api";
+import { matchesQuery } from "../../lib/search";
+import { SheetScanner } from "./components/sheet-scan";
+import { useSheetJump } from "./hooks/use-sheet-jump";
 
 const ACCENT = "#fcd34d";
+
+/** ثلاثُ نبضاتٍ في `skk-row-glow` — والمدّة هنا صورةٌ عن مدّتها هناك */
+const GLOW_MS = 3 * 900;
 
 const cellKey = (enrollmentId: string, sessionId: string) => `${enrollmentId}|${sessionId}`;
 
@@ -142,6 +165,8 @@ export default function DailySheetPage() {
 
   const [yearId, setYearId] = useState("");
   const [filters, setFilters] = useState<SheetFilters>(EMPTY_FILTERS);
+  /** بحثٌ داخل الكشف المفتوح — عرضٌ لا حذف: الطباعة والمجاميع على الكشف كلِّه */
+  const [search, setSearch] = useState("");
 
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loadingRefs, setLoadingRefs] = useState(false);
@@ -151,6 +176,14 @@ export default function DailySheetPage() {
   const [sheet, setSheet] = useState<Sheet | null>(null);
 
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
+  /**
+   * من غادر هذا الفوج بالنقل — بمعزلٍ عن `enrollments` عمداً.
+   *
+   * دمجُهما كان يُدخل المغادِر في كلّ ما يُشتقّ من القائمة: المجاميع،
+   * وعدّاد «14 طالباً»، والفواتير، والورقة المطبوعة، وشرطُ إنجاز
+   * الحصة. وهو لا يخصّه شيءٌ من ذلك — سطرُه خبرٌ لا حساب.
+   */
+  const [departed, setDeparted] = useState<EnrollmentRow[]>([]);
   const [cells, setCells] = useState<Map<string, AttendanceRow>>(new Map());
   /**
    * فواتير الفترة — مفتاحُها التسجيل.
@@ -226,6 +259,67 @@ export default function DailySheetPage() {
   const options = useMemo(() => deriveOptions(assignments, filters), [assignments, filters]);
   const assignment = useMemo(() => resolveAssignment(assignments, filters), [assignments, filters]);
 
+  /*
+   * القدوم من ورقةٍ أخرى — `?y=سنة&a=إسناد&s=كشف`.
+   *
+   * الشاشة تُفتح بخمسة مرشِّحاتٍ فارغة، فمن جاء من الحقوق أو من الكشف
+   * التقديري يعيد اختيارها كلَّها ثمّ يبحث عن رقم الكشف. فيُقرأ الرابط
+   * على ثلاث مراحل — السنة تُحمّل الإسنادات، والإسناد يملأ المرشِّحات
+   * ويُحمّل الكشوف، والكشف يُختار حين يصير موجوداً — ثمّ يُمحى الرابط
+   * كي لا يعيد الاختيار على المستخدم إن بدّل بيده بعدها.
+   */
+  const [params, setParams] = useSearchParams();
+  const linkYear = params.get("y");
+  const linkAssignment = params.get("a");
+  const linkSheet = params.get("s");
+  /** بحثٌ مسبَق — به يُشار إلى طالبٍ بعينه في الكشف المقصود */
+  const linkQuery = params.get("q");
+
+  /**
+   * الطالبُ المقصود بالرابط — يتوهّج سطرُه ثلاث نبضاتٍ ثمّ يسكن.
+   *
+   * البحثُ وحده لا يكفي دلالةً: من قفز من كشفٍ إلى كشفٍ يصل إلى ورقةٍ
+   * غير التي كان ينظر إليها، فيبحث ببصره عن السطر الذي جاء لأجله.
+   * والتوهّجُ يقع عند القدوم وحده لا كلّما كُتب اسمٌ في خانة البحث.
+   */
+  const [glowFor, setGlowFor] = useState<string | null>(null);
+
+  /** سطرُ المقصود — إليه يُمرَّر الجدول حين يُرسم */
+  const glowRow = useRef<HTMLTableRowElement | null>(null);
+
+  useEffect(() => {
+    if (!linkQuery) return;
+
+    setSearch(linkQuery);
+    setGlowFor(linkQuery);
+  }, [linkQuery]);
+
+  useEffect(() => {
+    if (linkYear) setYearId(linkYear);
+  }, [linkYear]);
+
+  useEffect(() => {
+    if (!linkAssignment || assignments.length === 0) return;
+
+    const target = assignments.find((a) => a.id === linkAssignment);
+    if (!target) return;
+
+    setFilters({
+      stageId: target.studyGroup.level.educationStage.id,
+      levelId: target.studyGroup.level.id,
+      subjectId: target.subject.id,
+      teacherId: target.teacher.id,
+      groupId: target.studyGroup.id,
+    });
+  }, [linkAssignment, assignments]);
+
+  useEffect(() => {
+    if (!linkSheet || !sheets.some((s) => s.id === linkSheet)) return;
+
+    setSheetId(linkSheet);
+    setParams({}, { replace: true });
+  }, [linkSheet, sheets, setParams]);
+
   /**
    * تغيير مرشِّح يُسقط ما تعارض معه من المرشِّحات الأخرى.
    *
@@ -247,11 +341,26 @@ export default function DailySheetPage() {
     });
   };
 
+  /*
+   * المسح ينقل الشاشة كلَّها إلى كشفٍ آخر — السنة والمرشِّحات والكشف.
+   * انظر `use-sheet-jump` لسبب تقسيمه على ثلاث دفعات.
+   */
+  const { jumpTo, jumping } = useSheetJump({
+    assignments,
+    sheets,
+    setYearId,
+    setFilters,
+    setSheetId,
+  });
+
   // --------------------------------------------------
   // كشوف الإسناد
   // --------------------------------------------------
 
   useEffect(() => {
+    /* الفوجُ تبدّل، فبحثُ الفوج السابق لا معنى له في جدولٍ آخر */
+    setSearch("");
+
     if (!assignment) {
       setSheets([]);
       setSheetId("");
@@ -284,6 +393,7 @@ export default function DailySheetPage() {
     if (!assignment || !sheetId) {
       setSheet(null);
       setEnrollments([]);
+      setDeparted([]);
       setCells(new Map());
       return;
     }
@@ -292,13 +402,15 @@ export default function DailySheetPage() {
     setError(null);
 
     try {
-      const [loaded, enrollmentRows] = await Promise.all([
+      const [loaded, enrollmentRows, departedRows] = await Promise.all([
         getSheet(sheetId),
         listEnrollments(assignment.id),
+        listDeparted(assignment.id),
       ]);
 
       setSheet(loaded);
       setEnrollments(enrollmentRows);
+      setDeparted(departedRows);
       setNotes(new Map(enrollmentRows.map((e) => [e.student.id, e.student.note ?? ""])));
       setPendingNotes(new Set());
 
@@ -350,10 +462,48 @@ export default function DailySheetPage() {
   // الأعمدة
   // --------------------------------------------------
 
-  const sessions = sheet?.sessions ?? [];
+  /*
+   * مرجعٌ ثابتٌ ما ثبت الكشف.
+   *
+   * `sheet?.sessions ?? []` تُنشئ مصفوفةً جديدة في كلّ رسمة، فكلُّ
+   * `useMemo` يعتمد عليها لا يحفظ شيئاً — يُعاد حسابُه دائماً. وهي
+   * تُقرأ في ثلاثة مواضع، منها ترشيحُ المغادرين على كلّ خلايا الكشف.
+   */
+  const sessions = useMemo(() => sheet?.sessions ?? [], [sheet]);
   const columnCount = sheet?.sessionCount ?? 0;
   /** الفارغة: أعمدةٌ لم يُكتب تاريخها بعد */
   const emptySlots = Math.max(0, columnCount - sessions.length);
+
+  /**
+   * أهلُ هذا الكشف — والوافدُ لا يُدرج فيما سبق وصولَه.
+   *
+   * التسجيلُ نشطٌ فيُرجعه الخادم مع كشوف الفوج كلِّها، فكان من وصل في
+   * الكشف الثالث يظهر في الأوّل والثاني بصفرٍ من صفر وشُرَطٍ في كلّ
+   * خانة — سطرٌ لا معنى له في ورقةٍ طُويت قبل أن يعرفه الفوج، ويزحزح
+   * ترتيبَ من كان فيها.
+   *
+   * والمقياسُ رقمُ الكشف لا التاريخ: الورقة وحدةٌ إدارية تحمل «الشهر
+   * 2»، وحصصُها قد تُؤرَّخ بأيّ شهر. فما كان رقمُه دون كشفِ وصوله فهو
+   * قبله، وما ساواه أو علاه فمن أيّامه — ومنه الكشفُ الجديد الفارغ:
+   * رقمُه أعلى فيظهر فيه من أوّل يوم.
+   *
+   * وعلامةٌ له في ورقةٍ قديمة تُبقيه فيها مهما قال الرقم: الأثرُ أصدق
+   * من الاستنتاج، ولا تُطوى ورقةٌ فيها خطُّ يدٍ عنه.
+   */
+  const roster = useMemo(() => {
+    const numberOf = new Map(sheets.map((s) => [s.id, s.number]));
+    const current = sheet?.number;
+
+    return enrollments.filter((row) => {
+      if (!row.transferAt || row.pendingTransferToId || !row.isActive) return true;
+      if (!row.transferSheetId || current === undefined) return true;
+
+      const arrived = numberOf.get(row.transferSheetId);
+      if (arrived === undefined || current >= arrived) return true;
+
+      return sessions.some((s) => cells.has(cellKey(row.id, s.id)));
+    });
+  }, [enrollments, sheets, sheet, sessions, cells]);
 
   /**
    * ما يُقال قبل الطباعة — خبرٌ لا لوم.
@@ -463,6 +613,124 @@ export default function DailySheetPage() {
     }
   };
 
+  /**
+   * المغادرون المعروضون — بشرطين لا بواحد.
+   *
+   * الأوّل: **كشفُ المغادرة** — فيه يُقال إنّه غادر، ولولا هذا القيد
+   * لظهر من نُقل في مارس على رأس كشف جانفي إلى آخر السنة.
+   *
+   * والثاني: **كلُّ كشفٍ له فيه علامة**. وهو ما كان ناقصاً: الطالب
+   * درس في الفوج شهوراً ثمّ غادر في الأخير، فكان تاريخُه كلُّه يختفي
+   * من كشوفه وتبقى ورقةٌ فيها ثمانِ حصصٍ لأحدَ عشر طالباً بلا تفسير
+   * لمن كان الثاني عشر. والأستاذ يُخلَّص على تلك العلامات، فحقُّه أن
+   * يراها.
+   */
+  const shownDeparted = useMemo(() => {
+    const term = search.trim();
+
+    return departed.filter((row) => {
+      if (term && !fullName(row.student).includes(term)) return false;
+
+      return (
+        row.transferSheetId === sheetId ||
+        sessions.some((s) => cells.has(cellKey(row.id, s.id)))
+      );
+    });
+  }, [departed, sheetId, search, sessions, cells]);
+
+  /**
+   * أهذه الحصةُ من حصصه؟ — والنقلُ يقسم الكشف قسمين.
+   *
+   * المغادِرُ مسؤولٌ عمّا وقع **إلى** يوم نقله، والوافدُ عمّا وقع
+   * **منه**. ومن لا نقلَ له فالكشفُ كلُّه له.
+   *
+   * والمقارنة باليوم لا باللحظة، كما في `isEligibleFor` على الخادم:
+   * من نُقل صباح يوم الحصة أخذ حصةَ ذلك اليوم في فوجه الجديد.
+   */
+  const ownsSession = (row: EnrollmentRow, sessionDate: string) => {
+    /*
+      المؤجَّلُ لم يُنقل بعد — فالكشفُ كلُّه له.
+
+      ولولا هذا الاستثناء لطُويت خاناتُه من يوم القرار، وهو ما زال
+      يحضر ويُدوَّن له ويُفوتَر شهرَه هنا كاملاً. والتأجيلُ إنّما وُضع
+      ليبقى سطرُه كاملاً لا لينقص.
+    */
+    if (row.pendingTransferToId) return true;
+    if (!row.transferAt) return true;
+
+    const at = isoDate(sessionDate);
+    const on = isoDate(row.transferAt);
+
+    return row.isActive ? at >= on : at <= on;
+  };
+
+  /**
+   * حصصُ صفٍّ منقولٍ في هذا الكشف — محضورُها ومجموعُها.
+   *
+   * والمقام حصصُه هو لا حصصُ الكشف: كشفٌ ثمانِ حصصٍ غادر بعد خمسٍ
+   * يُقرأ «0 / 5» لا «0 / 8» — فيلتقي مع ملاحظته «درس هنا 5 من 8
+   * حصص»، ولا يُنسب إليه ما لم يكن في الفوج يومه.
+   *
+   * وكان العمود يجمع الاثنين فيخرج «3 / 8» لمن غاب عن حصصه الخمس
+   * كلِّها، وثلاثتُه من حصصٍ تلت رحيله.
+   */
+  const transferTally = (row: EnrollmentRow) => {
+    const mine = held.filter((s) => ownsSession(row, s.sessionDate));
+
+    return {
+      attended: mine.filter((s) => {
+        const record = cells.get(cellKey(row.id, s.id));
+        return record ? isAttended(record.status) : false;
+      }).length,
+      of: mine.length,
+    };
+  };
+
+  /** إلغاءُ نقلٍ مؤجَّل — قرارٌ يُراجَع قبل أن يسري */
+  const cancelPending = async (row: EnrollmentRow) => {
+    setBusyKey(row.id);
+    setError(null);
+
+    try {
+      await cancelPendingTransfer(row.id);
+      await loadSheet();
+      flash("أُلغي النقل المؤجَّل — يبقى الطالب في فوجه");
+    } catch (err: any) {
+      fail(err, "تعذّر إلغاء النقل المؤجَّل");
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  /**
+   * الانتقال من ملاحظة النقل إلى الطرف الآخر.
+   *
+   * الملاحظة تقول «مُنقَل من الفوج 1 · كشف الشهر 7» فيريد قارئُها أن
+   * يفتحه — وكان عليه أن يعود ويعيد اختيار الطور والمستوى والمادة
+   * والأستاذ والفوج ثمّ يبحث عن الكشف. والمقصدُ محفوظٌ في الصفّ،
+   * فيكفيه ضغطة.
+   *
+   * والمُمرَّر `transferPeerSheetId` — كشفُ **الفوج المقصود** في شهر
+   * النقل. وكان يُمرَّر كشفُ هذا الفوج، وهو ليس من كشوف ذاك، فيسقط
+   * الاختيار ويُفتح كشفُه الافتراضيّ: شهرٌ لا صلة له بالنقل.
+   *
+   * والاسمُ يُمرَّر معه فيقع بصرُ القارئ على السطر بلا بحث.
+   */
+  const jumpToPeer = (row: EnrollmentRow) => {
+    if (!row.transferPeerAssignmentId) return;
+
+    const query = new URLSearchParams({
+      y: yearId,
+      a: row.transferPeerAssignmentId,
+      /* `fullName` نفسُها التي يُقارن بها التوهّج — وإلّا فرَّقت مسافةٌ زائدة */
+      q: fullName(row.student),
+    });
+
+    if (row.transferPeerSheetId) query.set("s", row.transferPeerSheetId);
+
+    navigate(`${PATHS.attendanceDaily}?${query.toString()}`);
+  };
+
   // --------------------------------------------------
   // الحضور
   // --------------------------------------------------
@@ -509,14 +777,56 @@ export default function DailySheetPage() {
     }
   };
 
+  /**
+   * «لا شيء» — الخانة تعود كما وُلدت: فارغةً لا غياباً.
+   *
+   * الحالاتُ الأربع كلُّها تدوين، وليس فيها ما يُلغي التدوين نفسه.
+   * فمن ضغط سهواً على صفّ طالبٍ لم يكن أمامه لم يجد إلّا أن يجعله
+   * «غائباً» — فيبقى في سجلّه غيابٌ لم يقع، ويدخل الكشفَ والتخليص.
+   */
+  const clearStatus = async (enrollmentId: string, sessionId: string) => {
+    const key = cellKey(enrollmentId, sessionId);
+    const existing = cells.get(key);
+
+    setPicker(null);
+    if (!existing) return;
+
+    /* تفرغ الآن؛ والارتداد يُعيد ما كان بالضبط */
+    setCells((prev) => {
+      const next = new Map(prev);
+      next.delete(key);
+      return next;
+    });
+
+    /* ما لم يصل الخادمَ بعد لا يُحذف منه — إسقاطُه محلّياً يكفي */
+    if (existing.id.startsWith("tmp:")) return;
+
+    setBusyKey(key);
+
+    try {
+      await deleteAttendance(existing.id);
+    } catch (err: any) {
+      setCells((prev) => new Map(prev).set(key, existing));
+      fail(
+        err,
+        err?.response?.status === 403
+          ? "لا صلاحية لمحو الحضور."
+          : "تعذّر إفراغ الخانة",
+      );
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
   const markColumnPresent = async (sessionId: string) => {
-    if (enrollments.length === 0) return;
+    /* أهلُ الكشف لا كلُّ الإسناد — ولا يُدوَّن حضورٌ لمن ليس في الورقة */
+    if (roster.length === 0) return;
 
     const before = new Map(cells);
 
     setCells((prev) => {
       const next = new Map(prev);
-      for (const e of enrollments) {
+      for (const e of roster) {
         const key = cellKey(e.id, sessionId);
         next.set(key, {
           id: next.get(key)?.id ?? `tmp:${key}`,
@@ -534,7 +844,7 @@ export default function DailySheetPage() {
     try {
       await bulkAttendance({
         sessionId,
-        records: enrollments.map((e) => ({
+        records: roster.map((e) => ({
           studentEnrollmentId: e.id,
           status: "PRESENT" as const,
         })),
@@ -767,6 +1077,81 @@ export default function DailySheetPage() {
   const hasSheet = Boolean(sheet) && enrollments.length > 0;
   const noSchedule = ready && slots.length === 0;
 
+  /** ما يبقى مقروءاً حين يُطوى لوح المرشِّحات */
+  const chips = useMemo<FilterChip[]>(() => {
+    const year = years.find((y) => y.id === yearId);
+
+    return [
+      ...(year ? [{ label: "السنة", value: year.name }] : []),
+      ...filterSummary(options, filters),
+      ...(sheet ? [{ label: "الكشف", value: sheetTitle(sheet) }] : []),
+    ];
+  }, [years, yearId, options, filters, sheet]);
+
+  /**
+   * صفوفُ العرض — مصفّاةً بالبحث ومحتفظةً بترتيبها الأصلي.
+   *
+   * الترتيب رقمُ الطالب في الكشف لا موضعُه في نتيجة البحث: من بحث عن
+   * «بلقاسم» فوجده الثالثَ عشرَ يقرأ الرقم نفسه في الورقة المطبوعة.
+   */
+  const visible = useMemo(
+    () =>
+      roster
+        .map((enrollment, index) => ({ enrollment, order: index + 1 }))
+        .filter((row) => matchesQuery(fullName(row.enrollment.student), search)),
+    [roster, search],
+  );
+
+  /*
+   * إطفاءُ التوهّج — والعدُّ يبدأ حين يظهر السطر لا حين يُقرأ الرابط.
+   *
+   * الشاشة تُحمّل الإسنادات ثمّ الكشوف ثمّ المسجَّلين، وبين النقرة
+   * ورسم الصفّ ثوانٍ. فلو بدأ المؤقّت مع الرابط لانطفأ التوهّجُ قبل
+   * أن يُرسَم ما يتوهّج، ووصل القارئ إلى ورقةٍ ساكنة.
+   */
+  useEffect(() => {
+    if (!glowFor) return;
+
+    const drawn =
+      visible.some((row) => fullName(row.enrollment.student) === glowFor) ||
+      shownDeparted.some((row) => fullName(row.student) === glowFor);
+
+    if (!drawn) return;
+
+    /*
+     * ويُمرَّر إليه الجدول: الكشف يطول فيخرج السطر عن الشاشة، ولا
+     * ينفع توهّجٌ تحت الطيّة. و`inline: nearest` تمنع الانزلاق
+     * الأفقيّ — الجدول يمتدّ ثمانيَ حصصٍ يميناً، ولا شأن للتمرير
+     * الرأسيّ بموضع الأعمدة.
+     */
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    glowRow.current?.scrollIntoView({
+      block: "center",
+      inline: "nearest",
+      behavior: still ? "auto" : "smooth",
+    });
+
+    const timer = setTimeout(() => setGlowFor(null), GLOW_MS);
+    return () => clearTimeout(timer);
+  }, [glowFor, visible, shownDeparted]);
+
+  /**
+   * أيُعرض خبرُ النقل في هذا الكشف؟
+   *
+   * المؤجَّلُ خبرُ **مستقبل**، فيُعرض أيّاً كان الكشفُ المفتوح: به يعلم
+   * الموظّف أنّ الطالب سيغادر عند طيّ الورقة، وفيه زرُّ الإلغاء.
+   *
+   * والواقعُ خبرُ ماضٍ يخصّ ورقةً بعينها — الكشفَ الذي وقع فيه. وكان
+   * يتكرّر في كلّ كشفٍ يُفتح بعده، فيحمل عمودُ الملاحظات إلى آخر السنة
+   * «مُنقَل من الفوج 2 — 21/08» وقد عُلم وانقضى، يزاحم ما يُكتب اليوم.
+   * والورقةُ الجديدة تبدأ نظيفة: من فيها فيها، ولا يُعاد خبرُ وصوله.
+   */
+  const showsTransferNote = (row: {
+    pendingTransferToId: string | null;
+    transferSheetId: string | null;
+  }) => Boolean(row.pendingTransferToId) || row.transferSheetId === sheetId;
+
   return (
     <div className="min-h-screen bg-[#05070d] text-white">
       <AppHeader title="كشف الحضور اليومي" subtitle="كشفٌ يملك أعمدته — لا شهر ولا نافذة">
@@ -781,88 +1166,102 @@ export default function DailySheetPage() {
 
       <div className="mx-auto max-w-[1600px] p-6">
         {/* ================= المرشِّحات ================= */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: MOTION.duration.normal, ease: MOTION.easing.enter }}
-          className="mb-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+        <FilterPanel
+          accent={ACCENT}
+          storageKey="attendance.daily"
+          collapseKey={assignment?.id ?? ""}
+          busy={loadingRefs}
+          chips={chips}
+          extra={
+            <SheetScanner sheets={sheets} onFound={jumpTo} busy={jumping} accent={ACCENT} />
+          }
+          onReset={() => setFilters(EMPTY_FILTERS)}
         >
-          <div className="flex flex-wrap items-end gap-3">
-            <Field label="السنة الدراسية">
-              <select value={yearId} onChange={(e) => setYearId(e.target.value)} className={selectClass}>
-                {years.map((y) => (
-                  <option key={y.id} value={y.id} className="bg-[#0a0f1a]">
-                    {y.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+          <FilterField label="السنة الدراسية">
+            <FilterSelect value={yearId} onChange={setYearId} items={years} accent={ACCENT} />
+          </FilterField>
 
-            <Field label="الطور">
-              <Picker value={filters.stageId} onChange={(v) => setFilter("stageId", v)} items={options.stages} all="كل الأطوار" />
-            </Field>
+          <FilterField label="الطور">
+            <FilterSelect
+              value={filters.stageId}
+              onChange={(v) => setFilter("stageId", v)}
+              items={options.stages}
+              placeholder="كل الأطوار"
+              accent={ACCENT}
+            />
+          </FilterField>
 
-            <Field label="المستوى">
-              <Picker value={filters.levelId} onChange={(v) => setFilter("levelId", v)} items={options.levels} all="كل المستويات" />
-            </Field>
+          <FilterField label="المستوى">
+            <FilterSelect
+              value={filters.levelId}
+              onChange={(v) => setFilter("levelId", v)}
+              items={options.levels}
+              placeholder="كل المستويات"
+              accent={ACCENT}
+            />
+          </FilterField>
 
-            <Field label="المادة">
-              <Picker value={filters.subjectId} onChange={(v) => setFilter("subjectId", v)} items={options.subjects} all="اختر المادة" />
-            </Field>
+          <FilterField label="المادة">
+            <FilterSelect
+              value={filters.subjectId}
+              onChange={(v) => setFilter("subjectId", v)}
+              items={options.subjects}
+              placeholder="اختر المادة"
+              accent={ACCENT}
+            />
+          </FilterField>
 
-            <Field label="الأستاذ">
-              <Picker
-                value={filters.teacherId}
-                onChange={(v) => setFilter("teacherId", v)}
-                items={options.teachers.map((t) => ({ id: t.id, name: fullName(t) }))}
-                all="اختر الأستاذ"
-              />
-            </Field>
+          <FilterField label="الأستاذ">
+            <FilterSelect
+              value={filters.teacherId}
+              onChange={(v) => setFilter("teacherId", v)}
+              items={options.teachers.map((t) => ({ id: t.id, name: fullName(t) }))}
+              placeholder="اختر الأستاذ"
+              accent={ACCENT}
+            />
+          </FilterField>
 
-            <Field label="الفوج">
-              <Picker value={filters.groupId} onChange={(v) => setFilter("groupId", v)} items={options.groups} all="اختر الفوج" />
-            </Field>
+          <FilterField label="الفوج">
+            <FilterSelect
+              value={filters.groupId}
+              onChange={(v) => setFilter("groupId", v)}
+              items={options.groups}
+              placeholder="اختر الفوج"
+              accent={ACCENT}
+            />
+          </FilterField>
 
-            {/* الكشف بدل الشهر: وحدةٌ إدارية لا مدىً تقويمي */}
-            {ready && (
-              <Field label="الكشف">
-                <div className="flex items-center gap-2">
-                  <select
+          {/* الكشف بدل الشهر: وحدةٌ إدارية لا مدىً تقويمي */}
+          {ready && (
+            <FilterField label="الكشف" span>
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <FilterSelect
                     value={sheetId}
-                    onChange={(e) => setSheetId(e.target.value)}
-                    className={selectClass}
+                    onChange={setSheetId}
+                    items={sheets.map((s) => ({ id: s.id, name: sheetTitle(s) }))}
+                    placeholder={sheets.length === 0 ? "لا كشوف بعد" : undefined}
                     disabled={sheets.length === 0}
-                  >
-                    {sheets.length === 0 ? (
-                      <option value="" className="bg-[#0a0f1a]">لا كشوف بعد</option>
-                    ) : (
-                      sheets.map((s) => (
-                        <option key={s.id} value={s.id} className="bg-[#0a0f1a]">
-                          {sheetTitle(s)}
-                        </option>
-                      ))
-                    )}
-                  </select>
-
-                  {can("attendance.create") && (
-                    <button
-                      onClick={() => setNewOpen(true)}
-                      disabled={noSchedule}
-                      title={noSchedule ? "لا خانة في الجدول الأسبوعي لهذا الإسناد" : "كشف جديد"}
-                      className="flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-black text-[#241202] transition hover:brightness-110 disabled:opacity-35"
-                      style={{ background: ACCENT }}
-                    >
-                      <FilePlus2 className="h-4 w-4" />
-                      كشف جديد
-                    </button>
-                  )}
+                    accent={ACCENT}
+                  />
                 </div>
-              </Field>
-            )}
 
-            {loadingRefs && <Loader2 className="mb-2.5 h-4 w-4 animate-spin text-white/40" />}
-          </div>
-        </motion.div>
+                {can("attendance.create") && (
+                  <button
+                    onClick={() => setNewOpen(true)}
+                    disabled={noSchedule}
+                    title={noSchedule ? "لا خانة في الجدول الأسبوعي لهذا الإسناد" : "كشف جديد"}
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-black text-[#241202] transition hover:brightness-110 disabled:opacity-35"
+                    style={{ background: ACCENT }}
+                  >
+                    <FilePlus2 className="h-4 w-4" />
+                    كشف جديد
+                  </button>
+                )}
+              </div>
+            </FilterField>
+          )}
+        </FilterPanel>
 
         {error && (
           <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
@@ -954,7 +1353,16 @@ export default function DailySheetPage() {
               */}
               <button
                 onClick={() => setPreviewing(true)}
-                disabled={!hasSheet || sessions.length === 0}
+                /*
+                  الورقة تُطبع ولو خلا الكشف.
+
+                  هذا **أصلُ استعمالها** لا حالةٌ شاذّة: تخرج فارغةً
+                  بأعمدةٍ بعدد ما قرّرته المؤسسة، فتُسلَّم للأستاذ يدوّن
+                  فيها الحضور بالقلم، ثمّ تعود إلى الإدارة فتُنقل إلى
+                  الكشف. وكان الزرّ يُعطَّل حتى تُنشأ أوّلُ حصة — أي حتى
+                  يُدوَّن ما جاءت الورقة لتُدوَّن فيه.
+                */
+                disabled={!hasSheet}
                 className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-bold text-white/70 transition hover:bg-white/10 disabled:opacity-35"
               >
                 <Printer className="h-4 w-4" />
@@ -1011,6 +1419,21 @@ export default function DailySheetPage() {
           />
         ) : (
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+            {/* شريط البحث — فوق الجدول لا داخل المرشِّحات: يبقى ظاهراً ولو طُويت */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+              <SearchBox
+                value={search}
+                onChange={setSearch}
+                shown={visible.length}
+                total={roster.length}
+                accent={ACCENT}
+              />
+
+              <span className="text-[11px] text-white/35">
+                {roster.length} مسجَّلاً في هذا الكشف
+              </span>
+            </div>
+
             <div className="max-h-[62vh] overflow-auto">
               {/*
                 border-separate لا border-collapse: الخلية اللاصقة تفقد
@@ -1158,18 +1581,39 @@ export default function DailySheetPage() {
                 </thead>
 
                 <tbody>
-                  {enrollments.map((e, index) => {
-                    const total = presentCount(e.id);
+                  {visible.length === 0 && shownDeparted.length === 0 && (
+                    <tr>
+                      {/* عمودان ثابتان + الحصص + الخانات الفارغة + خمسة أعمدةٍ في الذيل */}
+                      <td
+                        colSpan={sessions.length + emptySlots + 7}
+                        className="px-4 py-14 text-center text-sm text-white/40"
+                      >
+                        لا طالب باسم «{search.trim()}» في هذا الكشف
+                      </td>
+                    </tr>
+                  )}
+
+                  {visible.map(({ enrollment: e, order }) => {
+                    /* لا تُسمَّ `window`: ظِلٌّ على الكائن العامّ في هذا الحيّز */
+                    const own = e.transferAt ? transferTally(e) : null;
+                    const total = own ? own.attended : presentCount(e.id);
+                    const denominator = own ? own.of : held.length;
                     const dirty = pendingNotes.has(e.student.id);
                     const fee = feeOf(e.id);
 
                     return (
-                      <tr key={e.id} className="transition hover:bg-white/[0.03]">
+                      <tr
+                        key={e.id}
+                        ref={glowFor === fullName(e.student) ? glowRow : undefined}
+                        className={`transition hover:bg-white/[0.03]${
+                          glowFor === fullName(e.student) ? " skk-row-glow" : ""
+                        }`}
+                      >
                         <td
                           className="sticky z-10 border-b border-e border-white/5 bg-[#070b14] px-2 py-1.5 text-center text-white/45"
                           style={{ insetInlineStart: 0 }}
                         >
-                          {index + 1}
+                          {order}
                         </td>
                         <td
                           className="sticky z-10 truncate border-b border-e border-white/5 bg-[#070b14] px-3 py-1.5 font-bold"
@@ -1181,8 +1625,30 @@ export default function DailySheetPage() {
 
                         {sessions.map((s) => {
                           const key = cellKey(e.id, s.id);
-                          const record = cells.get(key);
+                          /*
+                            ما قبل التحاق المنقول ليس خانتَه.
+
+                            الوافدُ في الحصة الرابعة لم يغب عن الثلاث
+                            الأولى: لم يكن في الفوج. وكانت تُعرض له
+                            خاناتٌ فارغةٌ تُنقر فتُدوَّن — ويُقرأ مقامُه
+                            «من 8» وحصصُه خمس.
+                          */
+                          const mine = ownsSession(e, s.sessionDate);
+                          const record = mine ? cells.get(key) : undefined;
                           const tone = record ? STATUS_TONE[record.status] : null;
+
+                          if (!mine) {
+                            return (
+                              <td key={s.id} className="border-b border-e border-white/5 p-0 text-center">
+                                <span
+                                  className="grid h-9 w-full place-items-center text-white/10"
+                                  title="قبل التحاقه بالفوج — ليست من حصصه"
+                                >
+                                  —
+                                </span>
+                              </td>
+                            );
+                          }
 
                           return (
                             <td key={s.id} className="border-b border-e border-white/5 p-0 text-center">
@@ -1223,10 +1689,21 @@ export default function DailySheetPage() {
                           </td>
                         ))}
 
-                        <td className="border-b border-e border-white/5 px-2 py-1.5 text-center">
+                        <td
+                          className="border-b border-e border-white/5 px-2 py-1.5 text-center"
+                          title={
+                            own
+                              ? `حضر ${total} من ${denominator} حصصٍ أُجريت له بعد التحاقه. ` +
+                                "والحقّ يُحسب على ما أُجري له لا على ما حضره."
+                              : undefined
+                          }
+                        >
                           <span className="font-black" style={{ color: ACCENT }}>{total}</span>
-                          {/* المقام المنجزة لا كل الأعمدة — وإلّا بدا الحاضرُ في كلّها ناقصاً */}
-                          <span className="text-white/25"> / {held.length}</span>
+                          {/*
+                            المقام المنجزة لا كل الأعمدة — وإلّا بدا الحاضرُ
+                            في كلّها ناقصاً. ومن نُقل فمقامُه حصصُه هو.
+                          */}
+                          <span className="text-white/25"> / {denominator}</span>
                         </td>
 
                         {/* المبلغ لاتينيّ الاتجاه في محتواه لا في خانته */}
@@ -1246,6 +1723,62 @@ export default function DailySheetPage() {
                         </td>
 
                         <td className="border-b border-e border-white/5 px-1.5 py-1">
+                          {/*
+                            خبرُ النقل فوق الحقل لا داخله: الحقل ملكُ
+                            الموظّف يكتب فيه ويمحو، وهذا خبرٌ لا يُمحى
+                            ولا يُطمس عليه ما كتب.
+                          */}
+                          {e.note && showsTransferNote(e) && (
+                            <span className="mb-1 flex items-start gap-1">
+                              {/*
+                                لونان لا لون: الكهرمانيُّ لما **سيكون**
+                                (نقلٌ قُرِّر ولم يسرِ)، ولونُ الشاشة لما
+                                كان. ولو اتّحدا لقرأ الموظّفُ خبرَ
+                                المستقبل ماضياً وظنّ الطالب قد غادر.
+                              */}
+                              <span
+                                className="min-w-0 flex-1 truncate rounded-md px-1.5 py-0.5 text-[11px] font-bold"
+                                title={e.note}
+                                style={
+                                  e.pendingTransferToId
+                                    ? { background: "rgba(251,191,36,0.14)", color: "#fbbf24" }
+                                    : { background: `${ACCENT}1a`, color: ACCENT }
+                                }
+                              >
+                                {e.note}
+                              </span>
+
+                              {e.pendingTransferToId ? (
+                                editable && (
+                                  <button
+                                    onClick={() => cancelPending(e)}
+                                    disabled={busyKey === e.id}
+                                    title="ألغِ النقل المؤجَّل — يبقى الطالب في فوجه"
+                                    className="grid h-5 w-5 shrink-0 place-items-center rounded-md text-amber-300 transition hover:bg-rose-500/20 hover:text-rose-300 disabled:opacity-40"
+                                    style={{ background: "rgba(251,191,36,0.18)" }}
+                                  >
+                                    {busyKey === e.id ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <X className="h-3.5 w-3.5" />
+                                    )}
+                                  </button>
+                                )
+                              ) : (
+                                e.transferPeerAssignmentId && (
+                                  <button
+                                    onClick={() => jumpToPeer(e)}
+                                    title="افتح الكشف الذي جاء منه"
+                                    className="grid h-5 w-5 shrink-0 place-items-center rounded-md transition hover:brightness-125"
+                                    style={{ background: `${ACCENT}2e`, color: ACCENT }}
+                                  >
+                                    <ArrowUpLeft className="h-3.5 w-3.5" />
+                                  </button>
+                                )
+                              )}
+                            </span>
+                          )}
+
                           <input
                             value={notes.get(e.student.id) ?? ""}
                             onChange={(ev) => editNote(e.student.id, ev.target.value)}
@@ -1275,13 +1808,149 @@ export default function DailySheetPage() {
                       </tr>
                     );
                   })}
+
+                  {/*
+                    المغادرون — سطرٌ باهتٌ لا يدخل حساباً.
+
+                    خانات الحصص مطويّةٌ في خانةٍ واحدة عمداً: لا حضورَ
+                    يُدوَّن لمن غادر، وخاناتٌ فارغةٌ قابلةٌ للنقر تدعو
+                    إلى تدوينٍ لا يجوز. وأعمدةُ المال شُرَطٌ لأنّ
+                    فاتورته معلَّقةٌ بفوجه الجديد لا بهذا.
+                  */}
+                  {shownDeparted.map((row) => (
+                    <tr
+                      key={row.id}
+                      ref={glowFor === fullName(row.student) ? glowRow : undefined}
+                      className={`bg-white/[0.015] text-white/45${
+                        glowFor === fullName(row.student) ? " skk-row-glow" : ""
+                      }`}
+                    >
+                      <td
+                        className="sticky z-10 border-b border-e border-white/5 bg-[#070b14] px-2 py-1.5 text-center text-white/25"
+                        style={{ insetInlineStart: 0 }}
+                      >
+                        —
+                      </td>
+                      <td
+                        className="sticky z-10 truncate border-b border-e border-white/5 bg-[#070b14] px-3 py-1.5 font-bold text-white/45 line-through decoration-white/20"
+                        style={{ insetInlineStart: 54 }}
+                        title={fullName(row.student)}
+                      >
+                        {fullName(row.student)}
+                      </td>
+
+                      {/*
+                        حضورُه قبل أن يغادر — يُعرض ولا يُعدَّل.
+
+                        وما بعد يوم النقل ليس له: كانت الخانة تعرض ما
+                        وُجد فيها من علامات — وهي علاماتُ حصصٍ تلت
+                        رحيله — فيخرج «3 / 8» بجانب ملاحظةٍ تقول «درس
+                        هنا 5 من 8». رقمان في سطرٍ واحد لا يلتقيان.
+                        فتُشطب تلك الخانات ولا تُعدّ.
+                      */}
+                      {sessions.map((s) => {
+                        const mine = ownsSession(row, s.sessionDate);
+                        const record = mine ? cells.get(cellKey(row.id, s.id)) : undefined;
+                        const tone = record ? STATUS_TONE[record.status] : null;
+
+                        return (
+                          <td key={s.id} className="border-b border-e border-white/5 p-0 text-center">
+                            <span
+                              className="grid h-9 w-full place-items-center text-base font-black opacity-60"
+                              style={tone ? { background: tone.bg, color: tone.fg } : undefined}
+                              title={
+                                !mine
+                                  ? "بعد مغادرته — ليست من حصصه"
+                                  : tone
+                                    ? `${tone.label} — قبل النقل`
+                                    : "لم يُسجَّل"
+                              }
+                            >
+                              {!mine ? (
+                                <span className="text-white/10">—</span>
+                              ) : tone ? (
+                                tone.short
+                              ) : (
+                                <span className="text-white/10">·</span>
+                              )}
+                            </span>
+                          </td>
+                        );
+                      })}
+
+                      {Array.from({ length: emptySlots }).map((_, i) => (
+                        <td
+                          key={`d-empty-${i}`}
+                          className="border-b border-e border-white/5 bg-white/[0.015] p-0 text-center"
+                        >
+                          <span className="grid h-9 w-full place-items-center text-white/10">—</span>
+                        </td>
+                      ))}
+
+                      {/* المقام حصصُه هو لا حصصُ الكشف — وإلّا نُسب إليه ما لم يحضره */}
+                      <td
+                        className="border-b border-e border-white/5 px-2 py-1.5 text-center"
+                        title={
+                          `حضر ${transferTally(row).attended} من ${transferTally(row).of} ` +
+                          "حصصٍ أُجريت له قبل نقله. " +
+                          "والحقّ يُحسب على ما أُجري له لا على ما حضره — الغياب لا يُنقص شيئاً."
+                        }
+                      >
+                        <span className="font-black text-white/45">{transferTally(row).attended}</span>
+                        <span className="text-white/20"> / {transferTally(row).of}</span>
+                      </td>
+
+                      {/* المال معلَّقٌ بفوجه الجديد لا بهذا — فشُرَطٌ لا أرقام */}
+                      <td className="border-b border-e border-white/5 px-2 py-1.5 text-center text-white/25">—</td>
+                      <td className="border-b border-e border-white/5 px-2 py-1.5 text-center text-white/25">—</td>
+
+                      <td className="border-b border-e border-white/5 px-1.5 py-1">
+                        <span className="flex items-start gap-1">
+                          <span
+                            className="min-w-0 flex-1 truncate rounded-md px-1.5 py-0.5 text-[11px] font-bold"
+                            title={row.note ?? ""}
+                            style={{ background: `${ACCENT}1a`, color: ACCENT }}
+                          >
+                            {row.note}
+                          </span>
+
+                          {row.transferPeerAssignmentId && (
+                            <button
+                              onClick={() => jumpToPeer(row)}
+                              title="افتح كشف الفوج الذي نُقل إليه"
+                              className="grid h-5 w-5 shrink-0 place-items-center rounded-md transition hover:brightness-125"
+                              style={{ background: `${ACCENT}2e`, color: ACCENT }}
+                            >
+                              <ArrowUpLeft className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </span>
+                      </td>
+
+                      <td
+                        className="sticky z-10 border-b border-white/5 bg-[#070b14] px-2 py-1.5 text-center"
+                        style={{ insetInlineEnd: 0 }}
+                      >
+                        <span
+                          className="inline-block rounded-full bg-white/8 px-2 py-0.5 text-[11px] font-bold text-white/40"
+                          title={
+                            row.transferSheetId === sheetId
+                              ? "غادر الفوج في أثناء هذا الكشف"
+                              : "كان في الفوج حين هذا الكشف ثمّ غادره لاحقاً"
+                          }
+                        >
+                          غادر
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
 
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 px-4 py-2.5 text-[11px] text-white/40">
               <span>
-                {enrollments.length} طالباً · {sessions.length} حصة مؤرَّخة
+                {roster.length} طالباً · {sessions.length} حصة مؤرَّخة
                 {emptySlots > 0 && ` · ${emptySlots} عمود بلا تاريخ`}
               </span>
               {(Object.keys(STATUS_TONE) as AttendanceStatus[]).map((s) => (
@@ -1312,7 +1981,8 @@ export default function DailySheetPage() {
             className="fixed z-50 w-40 overflow-hidden rounded-xl border border-white/15 bg-[#0a0f1a] p-1 shadow-2xl"
             style={{
               left: Math.min(Math.max(picker.x - 80, 8), window.innerWidth - 168),
-              top: Math.min(picker.y + 6, window.innerHeight - 190),
+              /* خمسةُ صفوفٍ وفاصل — والحدُّ يتبع الارتفاع وإلّا خرج آخرُها */
+              top: Math.min(picker.y + 6, window.innerHeight - 246),
             }}
           >
             {(["PRESENT", "ABSENT", "LATE", "EXCUSED"] as AttendanceStatus[]).map((s) => {
@@ -1337,6 +2007,34 @@ export default function DailySheetPage() {
                 </button>
               );
             })}
+
+            {/*
+              الخامس ليس حالةً بل نفيُها — ولذلك هو خارج `STATUS_TONE`.
+              إدخالُه فيها كان يُدخله في الشريط المفسِّر وفي الورقة
+              المطبوعة، وهو لا يُطبع: الفارغُ يُقرأ فراغاً.
+            */}
+            <div className="my-1 h-px bg-white/10" />
+
+            <button
+              onClick={() => clearStatus(picker.enrollmentId, picker.sessionId)}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-bold transition hover:bg-white/10"
+              style={
+                cells.get(cellKey(picker.enrollmentId, picker.sessionId))
+                  ? undefined
+                  : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)" }
+              }
+            >
+              <span
+                className="grid h-5 w-5 place-items-center rounded text-[11px] font-black"
+                style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)" }}
+              >
+                −
+              </span>
+              لا شيء
+              {!cells.get(cellKey(picker.enrollmentId, picker.sessionId)) && (
+                <Check className="ms-auto h-3.5 w-3.5" />
+              )}
+            </button>
           </motion.div>
         </>
       )}
@@ -1543,11 +2241,13 @@ export default function DailySheetPage() {
       )}
 
       {/* ================= المعاينة والورقة ================= */}
-      {previewing && hasSheet && sheet && sessions.length > 0 && (
+      {/* بلا شرطِ حصة: الورقة الفارغة هي التي تُرسل إلى الأستاذ ليملأها */}
+      {previewing && hasSheet && sheet && (
         <SheetPreview
           title="كشف الحضور اليومي"
           subtitle={`${assignment!.subject.name} · ${assignment!.studyGroup.level.name} · ${assignment!.studyGroup.name} · ${sheetTitle(sheet)}`}
           warning={printWarning}
+          onRefresh={loadSheet}
           onClose={() => setPreviewing(false)}
         >
           <SheetPrint
@@ -1555,10 +2255,12 @@ export default function DailySheetPage() {
             assignment={assignment!}
             title={sheetTitle(sheet)}
             sessions={sessions}
-            enrollments={enrollments}
+            columnCount={columnCount}
+            enrollments={roster}
             cells={cells}
             notes={notes}
             invoices={invoices}
+            code={sheetCode(sheet)}
             logo={logo}
           />
         </SheetPreview>
@@ -1571,38 +2273,7 @@ export default function DailySheetPage() {
 // عناصر مساعدة
 // --------------------------------------------------
 
-const selectClass =
-  "rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-xs font-bold outline-none transition focus:border-white/30";
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-[11px] font-bold text-white/45">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function Picker({
-  value,
-  onChange,
-  items,
-  all,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  items: { id: string; name: string }[];
-  all: string;
-}) {
-  return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} className={selectClass}>
-      <option value="" className="bg-[#0a0f1a]">{all}</option>
-      {items.map((i) => (
-        <option key={i.id} value={i.id} className="bg-[#0a0f1a]">{i.name}</option>
-      ))}
-    </select>
-  );
-}
+/* الحقول والقوائم انتقلت إلى components/shared/FilterPanel — لوحٌ واحد للكشوف الثلاثة */
 
 function Meta({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
@@ -1865,8 +2536,36 @@ function SheetDialog({
 // أزرار ولا ألوان خلفية، والشاشة عكس ذلك تماماً.
 // --------------------------------------------------
 
-/** الورقة الأصلية مرقَّمة إلى 25 صفاً، وهو ما يملأ A4 أفقية تماماً */
+/**
+ * الحدُّ الأدنى لسطور الورقة — 25 كما في الأصل الورقي.
+ *
+ * وهو **حدٌّ أدنى لا سعةٌ نهائية**: السعة تُقاس بعد الرسم، لأنّ ارتفاع
+ * الصفّ يتعلّق بملاحظةٍ يكتبها الموظّف فتلتفّ سطرين. انظر
+ * `usePagedRows` في `components/print/paged-sheet`.
+ */
 const PRINT_ROWS_PER_PAGE = 25;
+
+/**
+ * أعرضُ الأعمدة الثابتة بالنسبة المئوية — وما بقي فلأعمدة الحصص.
+ *
+ * مكتوبةٌ هنا لا في الوسم لأنّ حساب مقاس خطّ التاريخ يحتاجها: عرضُ خانة
+ * الحصة هو الباقي مقسوماً على عددها.
+ */
+const COLUMN_PERCENT = { order: 5, name: 24, total: 8, note: 17 } as const;
+
+const DATES_SHARE =
+  100 - (COLUMN_PERCENT.order + COLUMN_PERCENT.name + COLUMN_PERCENT.total + COLUMN_PERCENT.note);
+
+/** حشوة الخانة يمنةً ويسرة كما في `index.css` */
+const CELL_PADDING_MM = 1.4;
+
+/**
+ * عرضُ التاريخ بأمثال مقاس خطّه — مقيسٌ لا مقدَّر.
+ *
+ * «28/08/2026» يشغل 5.485 أمثال المقاس، و«28/08/26» يشغل 4.335. ومنهما
+ * يُشتقّ أكبرُ خطٍّ يسع الخانة بلا كسرِ السطر.
+ */
+const DATE_WIDTH = { long: 5.485, short: 4.335 } as const;
 
 /**
  * الورقة المطبوعة.
@@ -1875,31 +2574,40 @@ const PRINT_ROWS_PER_PAGE = 25;
  * لا يمكن حسابه في CSS (‏Chromium لا يدعم صناديق هوامش `@page`)، فلو
  * تُرك التقطيع للمتصفّح لتعذّر ترقيمُها. وحين نقطّعها بأنفسنا تُعرف
  * الصفحاتُ عدداً وترتيباً، وتتكرّر الترويسة كاملةً على كل ورقة.
+ *
+ * وعددُ الصفوف في الورقة **يُقاس ولا يُفترض**: كان 25 صفّاً محسوبةً على
+ * صفٍّ من سطرٍ واحد، فإذا التفّت الملاحظات سطرين خرجت آخرُ الصفوف خارج
+ * الورقة. فتُرسم الصفوف كلُّها مرّةً في ورقةٍ خفيّة وتُقاس، ثمّ تُوزَّع
+ * بارتفاعها الحقيقي — وما يسع ورقةً واحدة يبقى في واحدة.
  */
 function SheetPrint({
   schoolName,
   assignment,
   title,
   sessions,
+  columnCount,
   enrollments,
   cells,
   notes,
   invoices,
+  code,
   logo,
 }: {
   schoolName: string;
   assignment: Assignment;
   title: string;
   sessions: SheetSession[];
+  /** أعمدةُ الكشف كما قرّرتها المؤسسة — ما لم تُنشأ حصّتُه يخرج فارغاً */
+  columnCount: number;
   enrollments: EnrollmentRow[];
   cells: Map<string, AttendanceRow>;
   notes: Map<string, string>;
   invoices: Map<string, Invoice>;
+  /** رمزُ الكشف — يخرج باركوداً تحت سطر التحرير */
+  code: string;
   logo: LogoSpec;
 }) {
-  const rows = Math.max(enrollments.length, PRINT_ROWS_PER_PAGE);
-  const pages = Math.ceil(rows / PRINT_ROWS_PER_PAGE);
-  const printedOn = new Date().toLocaleDateString("fr-DZ");
+  const printedOn = printedStamp();
 
   /*
    * الأعمدة كلّها تُطبع — المجدولة والملغاة معها، فالورقة تُظهر ما في
@@ -1908,148 +2616,267 @@ function SheetPrint({
   const held = heldSessions(sessions);
 
   /*
+   * أعمدةُ الورقة: ما أُنشئ من حصص، مكمَّلاً إلى ما قرّرته المؤسسة.
+   *
+   * الكشف يفتح أعمدةً بعددٍ معلوم، وتُكتب تواريخُها واحداً بعد آخر. وكان
+   * المطبوع يعرض ما كُتب تاريخُه فقط — فالورقة التي تُرسل إلى الأستاذ
+   * ليملأها تخرج بلا خانةٍ يملؤها. فما بقي يخرج عموداً فارغاً مرقَّماً.
+   */
+  const printedColumns = Math.max(sessions.length, columnCount);
+  const spareColumns = printedColumns - sessions.length;
+
+  /*
+   * ورقةٌ فارغة — لا حضورَ فيها أصلاً.
+   *
+   * فلا مجموعَ يُكتب (صفرٌ في كلّ سطر يوهم أنّ الحضور دُوِّن ولم يحضر
+   * أحد)، ولا ملاحظاتٍ ولا «مخلف»: الورقة ذاهبةٌ إلى الأستاذ ليكتب
+   * فيها، لا آتيةٌ منه.
+   */
+  const blankForm = cells.size === 0;
+
+  /*
    * الشعار على الورقة أكبر منه على الإيصال: الإيصال شريطٌ عرضه 80mm
    * والورقة 297mm، فقياسٌ واحد يخدم أحدهما ويضيع في الآخر.
    */
   const logoWidth = Math.max(24, Math.round(logo.widthMm * 1.4));
 
-  return (
-    <div className="sheet-print" dir="rtl">
-      {Array.from({ length: pages }).map((_, page) => {
-        const from = page * PRINT_ROWS_PER_PAGE;
+  /*
+   * المخزون: المسجَّلون ثمّ فراغاتٌ تكفي لملء آخر ورقة مهما كانت سعتها.
+   * وما فاض منها يُسقط بعد التقسيم فلا تخرج ورقةٌ لا تحمل إلّا أرقاماً.
+   */
+  const stock = enrollments.length + PRINT_ROWS_PER_PAGE;
 
-        return (
-          <section className="sheet-page" key={page}>
-            {/*
-              ترويسةٌ ثلاثية المناطق كما في الورقة: المستوى والكشف
-              يميناً، وهوية المؤسسة وعنوان الوثيقة وسطاً، والمادة
-              والفوج والأستاذ يساراً. والشعار وحده زيادةٌ على الأصل.
-            */}
-            <header className="sheet-print-top">
-              <div className="sheet-print-side">
-                <span>المستوى: {assignment.studyGroup.level.name}</span>
-                <span>{title}</span>
-                <span className="sheet-print-printed">حُرِّر في {printedOn}</span>
-              </div>
+  /* بصمةُ ما يغيّر الارتفاعات: الحصص، والأسماء، والملاحظات، و«مخلف» */
+  const signature = [
+    printedColumns,
+    blankForm,
+    enrollments
+      .map(
+        (e) =>
+          `${e.student.id}:${e.note ?? ""}:${notes.get(e.student.id) ?? ""}:` +
+          `${invoices.get(e.id)?.remaining ?? 0}`,
+      )
+      .join(","),
+  ].join("|");
 
-              <div className="sheet-print-center">
-                {logo.src && (
-                  <img
-                    src={logo.src}
-                    alt=""
-                    className="sheet-print-logo"
-                    style={{ width: `${logoWidth}mm`, filter: logo.filter }}
-                  />
-                )}
-                <h1>{schoolName}</h1>
-                <div className="sheet-print-year">{assignment.academicYear.name}</div>
-                <h2>كشف الحضور اليومي</h2>
-              </div>
+  const { measureRef, pages } = usePagedRows(signature, {
+    rowCount: stock,
+    perPage: PRINT_ROWS_PER_PAGE,
+  });
 
-              <div className="sheet-print-side sheet-print-side-end">
-                <span>المادة: {assignment.subject.name}</span>
-                <span>الفوج: {assignment.studyGroup.name}</span>
-                <span>أستاذ المادة: {fullName(assignment.teacher)}</span>
-              </div>
-            </header>
+  /*
+    ترويسةٌ ثلاثية المناطق كما في الورقة: المستوى والكشف يميناً، وهوية
+    المؤسسة وعنوان الوثيقة وسطاً، والمادة والفوج والأستاذ يساراً.
+    والشعار وحده زيادةٌ على الأصل. وتتكرّر على كل ورقة كاملةً — من حمل
+    الورقة الثانية وحدها يجب أن يعرف لِمَن هي.
+  */
+  const header = (
+    <header className="sheet-print-top">
+      <div className="sheet-print-side">
+        <span>المستوى: {assignment.studyGroup.level.name}</span>
+        <span>{title}</span>
+        <span className="sheet-print-printed">حُرِّر في {printedOn}</span>
+        <SheetBarcode code={code} />
+      </div>
+
+      <div className="sheet-print-center">
+        {logo.src && (
+          <img
+            src={logo.src}
+            alt=""
+            className="sheet-print-logo"
+            style={{ width: `${logoWidth}mm`, filter: logo.filter }}
+          />
+        )}
+        <h1>{schoolName}</h1>
+        <div className="sheet-print-year">{assignment.academicYear.name}</div>
+        <h2>كشف الحضور اليومي</h2>
+      </div>
+
+      <div className="sheet-print-side sheet-print-side-end">
+        <span>المادة: {assignment.subject.name}</span>
+        <span>الفوج: {assignment.studyGroup.name}</span>
+        <span>أستاذ المادة: {fullName(assignment.teacher)}</span>
+      </div>
+    </header>
+  );
+
+  /*
+   * خانةُ التاريخ ومقاسُ خطّها.
+   *
+   * أعمدةُ الحصص تقتسم ما تبقّى من عرض الورقة، فكلّما زادت ضاقت خانتُها.
+   * وكان الخطّ ثابتاً 2.7mm فينكسر التاريخ سطرين عند ثماني حصص، ويصير
+   * «25/08/202» و«6» تحته.
+   *
+   * فالمقاس يُحسب: عرضُ الخانة بالمليمتر ÷ ما يشغله «28/08/2026» في
+   * مقاسٍ معلوم (‏قِيس: 5.49 أمثال مقاس الخطّ)، مع فسحةٍ 8% للحدود.
+   * وإذا ضاق حتى عن أصغرِ مقاسٍ يُقرأ، طُرح القرن من السنة — وهو في
+   * ترويسة الورقة كاملاً.
+   */
+  const dateRoomMm =
+    (((SHEET_MM.width - 2 * SHEET_MM.padding) * (DATES_SHARE / 100)) / Math.max(1, printedColumns) -
+      CELL_PADDING_MM) *
+    0.94;
+
+  const longFont = dateRoomMm / DATE_WIDTH.long;
+  const shortYear = longFont < 2.1;
+
+  const dateFont = Math.min(
+    2.6,
+    Math.max(1.5, shortYear ? dateRoomMm / DATE_WIDTH.short : longFont),
+  );
+
+  /*
+    الورقة ورقةُ حضورٍ لا ورقةُ مال.
+
+    كان المطبوع يحمل «الحقّ الشهري» و«الدَّين» كما تحملهما الشاشة، وهما
+    على الشاشة خبرٌ يُقرأ بجانب الحضور. لكنّ الورقة تُحمل إلى القاعة
+    وتُترك على الطاولة وتُصوَّر — فمبلغُ كلِّ طالبٍ ودَينُه يخرجان من
+    المكتب مطبوعين، وليس ذلك ما تُطبع الورقة لأجله.
+
+    و«مخلف» تبقى في الملاحظات: هي ما تحمله الورقة الأصلية، تقول إنّ على
+    الطالب حقّاً بلا أن تُعلن كم هو. وكشف الحقوق الشهري هو موضع المال.
+  */
+  const columns = (
+    <thead>
+      <tr>
+        <th rowSpan={3} style={{ width: `${COLUMN_PERCENT.order}%` }}>الترتيب</th>
+        <th rowSpan={3} style={{ width: `${COLUMN_PERCENT.name}%` }}>اسم ولقب الطالب</th>
+        <th colSpan={printedColumns}>تاريخ الحضور</th>
+        <th rowSpan={3} style={{ width: `${COLUMN_PERCENT.total}%` }}>مجموع عدد الحصص</th>
+        <th rowSpan={3} style={{ width: `${COLUMN_PERCENT.note}%` }}>ملاحظــات</th>
+      </tr>
+      <tr>
+        {sessions.map((s) => (
+          <th
+            key={s.id}
+            className="sheet-print-date"
+            style={{ fontSize: `${dateFont.toFixed(2)}mm` }}
+          >
+            {shortYear ? sheetDateShort(s.sessionDate) : sheetDate(s.sessionDate)}
+          </th>
+        ))}
+
+        {/* عمودٌ لم تُكتب حصّتُه بعد — ترويسةٌ فارغة يملؤها الأستاذ بالقلم */}
+        {Array.from({ length: spareColumns }, (_, i) => (
+          <th key={`spare-date-${i}`} className="sheet-print-date" />
+        ))}
+      </tr>
+      <tr>
+        {Array.from({ length: printedColumns }, (_, i) => (
+          <th key={`slot-${i}`}>الحصة {i + 1}</th>
+        ))}
+      </tr>
+    </thead>
+  );
+
+  const bodyRow = (index: number) => {
+    const e = enrollments[index];
+
+    if (!e) {
+      /* صفٌّ مرقَّم فارغ — الورقة تُطبع كاملةً وتُملأ بالقلم */
+      return (
+        <tr key={`blank-${index}`}>
+          <td className="c">{index + 1}</td>
+          <td />
+          {Array.from({ length: printedColumns }, (_, column) => (
+            <td key={`cell-${column}`} />
+          ))}
+          <td />
+          <td />
+        </tr>
+      );
+    }
+
+    /* نفس قاعدة الشاشة — الحاضر والمتأخّر في المنجزة وحدها */
+    const total = held.reduce((sum, s) => {
+      const record = cells.get(cellKey(e.id, s.id));
+      return sum + (record && isAttended(record.status) ? 1 : 0);
+    }, 0);
+
+    const invoice = invoices.get(e.id);
+    const debt = invoice?.remaining ?? 0;
+    const note = notes.get(e.student.id) ?? "";
+
+    /*
+     * «مخلف» تُكتب من نفسها كما في الورقة الأصلية.
+     *
+     * كانت تُكتب باليد فتُنسى أو تبقى بعد السداد. ومصدرُها هنا
+     * `Invoice.remaining`، فتظهر بظهور الدَّين وتزول بزواله بلا خطوةٍ
+     * ثانية. وملاحظةُ الموظّف تبقى بجانبها لا تُمحى.
+     */
+    const remark = [debt > 0 ? "مخلف" : "", e.note ?? "", note]
+      .filter(Boolean)
+      .join(" — ");
+
+    return (
+      <tr key={e.id}>
+        <td className="c">{index + 1}</td>
+        <td className="n">{fullName(e.student)}</td>
+        {sessions.map((s) => {
+          const record = cells.get(cellKey(e.id, s.id));
+          return (
+            <td key={s.id} className="c">
+              {record ? STATUS_TONE[record.status].short : ""}
+            </td>
+          );
+        })}
+
+        {Array.from({ length: spareColumns }, (_, column) => (
+          <td key={`spare-${column}`} />
+        ))}
+
+        <td className="c b">{blankForm ? "" : total}</td>
+        <td>{blankForm ? "" : remark}</td>
+      </tr>
+    );
+  };
+
+  /*
+   * طورُ القياس — ورقةٌ واحدة خفيّة بكلّ الصفوف.
+   *
+   * لا تُطبع ولا تُرى ولا تُزيح شيئاً (‏`.sheet-measure` في index.css)،
+   * ولا تحمل صنف `.sheet-page` فلا تعدّها المعاينة ورقةً.
+   */
+  if (!pages) {
+    return (
+      <div className="sheet-print" dir="rtl">
+        <div className="sheet-measure" ref={measureRef}>
+          <section className="sheet-measure-page" data-measure-page="">
+            {header}
 
             <table className="sheet-print-table">
-              <thead>
-                <tr>
-                  <th rowSpan={3} style={{ width: "5%" }}>الترتيب</th>
-                  <th rowSpan={3} style={{ width: "18%" }}>اسم ولقب الطالب</th>
-                  <th colSpan={sessions.length}>تاريخ الحضور</th>
-                  <th rowSpan={3} style={{ width: "7%" }}>مجموع عدد الحصص</th>
-                  <th rowSpan={3} style={{ width: "9%" }}>الحقّ الشهري</th>
-                  <th rowSpan={3} style={{ width: "8%" }}>الدَّين</th>
-                  <th rowSpan={3} style={{ width: "12%" }}>ملاحظــات</th>
-                </tr>
-                <tr>
-                  {sessions.map((s) => (
-                    <th key={s.id} className="sheet-print-date">
-                      {sheetDate(s.sessionDate)}
-                    </th>
-                  ))}
-                </tr>
-                <tr>
-                  {sessions.map((s, i) => (
-                    <th key={s.id}>الحصة {i + 1}</th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {Array.from({ length: PRINT_ROWS_PER_PAGE }).map((_, offset) => {
-                  const index = from + offset;
-                  const e = enrollments[index];
-
-                  if (!e) {
-                    /* صفٌّ مرقَّم فارغ — الورقة تُطبع كاملةً وتُملأ بالقلم */
-                    return (
-                      <tr key={`blank-${index}`}>
-                        <td className="c">{index + 1}</td>
-                        <td />
-                        {sessions.map((s) => (
-                          <td key={s.id} />
-                        ))}
-                        <td />
-                        <td />
-                        <td />
-                        <td />
-                      </tr>
-                    );
-                  }
-
-                  /* نفس قاعدة الشاشة — الحاضر والمتأخّر في المنجزة وحدها */
-                  const total = held.reduce((sum, s) => {
-                    const record = cells.get(cellKey(e.id, s.id));
-                    return sum + (record && isAttended(record.status) ? 1 : 0);
-                  }, 0);
-
-                  const invoice = invoices.get(e.id);
-                  const debt = invoice?.remaining ?? 0;
-                  const note = notes.get(e.student.id) ?? "";
-
-                  /*
-                   * «مخلف» تُكتب من نفسها كما في الورقة الأصلية.
-                   *
-                   * كانت تُكتب باليد فتُنسى أو تبقى بعد السداد. ومصدرُها
-                   * هنا `Invoice.remaining`، فتظهر بظهور الدَّين وتزول
-                   * بزواله بلا خطوةٍ ثانية. وملاحظةُ الموظّف تبقى بجانبها
-                   * لا تُمحى.
-                   */
-                  const remark = [debt > 0 ? "مخلف" : "", note]
-                    .filter(Boolean)
-                    .join(" — ");
-
-                  return (
-                    <tr key={e.id}>
-                      <td className="c">{index + 1}</td>
-                      <td>{fullName(e.student)}</td>
-                      {sessions.map((s) => {
-                        const record = cells.get(cellKey(e.id, s.id));
-                        return (
-                          <td key={s.id} className="c">
-                            {record ? STATUS_TONE[record.status].short : ""}
-                          </td>
-                        );
-                      })}
-                      <td className="c b">{total}</td>
-                      <td className="c">{invoice ? money(invoice.total) : ""}</td>
-                      <td className="c b">{debt > 0 ? money(debt) : ""}</td>
-                      <td>{remark}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+              {columns}
+              <tbody>{Array.from({ length: stock }, (_, index) => bodyRow(index))}</tbody>
             </table>
 
-            <footer className="sheet-print-foot">
-              {pages > 1 ? `الصفحة ${page + 1} من ${pages}` : "الصفحة 1"}
+            <footer className="sheet-print-foot" data-measure-foot="">
+              الصفحة 1 من 1
             </footer>
           </section>
-        );
-      })}
+        </div>
+      </div>
+    );
+  }
+
+  const sheets = dropBlankPages(pages, enrollments.length);
+
+  return (
+    <div className="sheet-print" dir="rtl">
+      {sheets.map((rows, page) => (
+        <section className="sheet-page" key={page}>
+          {header}
+
+          <table className="sheet-print-table">
+            {columns}
+            <tbody>{rows.map((index) => bodyRow(index))}</tbody>
+          </table>
+
+          <footer className="sheet-print-foot">
+            {sheets.length > 1 ? `الصفحة ${page + 1} من ${sheets.length}` : "الصفحة 1"}
+          </footer>
+        </section>
+      ))}
     </div>
   );
 }

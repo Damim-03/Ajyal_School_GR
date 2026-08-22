@@ -3,6 +3,7 @@ import {
   loginService,
   refreshTokenService,
   getMeService,
+  listProfilesService,
 } from "./auth.service";
 import { HTTPSTATUS } from "../../core/config/http.config";
 import { UnauthorizedException } from "../../core/errors/app.errors";
@@ -13,10 +14,28 @@ import { LoginInput } from "./auth.schema";
 // Cookie options — refreshToken
 // --------------------------------------------------
 
+/*
+ * SameSite في الإنتاج `none` لا `strict`.
+ *
+ * في التطوير يكون الخادم والواجهة على localhost فالسياق موقعٌ واحد
+ * و`strict` أمتنُ ما يمكن. أمّا في الإنتاج فأصل النافذة
+ * `tauri://localhost` (أو `http://tauri.localhost` على ويندوز)
+ * والخادمُ على نطاقٍ آخر — سياقٌ عابر للمواقع، و`strict` يعني أنّ
+ * المتصفّح لا يخزّن الكوكي أصلاً ولا يرسله.
+ *
+ * والعرَض مضلِّل: الدخول ينجح لأنّ accessToken يعود في جسم
+ * الاستجابة، ثمّ بعد انقضائه تفشل /auth/refresh فيَطرد المعترضُ
+ * المستخدمَ — خروجٌ مفاجئ بعد ربع ساعةٍ من عملٍ سليم ظاهرياً.
+ *
+ * و`none` يوجب `Secure` أي HTTPS، وهو مضمونٌ في الإنتاج وحده،
+ * فالشرطان مقترنان بنفس الرايةِ عمداً.
+ */
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true, // لا يمكن الوصول إليه من JavaScript
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict" as const,
+  secure: IS_PRODUCTION,
+  sameSite: IS_PRODUCTION ? ("none" as const) : ("strict" as const),
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام بالـ ms
   path: "/api/auth/refresh", // Cookie متاح فقط لهذا المسار
 };
@@ -74,10 +93,16 @@ export const refreshTokenController = async (req: Request, res: Response) => {
 // --------------------------------------------------
 
 export const logoutController = async (_req: Request, res: Response) => {
-  // نمسح الـ Cookie
-  res.clearCookie("refreshToken", {
-    path: "/api/auth/refresh",
-  });
+  /*
+   * المسحُ يجب أن يحمل نفس السمات التي كُتب بها.
+   *
+   * المتصفّح يطابق الكوكي بـ(الاسم + المسار + النطاق)، ويرفض كتابةَ
+   * كوكي `SameSite=None` بلا `Secure` — فمسحٌ بالمسار وحده كان
+   * يُهمَل صامتاً في الإنتاج ويبقى refreshToken حيّاً بعد الخروج.
+   */
+  const { maxAge: _maxAge, ...clearOptions } = REFRESH_COOKIE_OPTIONS;
+
+  res.clearCookie("refreshToken", clearOptions);
 
   return res.status(HTTPSTATUS.OK).json({
     success: true,
@@ -99,5 +124,20 @@ export const getMeController = async (req: Request, res: Response) => {
     success: true,
     message: "User retrieved",
     data: { user },
+  });
+};
+
+/**
+ * GET /api/auth/profiles — عامّ.
+ *
+ * لا `asyncHandler` حول منطقٍ إضافي: القراءةُ واحدة، والخطأ يبلغ
+ * معالجَ الأخطاء العامّ كما في بقيّة المسارات.
+ */
+export const listProfilesController = async (_req: Request, res: Response) => {
+  const profiles = await listProfilesService();
+
+  res.status(HTTPSTATUS.OK).json({
+    success: true,
+    data: { profiles },
   });
 };

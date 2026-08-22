@@ -285,3 +285,122 @@ export const yearsOfService = (hireDate: string) => {
   const years = (Date.now() - new Date(hireDate).getTime()) / (365.25 * 24 * 3600 * 1000);
   return Math.max(0, Math.floor(years));
 };
+
+// --------------------------------------------------
+// كشف حساب الأستاذ
+// --------------------------------------------------
+
+/**
+ * سطرٌ لكلّ (إسناد × كشف شهر) — لا لكلّ شهر.
+ *
+ * أستاذُ فوجين له سطران في الشهر الواحد بمستحقّين، وجمعُهما يُخفي
+ * أيَّ الفوجين لم يُخلَّص.
+ */
+export interface TeacherStatementRow {
+  sheetId: string;
+  sheetCode: string;
+  sheetNumber: number;
+  sheetLabel: string | null;
+  month: number | null;
+  year: number | null;
+  firstSession: string | null;
+  subject: { id: string; name: string };
+  studyGroup: { id: string; name: string };
+  completedSessions: number;
+  sessions: number;
+  settlement: {
+    id: string;
+    settlementNumber: string;
+    status: "DRAFT" | "CONFIRMED" | "PAID" | "CANCELLED";
+    teacherAmount: number;
+    students: number;
+    paidStudents: number;
+    completedSessions: number;
+    approvedSessions: number;
+    confirmedAt: string | null;
+    paidAt: string | null;
+  } | null;
+  payment: {
+    id: string;
+    paymentNumber: string;
+    paymentDate: string;
+    amount: number;
+  } | null;
+}
+
+export interface TeacherStatementShare {
+  id: string;
+  shareAmount: number;
+  collectedAmount: number;
+  attendedUnits: number | null;
+  status: "PENDING" | "APPROVED" | "PAID" | "CANCELLED";
+  paidAt: string | null;
+  createdAt: string;
+  debtCollection: {
+    originalMonth: number;
+    originalYear: number;
+    collectedAt: string;
+    payment: { paymentNumber: string; paymentDate: string };
+    invoice: {
+      studentEnrollment: {
+        student: { id: string; firstName: string; lastName: string };
+      };
+    };
+  };
+  originalSettlement: {
+    id: string;
+    settlementNumber: string;
+    attendanceSheet: { id: string; code: string; number: number; label: string | null };
+    teachingAssignment: {
+      subject: { id: string; name: string };
+      studyGroup: { id: string; name: string };
+    };
+  } | null;
+  collectionSettlement: { id: string; settlementNumber: string } | null;
+  /** الدفعةُ التي قبض بها نصيبَه — أو `null` إن لم تُدفع بعد */
+  teacherPayment: {
+    id: string;
+    paymentNumber: string;
+    paymentDate: string;
+    amount: number;
+  } | null;
+}
+
+export interface TeacherStatement {
+  teacher: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string | null;
+    email: string | null;
+    specialization: string | null;
+    hireDate: string;
+  };
+  academicYear: { id: string; name: string; startDate: string; endDate: string };
+  rows: TeacherStatementRow[];
+  arrears: TeacherStatementShare[];
+  totals: {
+    sheets: number;
+    settled: number;
+    completedSessions: number;
+    due: number;
+    paid: number;
+    unpaid: number;
+    arrearsPaid: number;
+    arrearsPending: number;
+    grandDue: number;
+    grandPaid: number;
+    grandUnpaid: number;
+  };
+}
+
+export const getTeacherStatement = async (
+  teacherId: string,
+  academicYearId: string,
+) => {
+  const { data } = await apiClient.get(`/teachers/${teacherId}/statement`, {
+    params: { academicYearId },
+  });
+
+  return data.data as TeacherStatement;
+};

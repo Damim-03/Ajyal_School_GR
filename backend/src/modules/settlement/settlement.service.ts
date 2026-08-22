@@ -760,6 +760,22 @@ export const getSettlementService = async (id: string) => {
     select: {
       ...settlementSelect,
       lines: { select: lineSelect, orderBy: { lessonNumber: "asc" } },
+      /* الأرشيف: الورقة الموقَّعة ممسوحةً، والكشفان مجمَّدين */
+      documents: {
+        select: {
+          id: true,
+          filePath: true,
+          fileName: true,
+          pageNumber: true,
+          note: true,
+          createdAt: true,
+          uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+        },
+        orderBy: { pageNumber: "asc" },
+      },
+      snapshot: {
+        select: { id: true, dailySheet: true, monthlyFees: true, createdAt: true },
+      },
     },
   });
 
@@ -773,7 +789,92 @@ export const getSettlementService = async (id: string) => {
   return {
     ...toResponse(settlement),
     lines: settlement.lines.map(toLineResponse),
+    documents: settlement.documents,
+    snapshot: settlement.snapshot,
   };
+};
+
+// --------------------------------------------------
+// الأوراق الموقَّعة — أرشيفُ الإقرار
+//
+// الملفّ نفسه يُرفع عبر `/api/uploads` كما ترفع وثائقُ الطالب، وهذا
+// يربط مسارَه بالتخليص. والفصلُ مقصود: الرفع خدمةٌ واحدة في النظام
+// كلِّه، لا واحدةٌ لكل صاحب وثيقة.
+// --------------------------------------------------
+
+export const attachSettlementDocumentService = async (
+  settlementId: string,
+  body: {
+    filePath: string;
+    fileName?: string | null;
+    /** رقمُ الصفحة؛ فارغُه يعني «أضِف صفحةً تالية» */
+    pageNumber?: number | null;
+    note?: string | null;
+  },
+  userId: string,
+) => {
+  await findOrThrow(settlementId);
+
+  /*
+   * الصفحة تُملأ أو تُضاف.
+   *
+   * إن جاء رقمُها استُبدلت: إعادةُ مسح الصفحة الثانية تحلّ محلّ
+   * الأولى ولا تُراكم — وإلّا اجتمعت في الأرشيف ثلاثُ صورٍ لصفحةٍ
+   * واحدة ولا يُعرف أيُّها الأخيرة.
+   *
+   * وإن لم يجئ فهي **تالية** ما وُجد: الورقة تعود من الأستاذ فتُمسح
+   * صفحاتُها واحدةً بعد أخرى، ولا يُطلب من الماسح أن يعدّ.
+   */
+  const pageNumber =
+    body.pageNumber ??
+    ((
+      await prisma.settlementDocument.aggregate({
+        where: { settlementId },
+        _max: { pageNumber: true },
+      })
+    )._max.pageNumber ?? 0) + 1;
+
+  await prisma.settlementDocument.deleteMany({
+    where: { settlementId, pageNumber },
+  });
+
+  return prisma.settlementDocument.create({
+    data: {
+      settlementId,
+      filePath: body.filePath,
+      fileName: body.fileName ?? null,
+      pageNumber,
+      note: body.note ?? null,
+      uploadedById: userId,
+    },
+    select: {
+      id: true,
+      filePath: true,
+      fileName: true,
+      pageNumber: true,
+      note: true,
+      createdAt: true,
+      uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+    },
+  });
+};
+
+export const removeSettlementDocumentService = async (documentId: string) => {
+  const document = await prisma.settlementDocument.findUnique({
+    where: { id: documentId },
+    select: { id: true },
+  });
+
+  if (!document) {
+    throw new NotFoundException(
+      "Settlement document not found",
+      ErrorCodeEnum.RESOURCE_NOT_FOUND,
+    );
+  }
+
+  await prisma.settlementDocument.delete({ where: { id: documentId } });
+
+  return { id: documentId };
 };
 
 // --------------------------------------------------

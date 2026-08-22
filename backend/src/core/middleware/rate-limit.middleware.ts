@@ -54,3 +54,24 @@ export const loginLimiter = rateLimit({
     ErrorCodeEnum.AUTH_TOO_MANY_ATTEMPTS,
   ),
 });
+
+/**
+ * بطاقاتُ شاشة اختيار المستخدم — مسارٌ عامّ يُقرأ مرّةً عند الإقلاع.
+ *
+ * ولا يُستعمل `loginLimiter` هنا: فيه `skipSuccessfulRequests` لأنّ
+ * المقصودَ هناك عدُّ المحاولات الفاشلة. وهذا الطلبُ ينجح دائماً، فلو
+ * أُلحق به لما عُدّ له طلبٌ واحد وبقي الحدُّ زينةً لا أثرَ لها.
+ *
+ * والسقفُ سخيٌّ عمداً: الشاشةُ تُفتح وتُغلق في التجريب، وقاعةٌ فيها
+ * عدّةُ أجهزةٍ خلف بوّابةٍ واحدة تشترك في العنوان.
+ */
+export const profilesLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: jsonHandler(
+    "Too many requests, please try again shortly",
+    ErrorCodeEnum.AUTH_TOO_MANY_ATTEMPTS,
+  ),
+});

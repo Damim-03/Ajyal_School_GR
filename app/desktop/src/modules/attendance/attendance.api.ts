@@ -1,4 +1,5 @@
 import { apiClient } from "../../core/api/client";
+import { fullName as teacherFullName } from "../../core/api/reference.api";
 import type { Assignment } from "../../core/api/reference.api";
 
 /* الإسناد وأدواته مرجعية يشترك فيها الكشف والجدول الأسبوعي */
@@ -146,6 +147,8 @@ export interface SheetSession {
 
 export interface Sheet {
   id: string;
+  /** رمزُ الورقة — ثلاث عشرة خانة يشفّرها الباركود المطبوع */
+  code: string;
   teachingAssignmentId: string;
   academicYearId: string;
   number: number;
@@ -166,6 +169,37 @@ export interface Sheet {
   _count: { sessions: number };
   sessions: SheetSession[];
 }
+
+/**
+ * رمزُ الكشف المطبوع تحت الباركود.
+ *
+ * كان المعرّف نفسه (cuid): خمسةٌ وعشرون محرفاً تُشفَّر في **310 وحدة**
+ * Code128، فتخرج قضباناً دقيقةً يتعثّر فيها الماسح الرخيص. وثلاث عشرة
+ * خانة رقمية تُشفَّر في **123 وحدة** — أي قضباناً أثخنَ ثلاثَ مرّات في
+ * العرض نفسه (‏0.57mm للوحدة على 70mm، وهو 22 mil).
+ *
+ * والطول نفسه المعتمد للدفعات والإيصالات، فلا صيغتان في مؤسسة واحدة.
+ * والقديم يبقى مقروءاً: الماسح يرسل ما قُرئ، والبحث يميّز الرقم من
+ * المعرّف بشكله.
+ */
+export const sheetCode = (sheet: { code?: string | null; id: string }) =>
+  sheet.code ?? sheet.id;
+
+/**
+ * الكشف برمزه — مدخلُ الباركود.
+ *
+ * الرمز يُفرد صفّاً واحداً في المؤسسة كلّها، فيُفتح الكشف بلا معرفة
+ * إسناده ولا سنته. ثمّ يُجلب كاملاً بمعرّفه لأنّ القائمة لا تحمل
+ * الحصص.
+ */
+export const findSheetByCode = async (code: string) => {
+  const { data } = await apiClient.get("/attendance-sheets", {
+    params: { code, limit: 1 },
+  });
+
+  const rows = data.data as Sheet[];
+  return rows.length > 0 ? getSheet(rows[0].id) : null;
+};
 
 /** «الشهر السادس» إن كُتبت تسمية، وإلّا «الشهر رقم 6» */
 export const sheetTitle = (sheet: { number: number; label: string | null }) =>
@@ -249,6 +283,30 @@ export interface EnrollmentRow {
   studentId: string;
   teachingAssignmentId: string;
   isActive: boolean;
+  /**
+   * خبرُ هذا التسجيل — «مُنقَل من الفوج 1 — 21/08/2026».
+   *
+   * يكتبه النظام عند النقل ويُعرض في عمود «ملاحظات» فوق ملاحظة
+   * الموظّف لا مكانَها: هذه تخصّ الفوج، وتلك تخصّ الطالب في المؤسسة
+   * كلِّها.
+   */
+  note: string | null;
+  /** الفوجُ الآخر في النقل — مقصدُ زرّ الملاحظة */
+  transferPeerAssignmentId: string | null;
+  /** كشفُ **هذا الفوج** الذي وقع النقل في أثنائه — به يُعرض المغادِر */
+  transferSheetId: string | null;
+  /** كشفُ **الفوج الآخر** في شهر النقل — إليه يذهب زرّ الملاحظة */
+  transferPeerSheetId: string | null;
+  /** يومُ النقل — به تُفصل حصصُه عن حصص غيره في الكشف */
+  transferAt: string | null;
+  /**
+   * نقلٌ قُرِّر ولم يسرِ بعد — والطالبُ ما زال في هذا الفوج.
+   *
+   * فلا يُشطب سطرُه ولا تُطوى خاناتُه: هو حاضرٌ إلى آخر حصةٍ في هذا
+   * الكشف، ويُفوتَر شهرَه هنا كاملاً. وإنّما تُقال ملاحظتُه بلونٍ
+   * يفرّقها عمّا وقع — هذا خبرُ ما سيكون لا ما كان.
+   */
+  pendingTransferToId: string | null;
   student: {
     id: string;
     firstName: string;
@@ -259,13 +317,22 @@ export interface EnrollmentRow {
   };
 }
 
-export const listEnrollments = async (teachingAssignmentId: string) => {
+const byName = (a: EnrollmentRow, b: EnrollmentRow) =>
+  `${a.student.lastName} ${a.student.firstName}`.localeCompare(
+    `${b.student.lastName} ${b.student.firstName}`,
+    "ar",
+  );
+
+const pageThrough = async (
+  teachingAssignmentId: string,
+  isActive: "true" | "false",
+) => {
   const rows: EnrollmentRow[] = [];
   let page = 1;
 
   for (;;) {
     const { data } = await apiClient.get("/enrollments", {
-      params: { teachingAssignmentId, isActive: "true", limit: 100, page },
+      params: { teachingAssignmentId, isActive, limit: 100, page },
     });
 
     rows.push(...(data.data as EnrollmentRow[]));
@@ -275,13 +342,27 @@ export const listEnrollments = async (teachingAssignmentId: string) => {
     page++;
   }
 
-  return rows.sort((a, b) =>
-    `${a.student.lastName} ${a.student.firstName}`.localeCompare(
-      `${b.student.lastName} ${b.student.firstName}`,
-      "ar",
-    ),
-  );
+  return rows.sort(byName);
 };
+
+export const listEnrollments = async (teachingAssignmentId: string) =>
+  pageThrough(teachingAssignmentId, "true");
+
+/**
+ * من غادر هذا الفوج بالنقل — ومعه أثرُ مغادرته.
+ *
+ * الكشف يعرض النشطين وحدهم، وهو الصواب: المغادِر لا يُفوتَر ولا
+ * يُحتسب ولا يُدوَّن له حضورٌ جديد. لكنّ الأستاذ يفتح كشفه فيجد اسماً
+ * غاب بلا خبر، ولا سبيل له إلى معرفة أين ذهب.
+ *
+ * فيُجلبون على حدة — **ولا يُدمجون في `enrollments`** كي لا يمسّوا
+ * مجموعاً ولا فاتورةً ولا ورقةً مطبوعة — ويُعرضون سطراً باهتاً في
+ * ذيل الجدول، في الكشف الذي غادروا في أثنائه وحده.
+ */
+export const listDeparted = async (teachingAssignmentId: string) =>
+  (await pageThrough(teachingAssignmentId, "false")).filter(
+    (row) => row.transferPeerAssignmentId !== null,
+  );
 
 // --------------------------------------------------
 // الحضور — خلايا الكشف
@@ -345,6 +426,18 @@ export const bulkAttendance = async (body: {
 };
 
 /**
+ * إفراغ خانةٍ واحدة — تعود «لا شيء» لا «غائباً».
+ *
+ * ومن علّم طالباً بالخطأ يحتاجها: تغييرُ الحالة يُصلح من أخطأ
+ * الحالةَ، ولا يُصلح من أخطأ الوجود — فيبقى في سجلّ الطالب غيابٌ
+ * لم يقع.
+ */
+export const deleteAttendance = async (id: string) => {
+  const { data } = await apiClient.delete(`/attendance/${id}`);
+  return data.data as { id: string; sessionId: string; remaining: number };
+};
+
+/**
  * تفريغ ورقة حصة — تعود خاناتها فارغة لا غياباً.
  *
  * الفرق بينهما معنويٌّ لا شكليّ: الفارغ «لم يُسجَّل بعد»، والغياب
@@ -375,6 +468,7 @@ export const updateStudentNote = async (studentId: string, note: string | null) 
 export {
   MONTHS,
   sheetDate,
+  sheetDateShort,
   isoDate,
   monthRange,
   sheetWindow,
@@ -448,6 +542,30 @@ export const deriveOptions = (rows: Assignment[], f: SheetFilters) => {
       (g) => g.id,
     ),
   };
+};
+
+/**
+ * ما اختير من المرشِّحات، مكتوباً بأسمائه.
+ *
+ * يُقرأ حين يُطوى لوح المرشِّحات: المعرّفات في الحالة، والأسماء وحدها في
+ * القوائم المشتقّة — فلا سبيل إلى «الفوج: أ» إلّا بالرجوع إليها.
+ */
+export const filterSummary = (
+  options: ReturnType<typeof deriveOptions>,
+  f: SheetFilters,
+): { label: string; value: string }[] => {
+  const named = (items: { id: string; name: string }[], id: string) =>
+    items.find((i) => i.id === id)?.name;
+
+  const teacher = options.teachers.find((t) => t.id === f.teacherId);
+
+  return [
+    { label: "الطور", value: named(options.stages, f.stageId) },
+    { label: "المستوى", value: named(options.levels, f.levelId) },
+    { label: "المادة", value: named(options.subjects, f.subjectId) },
+    { label: "الأستاذ", value: teacher ? teacherFullName(teacher) : undefined },
+    { label: "الفوج", value: named(options.groups, f.groupId) },
+  ].filter((chip): chip is { label: string; value: string } => Boolean(chip.value));
 };
 
 /** الإسناد الوحيد المطابق للمرشِّحات — أو null إن بقي الاختيار ناقصاً */

@@ -11,6 +11,7 @@ import {
   Layers,
   Loader2,
   Pencil,
+  ScrollText,
   School,
   Search,
   Trash2,
@@ -34,14 +35,19 @@ import { AppHeader } from "../../components/AppHeader";
 import { Avatar } from "../../components/shared/Avatar";
 import { useAuthStore } from "../../core/stores/auth.store";
 import { MOTION } from "../../motion/system";
+import { BarcodeScanner } from "../../components/shared/BarcodeScanner";
+import { SheetPreview } from "../../components/print/SheetPreview";
+import { EnrolmentCertificate } from "./EnrolmentCertificate";
 import { PATHS } from "../../routes/paths";
 import { useScreenExit } from "../../lib/screen-transition";
 import { StudentForm } from "./StudentForm";
 import { StudentRegisterDialog } from "./StudentRegisterDialog";
 import {
   deleteStudent,
+  getStudentEnrollments,
   listStudents,
   updateStudent,
+  type Enrollment,
   type Gender,
   type Pagination,
   type Student,
@@ -102,6 +108,44 @@ export default function StudentsPage() {
   const [editing, setEditing] = useState<Student | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [confirming, setConfirming] = useState<Student | null>(null);
+
+  /*
+   * شهادةُ التمدرس — تحتاج ما يدرسه الطالب لا صفَّه في الجدول.
+   *
+   * فتُجلب تسجيلاتُه عند طلب الشهادة: طلبٌ واحد لطالبٍ واحد حين تُطلب
+   * ورقتُه، لا مع كلّ صفحةٍ من القائمة.
+   */
+  const [certificate, setCertificate] = useState<{
+    student: Student;
+    enrolments: Enrollment[];
+    year: string;
+  } | null>(null);
+  const [certifying, setCertifying] = useState<string | null>(null);
+
+  const openCertificate = async (student: Student) => {
+    setCertifying(student.id);
+    setError(null);
+
+    try {
+      const enrolments = await getStudentEnrollments(student.id, { isActive: true });
+
+      /*
+       * السنةُ من تسجيلاته لا من إعدادات الشاشة: الشهادة تُثبت سنةَ
+       * دراسته، ومن لا تسجيلَ له تُترك سنتُه نقاطاً تُملأ بالقلم.
+       */
+      const year =
+        enrolments.find((e) => e.teachingAssignment.academicYear.isCurrent)
+          ?.teachingAssignment.academicYear.name ??
+        enrolments[0]?.teachingAssignment.academicYear.name ??
+        "..................";
+
+      setCertificate({ student, enrolments, year });
+    } catch {
+      setError("تعذّر جلب تسجيلات الطالب");
+    } finally {
+      setCertifying(null);
+    }
+  };
   const [rowBusy, setRowBusy] = useState<string | null>(null);
 
   /* البحث لا يُرسَل مع كل ضغطة مفتاح */
@@ -234,6 +278,41 @@ export default function StudentsPage() {
               </button>
             )}
           </div>
+
+          {/*
+            المسحُ يفتح ملفَّ الطالب لا يُرشِّح القائمة: البطاقةُ في اليد
+            تعني أنّ صاحبَها هو المقصود، لا واحدٌ من قائمةٍ تُقلَّب.
+          */}
+          <BarcodeScanner<Student>
+            accent={ACCENT}
+            onFound={(found) => navigate(PATHS.studentDetail(found.id))}
+            copy={{
+              button: "مسح بطاقة الطالب",
+              buttonTitle: "افتح ملفَّ طالبٍ بمسح باركود بطاقته",
+              title: "مسح رقم تسجيل الطالب",
+              subtitle: "البطاقة تفتح ملفَّ صاحبها — بلا بحث",
+              placeholder: "امسح باركود البطاقة، أو اكتب رقم التسجيل…",
+              action: "افتح الملفّ",
+              notFound: "لا وجود لطالبٍ بهذا الكود بار — الرجاء التحقّق منه.",
+              hint: "الرقم مكتوبٌ تحت الباركود",
+              steps: [
+                <>
+                  وجّه القارئ إلى{" "}
+                  <span className="font-bold text-white/85">باركود بطاقة الطالب</span>، أو
+                  إلى الباركود المطبوع على شهادة تمدرسه أو وصل تسجيله.
+                </>,
+                <>القارئ يكتب الرقم في الحقل أدناه من نفسه ثمّ يُرسله — لا تضغط شيئاً.</>,
+                <>تُفتح صفحةُ ملفّه: بطاقتُه وتسجيلاتُه وفواتيرُه وحضورُه ووثائقُه.</>,
+              ],
+            }}
+            resolve={async (text) => {
+              const code = text.trim();
+              const { students } = await listStudents({ search: code, limit: 20 });
+
+              /* المطابقةُ تامّة: البحثُ الحرّ يلتقط أرقام الهواتف أيضاً */
+              return students.find((row) => row.studentNumber === code) ?? null;
+            }}
+          />
 
           <Segmented
             icon={<VenusAndMars className="h-4 w-4" />}
@@ -440,6 +519,18 @@ export default function StudentsPage() {
 
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
+                          {/*
+                            شهادةُ التمدرس — تُطلب لكلّ طالبٍ على حدة،
+                            فمحلُّها سطرُه لا شريطُ الأدوات.
+                          */}
+                          <IconButton
+                            title="شهادة تمدرس"
+                            busy={certifying === student.id}
+                            onClick={() => openCertificate(student)}
+                          >
+                            <ScrollText className="h-4 w-4" />
+                          </IconButton>
+
                           {can("student.update") && (
                             <>
                               <IconButton
@@ -563,6 +654,21 @@ export default function StudentsPage() {
 
       {/* ================= تأكيد الحذف =================
           بلا AnimatePresence للسبب نفسه المشروح أعلاه */}
+      {certificate && (
+        <SheetPreview
+          title="شهادة تمدرس"
+          subtitle={`${certificate.student.lastName} ${certificate.student.firstName} — ${certificate.year}`}
+          orientation="portrait"
+          onClose={() => setCertificate(null)}
+        >
+          <EnrolmentCertificate
+            student={certificate.student}
+            enrolments={certificate.enrolments}
+            academicYear={certificate.year}
+          />
+        </SheetPreview>
+      )}
+
       {confirming && (
           <>
             <motion.div

@@ -6,6 +6,7 @@ import {
   bulkAttendanceController,
   updateAttendanceController,
   clearSessionAttendanceController,
+  deleteAttendanceController,
 } from "./attendance.controller";
 import { asyncHandler } from "../../core/middleware/async-handler.middleware";
 import { authMiddleware } from "../../core/middleware/auth.middleware";
@@ -48,13 +49,14 @@ router.post(
 );
 
 // --------------------------------------------------
-// DELETE /api/attendance/session/:sessionId
+// المحو — ورقةً كاملة أو خليةً واحدة
 //
-// المسار الوحيد الذي يمحو حضوراً، ومحصورٌ في ورقة حصةٍ كاملة.
-// وسببُه أنّ ورقةً مُلئت بالخطأ لا تُصحَّح بالتعديل: الصواب أن تعود
-// الخانات فارغة («لم يُسجَّل بعد») لا أن تصير غياباً («سُجّل أنه غاب»).
+// وسببُهما واحد: ما مُلئ بالخطأ لا يُصحَّح بالتعديل. الصواب أن تعود
+// الخانة فارغة («لم يُسجَّل بعد») لا أن تصير غياباً («سُجّل أنه غاب»)
+// — وبينهما فرقٌ ماليٌّ في التخليص ومعنويٌّ في سجلّ الطالب.
 //
-// ولا مسار لحذف سجلٍّ منفرد — الخلية الواحدة تُصحَّح بتغيير حالتها.
+// و`/session/:sessionId` قبل `/:id` لأنّه أخصّ — ولا يتعارضان أصلاً
+// لاختلاف عدد المقاطع، لكنّ الترتيب يُبقي القراءة على وجهٍ واحد.
 // --------------------------------------------------
 
 router.delete(
@@ -62,6 +64,13 @@ router.delete(
   requirePermission("attendance.delete"),
   validateParams(attendanceSessionIdSchema),
   asyncHandler(clearSessionAttendanceController),
+);
+
+router.delete(
+  "/:id",
+  requirePermission("attendance.delete"),
+  validateParams(attendanceIdSchema),
+  asyncHandler(deleteAttendanceController),
 );
 
 router.get(

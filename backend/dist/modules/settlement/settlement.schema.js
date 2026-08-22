@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.dailyClearanceQuerySchema = exports.estimateQuerySchema = exports.settlementQuerySchema = exports.cancelSettlementSchema = exports.confirmSettlementSchema = exports.settlementIdSchema = exports.computeSettlementSchema = void 0;
+exports.dailyClearanceQuerySchema = exports.estimateQuerySchema = exports.settlementQuerySchema = exports.documentIdSchema = exports.attachDocumentSchema = exports.cancelSettlementSchema = exports.confirmSettlementSchema = exports.settlementIdSchema = exports.computeSettlementSchema = void 0;
 const zod_1 = require("zod");
 /**
  * لاحظ ما **ليس** هنا: teacherAmount، ولا أيّ مجموع.
@@ -36,6 +36,22 @@ exports.cancelSettlementSchema = zod_1.z.object({
         .trim()
         .min(3, "Cancel reason is required")
         .max(500),
+});
+/** ورقةٌ موقَّعة تُلحق بتخليص — الملفّ مرفوعٌ سلفاً عبر /api/uploads */
+exports.attachDocumentSchema = zod_1.z.object({
+    filePath: zod_1.z
+        .string({ error: "File path is required" })
+        .trim()
+        .min(1, "File path is required")
+        .max(255),
+    fileName: zod_1.z.string().trim().max(191).nullish(),
+    /** وجهُ الورقة — الخلفي اختياريٌّ لأنّ الورقة قد تكون من وجهٍ واحد */
+    /** رقمُ الصفحة؛ فارغُه يعني «أضِف صفحةً تالية» */
+    pageNumber: zod_1.z.coerce.number().int().min(1).max(50).nullish(),
+    note: zod_1.z.string().trim().max(191).nullish(),
+});
+exports.documentIdSchema = zod_1.z.object({
+    documentId: zod_1.z.string().trim().min(1, "Document id is required"),
 });
 exports.settlementQuerySchema = zod_1.z.object({
     page: zod_1.z.coerce.number().int().min(1).default(1),

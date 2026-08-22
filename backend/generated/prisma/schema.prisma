@@ -68,6 +68,11 @@ enum PermissionModule {
   TUITION_FEE
   SETTLEMENT_POLICY
   SETTLEMENT
+  TEACHER_PAYMENT
+  /**
+   * النسخُ والاستعادة وإعادة التهيئة — لا تُلحق بـSETTINGS
+   */
+  MAINTENANCE
 }
 
 // ------------------------------------------------------
@@ -193,6 +198,8 @@ model Subject {
   code        String?  @unique
   description String?
   color       String?
+  /// صورةُ المادة — مسارٌ من /api/uploads، تُعرض في مربّعها
+  imagePath   String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -385,6 +392,8 @@ model Student {
   lastName         String
   gender           Gender
   birthDate        DateTime?
+  /// مسقطُ الرأس — تطلبه شهادة التمدرس، وهو غيرُ `address` (مسكنُه اليوم)
+  birthPlace       String?
   /// مسار الصورة كما يُرجعه /api/uploads — مثل "/uploads/1712-93.jpg"
   avatar           String?
   phone            String?
@@ -393,8 +402,17 @@ model Student {
   schoolName       String?
   emergencyPhone   String?
   registrationDate DateTime  @default(now())
-  isActive         Boolean   @default(true)
-  note             String?
+
+  /// حقوقُ التسجيل — مبلغٌ يُدفع مرّةً عند التحاقه، غيرُ الحقّ الشهري.
+  ///
+  /// وثلاثةُ حقولٍ لا حقلٌ واحد: الحالةُ وحدها تقول «دُفع» ولا تقول كم
+  /// ولا متى، والوصلُ الذي يُسلَّم للوليّ يحتاجهما.
+  registrationFeePaid   Boolean   @default(false)
+  registrationFeeAmount Decimal?  @db.Decimal(10, 2)
+  registrationFeePaidAt DateTime?
+
+  isActive Boolean @default(true)
+  note     String?
 
   /// المستوى الدراسي للطالب — «أولى متوسط»، يُختار عند التسجيل.
   ///
@@ -490,11 +508,11 @@ model TeachingAssignment {
 // ------------------------------------------------------
 
 model StudentEnrollment {
-  id                   String    @id @default(cuid())
-  studentId            String
-  teachingAssignmentId String
+  id                       String    @id @default(cuid())
+  studentId                String
+  teachingAssignmentId     String
   /// طابعُ إنشاء السجل — لا تاريخُ الالتحاق. لا يُبنى عليه حسابٌ.
-  enrolledAt           DateTime  @default(now())
+  enrolledAt               DateTime  @default(now())
   /**
    * أوّلُ يومٍ صار الطالب فيه عضواً في الفوج — ومنه تُحسب أهليتُه.
    * **وفارغُه يعني «مؤهَّلٌ من البداية»**، وهو ما يجعل هذه الإضافة بلا
@@ -503,8 +521,61 @@ model StudentEnrollment {
    * وتاريخٌ لا مؤشّرُ حصة: الحصص تُفصل عن كشفٍ وتُضمّ إلى آخر ويُعاد
    * ترقيمُها، فمؤشّرٌ إليها يكسره أوّلُ إعادة ضمّ — والتاريخ يصمد.
    */
-  eligibleFrom         DateTime?
-  isActive             Boolean   @default(true)
+  eligibleFrom             DateTime?
+  /**
+   * خبرٌ عن هذا التسجيل يُعرض في عمود «ملاحظات» بالكشف.
+   * ويكتبه النظامُ لا الموظّف: النقلُ يترك أثره هنا — «مُنقَل من
+   * الفوج 1» في الجديد و«نُقل إلى الفوج 2» في القديم — فيفهم الأستاذ
+   * لِمَ ظهر طالبٌ في منتصف كشفه أو لِمَ غاب.
+   * وهي غيرُ `Student.note`: تلك واحدةٌ للطالب في المؤسسة كلِّها،
+   * يكتبها الموظّف وتظهر في كشوف موادّه جميعاً. وهذه تخصّ فوجاً واحداً.
+   */
+  note                     String?   @db.VarChar(255)
+  /**
+   * الإسنادُ الآخر في النقل — مقصدُ زرّ الملاحظة.
+   * في التسجيل الوافد يشير إلى الفوج المغادَر، وفي المغادَر يشير إلى
+   * الوافد. فمن قرأ «مُنقَل من الفوج 1» فتحه بضغطة بدل أن يعيد
+   * اختيار الطور والمستوى والمادة والأستاذ والفوج.
+   */
+  transferPeerAssignmentId String?
+  /**
+   * كشفُ **هذا الفوج** الذي وقع النقل في أثنائه.
+   * به يُعرف أين يُعرض سطرُ المغادِر: من غادر في كشف مارس لا يُعرض في
+   * كشف جانفي إلى آخر السنة.
+   */
+  transferSheetId          String?
+  /**
+   * كشفُ **الفوج الآخر** في شهر النقل — وإليه يذهب زرّ الملاحظة.
+   * وهو غيرُ `transferSheetId`: لو مُرِّر كشفُ هذا الفوج إلى ذاك
+   * لسقط الاختيار (ليس من كشوفه) وفُتح كشفُه الافتراضيّ — شهرٌ لا
+   * صلة له بالنقل. وفارغُه حين لا كشفَ للفوج الآخر في ذلك الشهر،
+   * فيُفتح الفوجُ ويُترك اختيارُ الكشف له.
+   */
+  transferPeerSheetId      String?
+  /**
+   * يومُ النقل — به تُعرف حصصُه من حصص غيره في الكشف.
+   * المغادِرُ مسؤولٌ عمّا وقع **إلى** هذا اليوم، والوافدُ عمّا وقع
+   * **منه**. وبدونه كان سطرُ المغادِر يعدّ حضوراً في حصصٍ تلت رحيله.
+   */
+  transferAt               DateTime?
+  /**
+   * نقلٌ قُرِّر ولم يسرِ بعد — الإسنادُ المقصود.
+   * والتسجيلُ يبقى **نشطاً** معه: الطالب في فوجه القديم إلى آخر حصةٍ
+   * في الكشف الجاري، يُدوَّن حضورُه ويُفوتَر شهرُه كاملاً هناك. وحين
+   * يُنشأ كشفٌ جديد لهذا الإسناد يُنفَّذ النقلُ من نفسه.
+   */
+  pendingTransferToId      String?
+  /**
+   * يومُ القرار — يُعرض في الملاحظة ويصير `transferAt` عند التنفيذ
+   */
+  pendingTransferAt        DateTime?
+  /**
+   * الكشفُ الجاري يومَ القرار — وبه يُعرف متى يسري.
+   * التنفيذُ عند إنشاء كشفٍ **غيره** لهذا الإسناد. ولولا حفظُه لسرى
+   * النقلُ عند أوّل كشفٍ يُنشأ ولو كان الكشفَ نفسه أُعيد إنشاؤه.
+   */
+  pendingTransferSheetId   String?
+  isActive                 Boolean   @default(true)
 
   student            Student            @relation(fields: [studentId], references: [id])
   teachingAssignment TeachingAssignment @relation(fields: [teachingAssignmentId], references: [id])
@@ -591,6 +662,8 @@ model Session {
 
 model AttendanceSheet {
   id                   String   @id @default(cuid())
+  /// رمزُ الورقة — ثلاث عشرة خانة يشفّرها الباركود المطبوع عليها
+  code                 String   @unique
   teachingAssignmentId String
   academicYearId       String
   /// ترتيبه ضمن الإسناد — يُعرض «الشهر رقم 1» ما لم تُكتب تسمية
@@ -664,14 +737,15 @@ model User {
   updatedAt   DateTime  @updatedAt
   roleId      String
 
-  role              Role              @relation(fields: [roleId], references: [id])
-  invoices          Invoice[]         @relation("InvoiceCreatedBy")
-  cancelledInvoices Invoice[]         @relation("InvoiceCancelledBy")
-  payments          Payment[]         @relation("PaymentReceivedBy")
-  cancelledPayments Payment[]         @relation("PaymentCancelledBy")
-  receipts          Receipt[]         @relation("ReceiptPrintedBy")
-  cancelledReceipts Receipt[]         @relation("ReceiptCancelledBy")
-  documents         StudentDocument[] @relation("DocumentUploadedBy")
+  role              Role                 @relation(fields: [roleId], references: [id])
+  invoices          Invoice[]            @relation("InvoiceCreatedBy")
+  cancelledInvoices Invoice[]            @relation("InvoiceCancelledBy")
+  payments          Payment[]            @relation("PaymentReceivedBy")
+  cancelledPayments Payment[]            @relation("PaymentCancelledBy")
+  receipts          Receipt[]            @relation("ReceiptPrintedBy")
+  cancelledReceipts Receipt[]            @relation("ReceiptCancelledBy")
+  documents         StudentDocument[]    @relation("DocumentUploadedBy")
+  settlementDocs    SettlementDocument[] @relation("SettlementDocUploadedBy")
 
   confirmedSettlements     Settlement[]        @relation("SettlementConfirmedBy")
   paidSettlements          Settlement[]        @relation("SettlementPaidBy")
@@ -1134,6 +1208,8 @@ model Settlement {
   paidBy              User?                      @relation("SettlementPaidBy", fields: [paidById], references: [id])
   cancelledBy         User?                      @relation("SettlementCancelledBy", fields: [cancelledById], references: [id])
   lines               SettlementLine[]
+  documents           SettlementDocument[]
+  snapshot            SettlementSnapshot?
   debtSharesOrigin    TeacherDebtShare[]         @relation("DebtShareOrigin")
   debtSharesCollected TeacherDebtShare[]         @relation("DebtShareCollection")
   teacherAllocations  TeacherPaymentAllocation[]
@@ -1176,6 +1252,64 @@ model SettlementLine {
 
   @@index([settlementId])
   @@index([sessionId])
+}
+
+// ------------------------------------------------------
+// Settlement Document — الورقة الموقَّعة ممسوحةً
+//
+// التخليص يحفظ الحساب، والورقة تحفظ **الإقرار**: إمضاء الأستاذ
+// والإدارة على أنّ المبلغ سُلّم. وهي التي تُخرَج عند النزاع، لا
+// السطر في القاعدة.
+//
+// وعدّة أوراقٍ لا واحدة: الكشف التقديري موقَّعاً، وربّما كشف الحضور
+// معه. والمسار كما يُرجعه /api/uploads — نفس ما تفعله وثائق الطالب.
+// ------------------------------------------------------
+
+/// وجهُ الورقة — الأمامي وحده يكفي، والخلفي حين تُطبع الورقة على وجهين
+model SettlementDocument {
+  id           String   @id @default(cuid())
+  settlementId String
+  /// رقمُ الصفحة في الورقة الموقَّعة — واحدٌ فما فوق، بلا حدّ.
+  ///
+  /// كان وجهاً من اثنين، والكشف يطول فيُطبع على ثلاث صفحاتٍ وأربع
+  /// وتعود موقَّعةً كلُّها. فما زاد على الوجهين كان يُستبدل بما قبله.
+  pageNumber   Int      @default(1)
+  /// مسار الملف كما يُرجعه /api/uploads
+  filePath     String
+  /// الاسم الأصلي للعرض والتنزيل
+  fileName     String?
+  note         String?
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  settlement Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  uploadedBy User?      @relation("SettlementDocUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([settlementId])
+  @@index([settlementId, pageNumber])
+}
+
+// ------------------------------------------------------
+// Settlement Snapshot — الكشفان مجمَّدين لحظة الدفع
+//
+// التخليص يحفظ لقطة الكشف التقديري في `SettlementLine`. أمّا كشف
+// الحضور اليومي وكشف دفع الحقوق فمعطياتُهما حيّة: حضورٌ يُصحَّح بعد
+// شهر، ودَينٌ يُسدَّد، فتتبدّل الورقة التي وُقّع عليها.
+//
+// فتُجمَّد هنا JSON لحظة إثبات الدفع: ما يُفتح من الأرشيف بعد سنة هو
+// ما رآه الأستاذ حين أمضى، لا ما صارت إليه القاعدة بعده.
+// ------------------------------------------------------
+
+model SettlementSnapshot {
+  id           String   @id @default(cuid())
+  settlementId String   @unique
+  /// كشف الحضور اليومي كما كان — حصصُه وحضورُ كلِّ مسجَّل
+  dailySheet   Json
+  /// كشف دفع الحقوق الشهري كما كان — الحصص والحالة المالية
+  monthlyFees  Json
+  createdAt    DateTime @default(now())
+
+  settlement Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
 }
 
 // ------------------------------------------------------

@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "motion/react";
 import {
   AlertTriangle,
   ArrowRight,
   Ban,
-  Check,
   ChevronDown,
   ChevronLeft,
   FolderOpen,
@@ -14,28 +12,30 @@ import {
   Printer,
   Receipt,
   Search,
-  Sparkles,
   X,
 } from "lucide-react";
 
 import { AppHeader } from "../../components/AppHeader";
 import { PrintPreview } from "../../components/print/PrintPreview";
-import { FormDialog, FormGrid, FormRow } from "../../components/shared/FormDialog";
+import { BarcodeScanner } from "../../components/shared/BarcodeScanner";
+import {
+  FilterField,
+  FilterPanel,
+  FilterSelect,
+  type FilterChip,
+} from "../../components/shared/FilterPanel";
 import {
   groupLabel,
   useAcademicYears,
   useStudyGroups,
-  type GroupOption,
 } from "../../core/api/reference.api";
 import { useAuthStore } from "../../core/stores/auth.store";
 import { useSchoolStore } from "../../core/stores/school.store";
-import { MOTION } from "../../motion/system";
 import { PATHS } from "../../routes/paths";
 import { useScreenExit } from "../../lib/screen-transition";
 import { InvoiceDoc } from "./PrintDocs";
 import {
   cancelInvoice,
-  generateInvoices,
   getInvoice,
   listInvoices,
   money,
@@ -48,6 +48,22 @@ import {
 
 const ACCENT = "#ff8fb1";
 const PAGE_SIZE = 15;
+
+/**
+ * الحالات — و«المتأخرة» بينها لا زرّاً مستقلاً إلى جانبها.
+ *
+ * كانت خارج المجموعة فبدت شرطاً يُضاف إلى الحالة، وليست كذلك: الخادم
+ * يرشّح بـ`overdue` أو بـ`status` لا بهما معاً، وكان كلٌّ منهما يُفرغ
+ * الآخر عند الضغط بلا ما يدلّ عليه. فصارت الخيارَ الخامس في الصفّ —
+ * ومن الصفّ وحده يُقرأ أنّ الواحد يُبطل ما قبله.
+ */
+const STATES = [
+  { key: "", label: "الكل" },
+  { key: "PENDING", label: "معلّقة" },
+  { key: "PARTIAL", label: "جزئية" },
+  { key: "PAID", label: "مسدَّدة" },
+  { key: "OVERDUE", label: "المتأخرة" },
+] as const;
 
 export default function InvoicesPage() {
   const exitTo = useScreenExit();
@@ -67,9 +83,11 @@ export default function InvoicesPage() {
   const [status, setStatus] = useState<InvoiceStatus | "">("");
   const [overdue, setOverdue] = useState(false);
   const [yearId, setYearId] = useState("");
+  /** الفوجُ والشهر — يرشّحهما الخادم أصلاً ولم تكن الشاشة تعرضهما */
+  const [groupId, setGroupId] = useState("");
+  const [month, setMonth] = useState("");
   const [page, setPage] = useState(1);
 
-  const [genOpen, setGenOpen] = useState(false);
   const [printing, setPrinting] = useState<Invoice | null>(null);
   const [confirming, setConfirming] = useState<Invoice | null>(null);
   const [busy, setBusy] = useState(false);
@@ -79,7 +97,7 @@ export default function InvoicesPage() {
     return () => window.clearTimeout(t);
   }, [search]);
 
-  useEffect(() => setPage(1), [debounced, status, overdue, yearId]);
+  useEffect(() => setPage(1), [debounced, status, overdue, yearId, groupId, month]);
 
   const query = useMemo(
     () => ({
@@ -89,9 +107,41 @@ export default function InvoicesPage() {
       ...(status && { status }),
       ...(overdue && { overdue: true }),
       ...(yearId && { academicYearId: yearId }),
+      ...(groupId && { studyGroupId: groupId }),
+      ...(month && { month: Number(month) }),
     }),
-    [page, debounced, status, overdue, yearId],
+    [page, debounced, status, overdue, yearId, groupId, month],
   );
+
+  /** إفراغُ المرشِّحات — ويُستعمل قبل المسح أيضاً كي لا يحجب مرشِّحٌ ما مُسح */
+  const clearFilters = () => {
+    setSearch("");
+    setStatus("");
+    setOverdue(false);
+    setYearId("");
+    setGroupId("");
+    setMonth("");
+  };
+
+  /** ما يُقرأ حين يُطوى اللوح — إخفاءُ الحقول لا يجوز أن يُخفي ما اختير */
+  const chips = useMemo(() => {
+    const out: FilterChip[] = [];
+
+    if (debounced) out.push({ label: "بحث", value: debounced });
+
+    const year = (years.data ?? []).find((y) => y.id === yearId);
+    if (year) out.push({ label: "السنة", value: year.name });
+
+    const group = (groups.data ?? []).find((g) => g.id === groupId);
+    if (group) out.push({ label: "الفوج", value: group.name });
+
+    if (month) out.push({ label: "الشهر", value: MONTHS[Number(month) - 1] ?? month });
+
+    const state = STATES.find((s) => s.key === (overdue ? "OVERDUE" : status));
+    if (state && state.key) out.push({ label: "الحالة", value: state.label });
+
+    return out;
+  }, [debounced, yearId, groupId, month, status, overdue, years.data, groups.data]);
 
   const fetchRows = async () => {
     setLoading(true);
@@ -252,73 +302,96 @@ export default function InvoicesPage() {
       </AppHeader>
 
       <div className="mx-auto max-w-350 p-6">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: MOTION.duration.normal, ease: MOTION.easing.enter }}
-          className="mb-5 flex flex-wrap items-center gap-3"
-        >
-          <div className="relative min-w-60 flex-1">
-            <Search className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="ابحث برقم الفاتورة…"
-              className="w-full rounded-xl border border-white/10 bg-black/30 py-2.5 pe-4 ps-10 outline-none transition focus:border-white/30"
+        <FilterPanel
+          accent={ACCENT}
+          storageKey="invoices"
+          busy={loading}
+          chips={chips}
+          onReset={clearFilters}
+          extra={
+            <InvoiceScanner
+              accent={ACCENT}
+              onFound={(invoice) => {
+                /*
+                  المُفرِغُ قبل الوضع: لو بقي المرشِّح على «معلّقة» ومُسحت
+                  ورقةٌ مسدَّدة لارتدّت الشاشة بـ«لا فواتير» والفاتورةُ في
+                  يد الماسح — فلا يُصدَّق أنّ المسح عمل.
+                */
+                clearFilters();
+                setSearch(invoice.invoiceNumber);
+              }}
             />
-          </div>
+          }
+        >
+          <FilterField label="بحث" span>
+            <div className="relative">
+              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="رقم الفاتورة أو اسم الطالب…"
+                className="w-full rounded-xl border border-white/10 bg-black/30 py-2.5 pe-3 ps-9 text-xs font-bold outline-none transition hover:bg-black/40 focus:border-white/35"
+              />
+            </div>
+          </FilterField>
 
-          <select
-            value={yearId}
-            onChange={(e) => setYearId(e.target.value)}
-            className="rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-xs font-bold outline-none"
-          >
-            <option value="" className="bg-[#0a0f1a]">السنة: الكل</option>
-            {(years.data ?? []).map((y) => (
-              <option key={y.id} value={y.id} className="bg-[#0a0f1a]">{y.name}</option>
-            ))}
-          </select>
+          <FilterField label="السنة الدراسية">
+            <FilterSelect
+              value={yearId}
+              onChange={setYearId}
+              placeholder="الكل"
+              accent={ACCENT}
+              items={(years.data ?? []).map((y) => ({ id: y.id, name: y.name }))}
+            />
+          </FilterField>
 
-          <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/30 p-1">
-            {([
-              { v: "", label: "الكل" },
-              { v: "PENDING", label: "معلّقة" },
-              { v: "PARTIAL", label: "جزئية" },
-              { v: "PAID", label: "مسدَّدة" },
-            ] as const).map((o) => (
-              <button
-                key={o.v}
-                onClick={() => { setStatus(o.v as InvoiceStatus | ""); setOverdue(false); }}
-                className="rounded-lg px-3 py-1.5 text-xs font-bold transition"
-                style={status === o.v && !overdue ? { background: `${ACCENT}22`, color: ACCENT } : { color: "rgba(255,255,255,0.5)" }}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
+          <FilterField label="الفوج">
+            <FilterSelect
+              value={groupId}
+              onChange={setGroupId}
+              placeholder="الكل"
+              accent={ACCENT}
+              items={(groups.data ?? []).map((g) => ({ id: g.id, name: groupLabel(g) }))}
+            />
+          </FilterField>
 
-          <button
-            onClick={() => { setOverdue((v) => !v); setStatus(""); }}
-            className="flex items-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-bold transition"
-            style={overdue
-              ? { borderColor: "rgba(252,211,77,0.5)", background: "rgba(252,211,77,0.12)", color: "#fcd34d" }
-              : { borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)" }}
-          >
-            <AlertTriangle className="h-3.5 w-3.5" />
-            المتأخرة
-          </button>
+          <FilterField label="الشهر">
+            <FilterSelect
+              value={month}
+              onChange={setMonth}
+              placeholder="الكل"
+              accent={ACCENT}
+              items={MONTHS.map((name, index) => ({ id: String(index + 1), name }))}
+            />
+          </FilterField>
 
-          {can("invoice.create") && (
-            <button
-              onClick={() => setGenOpen(true)}
-              className="flex items-center gap-2 rounded-xl px-4 py-2.5 font-black text-[#1a0410] transition hover:brightness-110"
-              style={{ background: ACCENT }}
-            >
-              <Sparkles className="h-4.5 w-4.5" />
-              توليد فواتير الشهر
-            </button>
-          )}
-        </motion.div>
+          <FilterField label="الحالة" span>
+            <div className="flex flex-wrap items-center gap-1 rounded-xl border border-white/10 bg-black/30 p-1">
+              {STATES.map((option) => {
+                const active = (overdue ? "OVERDUE" : status) === option.key;
+
+                return (
+                  <button
+                    key={option.key || "all"}
+                    onClick={() => {
+                      setOverdue(option.key === "OVERDUE");
+                      setStatus(option.key === "OVERDUE" ? "" : (option.key as InvoiceStatus | ""));
+                    }}
+                    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition"
+                    style={
+                      active
+                        ? { background: `${ACCENT}22`, color: ACCENT }
+                        : { color: "rgba(255,255,255,0.5)" }
+                    }
+                  >
+                    {option.key === "OVERDUE" && <AlertTriangle className="h-3.5 w-3.5" />}
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </FilterField>
+        </FilterPanel>
 
         {error && (
           <div className="mb-4 flex items-center justify-between rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
@@ -351,9 +424,9 @@ export default function InvoicesPage() {
                     <Receipt className="mx-auto mb-3 h-10 w-10 text-white/15" />
                     {/* الرسالة تتبع الفلتر: «لا نتائج» غير «لا فواتير بعد» */}
                     <p className="text-white/50">
-                      {debounced || status || overdue || yearId
+                      {chips.length > 0
                         ? "لا فاتورة تطابق هذه التصفية"
-                        : "لا فواتير — ابدأ بتوليد فواتير الشهر"}
+                        : "لا فواتير بعد — تُولَّد من كشف دفع الحقوق الشهري"}
                     </p>
                   </td>
                 </tr>
@@ -521,15 +594,6 @@ export default function InvoicesPage() {
         )}
       </div>
 
-      {genOpen && (
-        <GenerateDialog
-          years={years.data ?? []}
-          groups={groups.data ?? []}
-          onClose={() => setGenOpen(false)}
-          onDone={() => { setGenOpen(false); fetchRows(); }}
-        />
-      )}
-
       {printing && (
         <PrintPreview
           doc={{
@@ -572,159 +636,60 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: str
   );
 }
 
+
 // --------------------------------------------------
-// توليد فواتير الشهر
+// مسحُ باركود الفاتورة المطبوعة
 // --------------------------------------------------
 
-function GenerateDialog({
-  years, groups, onClose, onDone,
+/**
+ * الورقة تحمل باركود رقمها ورقمَه مكتوباً تحته (`InvoiceDoc`)، فمن
+ * جاءه وليٌّ بورقته في يده لا يقرأ ثلاثةَ عشرَ رقماً ويكتبها — يمسحها.
+ *
+ * والبحثُ يقبل الاسمَ والرقم معاً، فقد يرجع أكثرَ من صفّ. والمعتمَدُ
+ * المطابقةُ التامّة وحدها، وإلّا فصفٌّ واحدٌ لا ثاني له. وما عدا ذلك
+ * «لا وجود» — فورقةٌ خطأ أهونُ من ورقةٍ تُفتح على فاتورة غيرها ويُقبض
+ * عليها.
+ */
+function InvoiceScanner({
+  accent,
+  onFound,
 }: {
-  years: { id: string; name: string }[];
-  groups: GroupOption[];
-  onClose: () => void;
-  onDone: () => void;
+  accent: string;
+  onFound: (invoice: Invoice) => void;
 }) {
-  const now = new Date();
-
-  const [yearId, setYearId] = useState(years[0]?.id ?? "");
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [year, setYear] = useState(now.getFullYear());
-  const [dueDate, setDueDate] = useState("");
-  const [groupIds, setGroupIds] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<Awaited<ReturnType<typeof generateInvoices>> | null>(null);
-
-  const run = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (busy) return;
-
-    setBusy(true);
-    setError(null);
-    try {
-      setResult(await generateInvoices({
-        academicYearId: yearId,
-        month, year,
-        ...(dueDate && { dueDate }),
-        ...(groupIds.length > 0 && { studyGroupIds: groupIds }),
-      }));
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? "تعذّر التوليد");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
-    <FormDialog
-      icon={Sparkles}
-      title="توليد فواتير الشهر"
-      subtitle="تُنشأ فاتورة لكل تسجيل نشط بسعر حقّ الاشتراك الساري. الموجود مسبقاً يُتخطّى، فإعادة التشغيل آمنة."
-      tone={ACCENT}
-      width="md"
-      /* بعد التوليد لا رجعة: الإغلاق يُنعش القائمة كي تظهر الفواتير الجديدة */
-      onClose={result ? onDone : onClose}
-      onSubmit={result ? (e) => { e.preventDefault(); onDone(); } : run}
-      busy={busy}
-      submitDisabled={!result && !yearId}
-      submitLabel={result ? "تمّ" : "توليد"}
-      submitIcon={result ? <Check className="h-4.5 w-4.5" /> : <Sparkles className="h-4.5 w-4.5" />}
-      error={result ? null : error}
-    >
-        {!result ? (
+    <BarcodeScanner<Invoice>
+      accent={accent}
+      onFound={onFound}
+      copy={{
+        button: "مسح الفاتورة",
+        buttonTitle: "اعثر على فاتورة بمسح الباركود المطبوع عليها",
+        title: "مسح باركود الفاتورة",
+        subtitle: "الورقة تدلّ على فاتورتها — بلا بحثٍ ولا مرشِّحات",
+        placeholder: "امسح الباركود، أو اكتب رقم الفاتورة…",
+        action: "اعرض الفاتورة",
+        notFound: "لا وجود لفاتورة بهذا الكود بار — الرجاء التحقّق منه.",
+        hint: "الرقم مكتوبٌ تحت الباركود في أسفل الورقة",
+        steps: [
           <>
-            <FormGrid>
-              <FormRow wide>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-bold text-white/60">السنة الدراسية</span>
-                  <select value={yearId} onChange={(e) => setYearId(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none">
-                    <option value="" className="bg-[#0a0f1a]">— اختر —</option>
-                    {years.map((y) => <option key={y.id} value={y.id} className="bg-[#0a0f1a]">{y.name}</option>)}
-                  </select>
-                </label>
-              </FormRow>
+            وجّه القارئ إلى <span className="font-bold text-white/85">الباركود المطبوع</span> في
+            أسفل ورقة الفاتورة.
+          </>,
+          <>القارئ يكتب الرقم في الحقل أدناه من نفسه ثمّ يُرسله — لا تضغط شيئاً.</>,
+          <>
+            تُغلق هذه النافذة وتُفرَغ المرشِّحات، فتبقى في القائمة فاتورتُها وحدها بحالتها
+            وما بقي عليها.
+          </>,
+        ],
+      }}
+      resolve={async (text) => {
+        const { invoices } = await listInvoices({ search: text, limit: 5 });
 
-              <FormRow>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-bold text-white/60">الشهر</span>
-                  <select value={month} onChange={(e) => setMonth(Number(e.target.value))}
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none">
-                    {MONTHS.map((m, i) => <option key={m} value={i + 1} className="bg-[#0a0f1a]">{m}</option>)}
-                  </select>
-                </label>
-              </FormRow>
-
-              <FormRow>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-bold text-white/60">السنة</span>
-                  <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} dir="ltr"
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none" />
-                </label>
-              </FormRow>
-
-              <FormRow wide>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-bold text-white/60">تاريخ الاستحقاق</span>
-                  <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} dir="ltr"
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 outline-none" />
-                  <span className="mt-1 block text-[11px] text-white/40">اتركه فارغاً ليكون آخر يوم في الشهر</span>
-                </label>
-              </FormRow>
-            </FormGrid>
-
-            <details className="mt-4 rounded-xl border border-white/10 bg-black/20 p-3">
-              <summary className="cursor-pointer text-xs font-bold text-white/60">
-                تحديد أفواج بعينها (اختياري)
-              </summary>
-              <div className="mt-3 max-h-40 space-y-1.5 overflow-y-auto">
-                {groups.map((g) => (
-                  <label key={g.id} className="flex cursor-pointer items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={groupIds.includes(g.id)}
-                      onChange={(e) =>
-                        setGroupIds((prev) => e.target.checked ? [...prev, g.id] : prev.filter((x) => x !== g.id))
-                      }
-                      className="h-4 w-4 accent-pink-400"
-                    />
-                    {groupLabel(g)}
-                  </label>
-                ))}
-              </div>
-            </details>
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/[0.08] px-4 py-3">
-              <div className="text-2xl font-black text-emerald-200">{result.created}</div>
-              <div className="text-xs text-white/60">فاتورة أُنشئت</div>
-            </div>
-
-            {result.skippedExisting > 0 && (
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/60">
-                {result.skippedExisting} فاتورة موجودة مسبقاً — تُخطّيت.
-              </div>
-            )}
-
-            {result.skippedNoFee.length > 0 && (
-              <div className="rounded-xl border border-amber-400/30 bg-amber-500/[0.08] p-4">
-                <div className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-200">
-                  <AlertTriangle className="h-4 w-4" />
-                  {result.skippedNoFee.length} تسجيلاً بلا حقّ اشتراك
-                </div>
-                <ul className="max-h-32 space-y-1 overflow-y-auto text-[11px] text-white/55">
-                  {result.skippedNoFee.map((s, i) => (
-                    <li key={i}>{s.student} — {s.subject} ({s.studyGroup})</li>
-                  ))}
-                </ul>
-                <p className="mt-2 text-[11px] text-white/40">
-                  اضبط سعرها في الإعدادات ← حقوق الاشتراك ثم أعد التوليد.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-    </FormDialog>
+        return (
+          invoices.find((invoice) => invoice.invoiceNumber === text) ??
+          (invoices.length === 1 ? invoices[0]! : null)
+        );
+      }}
+    />
   );
 }

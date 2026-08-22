@@ -40,6 +40,15 @@ exports.paymentQuerySchema = zod_1.z.object({
     limit: zod_1.z.coerce.number().int().min(1).max(100).default(20),
     search: zod_1.z.string().trim().min(1).optional(),
     studentId: zod_1.z.string().trim().min(1).optional(),
+    /**
+     * الطالبُ بما يُعرف به لا بمعرّفه الداخلي.
+     *
+     * `studentId` معرّفٌ (cuid) لا يُملى ولا يُكتب — تختاره الشاشةُ من
+     * قائمة. والموظّفُ في شبّاك التحصيل يمسك اسماً أو بطاقةً فيها رقم،
+     * فلا يجد بهما مدخلاً وكان يقلّب الصفحات.
+     */
+    studentName: zod_1.z.string().trim().min(1).optional(),
+    studentNumber: zod_1.z.string().trim().min(1).optional(),
     invoiceId: zod_1.z.string().trim().min(1).optional(),
     paymentMethod: zod_1.z.enum(prisma_1.PaymentMethod).optional(),
     status: zod_1.z.enum(prisma_1.PaymentStatus).optional(),

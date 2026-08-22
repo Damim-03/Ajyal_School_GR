@@ -20,6 +20,18 @@ export const sheetDate = (iso: string) => {
   return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`;
 };
 
+/**
+ * 2026-09-03 → 03/09/26 — للخانة الضيّقة.
+ *
+ * ورقةٌ فيها اثنتا عشرة حصةً تُبقي لكلِّ تاريخٍ تسعةَ مليمترات، ولا يسعها
+ * «03/09/2026» بخطٍّ يُقرأ. والقرنُ وحده ما يُطرح: السنة الدراسية مكتوبةٌ
+ * في ترويسة الورقة كاملةً فوقه.
+ */
+export const sheetDateShort = (iso: string) => {
+  const d = new Date(iso);
+  return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${pad(d.getUTCFullYear() % 100)}`;
+};
+
 /** 2026-09-03T00:00:00Z → 2026-09-03 — لحقول من نوع date */
 export const isoDate = (iso: string) => new Date(iso).toISOString().slice(0, 10);
 

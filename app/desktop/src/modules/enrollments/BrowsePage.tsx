@@ -15,21 +15,29 @@ import {
 
 import { AppHeader } from "../../components/AppHeader";
 import { Avatar } from "../../components/shared/Avatar";
+import { BarcodeScanner } from "../../components/shared/BarcodeScanner";
+import {
+  FilterField,
+  FilterPanel,
+  FilterSelect,
+  type FilterChip,
+} from "../../components/shared/FilterPanel";
 import { useAcademicYears } from "../../core/api/reference.api";
 import { useSchoolStore } from "../../core/stores/school.store";
 import { MOTION } from "../../motion/system";
 import { PATHS } from "../../routes/paths";
 import { useScreenExit } from "../../lib/screen-transition";
 import { money } from "../finance/finance.api";
-import { deriveOptions, type SheetFilters } from "../attendance/attendance.api";
 import {
   getAttendanceSummary,
   getStudent,
   listStudentInvoices,
+  listStudents,
   type AttendanceSummary,
   type Student,
   type StudentInvoice,
 } from "../students/student.api";
+import { useAssignmentFilters } from "./assignment-filters";
 import {
   fullName,
   listAssignments,
@@ -39,29 +47,6 @@ import {
 } from "./enrollments.api";
 
 const ACCENT = "#7dd3fc";
-
-const EMPTY_FILTERS: SheetFilters = {
-  stageId: "",
-  levelId: "",
-  subjectId: "",
-  teacherId: "",
-  groupId: "",
-};
-
-const FILTER_ORDER: (keyof SheetFilters)[] = [
-  "stageId",
-  "levelId",
-  "subjectId",
-  "teacherId",
-  "groupId",
-];
-
-const matchesAll = (a: Assignment, f: SheetFilters) =>
-  (!f.stageId || a.studyGroup.level.educationStage.id === f.stageId) &&
-  (!f.levelId || a.studyGroup.level.id === f.levelId) &&
-  (!f.subjectId || a.subject.id === f.subjectId) &&
-  (!f.teacherId || a.teacher.id === f.teacherId) &&
-  (!f.groupId || a.studyGroup.id === f.groupId);
 
 /**
  * عرض الطلبة.
@@ -78,26 +63,34 @@ export default function BrowsePage() {
   const exitTo = useScreenExit();
 
   const yearsQuery = useAcademicYears();
-  const years = yearsQuery.data ?? [];
+  const years = useMemo(() => yearsQuery.data ?? [], [yearsQuery.data]);
   const [yearId, setYearId] = useState("");
 
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [filters, setFilters] = useState<SheetFilters>(EMPTY_FILTERS);
+
+  /* نفسُ خُطّاف الإسناد والنقل — قاعدةُ «أسقِط ما تعارض فقط» تُكتب مرّة */
+  const {
+    filters,
+    setFilter,
+    reset: resetFilters,
+    options,
+  } = useAssignmentFilters(assignments);
 
   const [rows, setRows] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [opened, setOpened] = useState<Enrollment | null>(null);
+  const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
     if (yearId || years.length === 0) return;
-    setYearId((years.find((y) => y.isCurrent) ?? years[0]).id);
+    setYearId((years.find((y) => y.isCurrent) ?? years[0]!).id);
   }, [years, yearId]);
 
   useEffect(() => {
     if (!yearId) return;
     let alive = true;
-    setFilters(EMPTY_FILTERS);
+    resetFilters();
 
     listAssignments(yearId)
       .then((r) => alive && setAssignments(r))
@@ -106,27 +99,7 @@ export default function BrowsePage() {
     return () => {
       alive = false;
     };
-  }, [yearId]);
-
-  const options = useMemo(
-    () => deriveOptions(assignments, filters),
-    [assignments, filters],
-  );
-
-  const setFilter = (key: keyof SheetFilters, value: string) => {
-    setFilters((prev) => {
-      let next = { ...prev, [key]: value };
-      const others = FILTER_ORDER.filter((k) => k !== key);
-
-      while (!assignments.some((a) => matchesAll(a, next))) {
-        const drop = [...others].reverse().find((k) => next[k]);
-        if (!drop) break;
-        next = { ...next, [drop]: "" };
-      }
-
-      return next;
-    });
-  };
+  }, [yearId, resetFilters]);
 
   /**
    * التحميل بالمرشِّحات لا بجلب كل شيء ثم الترشيح في المتصفّح:
@@ -189,6 +162,66 @@ export default function BrowsePage() {
     );
   }, [rows]);
 
+  const chips = useMemo<FilterChip[]>(() => {
+    const out: FilterChip[] = [];
+    const year = years.find((y) => y.id === yearId);
+    const named = (
+      key: keyof typeof filters,
+      label: string,
+      items: { id: string; name: string }[],
+    ) => {
+      const found = items.find((i) => i.id === filters[key]);
+      if (found) out.push({ label, value: found.name });
+    };
+
+    if (year) out.push({ label: "السنة", value: year.name });
+    named("stageId", "الطور", options.stages);
+    named("levelId", "المستوى", options.levels);
+    named("subjectId", "المادة", options.subjects);
+    named(
+      "teacherId",
+      "الأستاذ",
+      options.teachers.map((t) => ({ id: t.id, name: fullName(t) })),
+    );
+    named("groupId", "الفوج", options.groups);
+
+    return out;
+  }, [years, yearId, filters, options]);
+
+  /**
+   * المسحُ يبحث في المؤسسة كلِّها ثمّ يفتح الملفّ.
+   *
+   * ويبدأ بما هو معروضٌ أمامه: الغالبُ أن يكون الممسوحُ في الفوج
+   * المفتوح، فيُفتح بلا رحلةٍ إلى الخادم. وإن لم يكن فيه طُلب من
+   * الخادم — البطاقةُ في اليد لا تعرف بأيّ مرشِّحٍ فُتحت الشاشة.
+   */
+  const scan = async (text: string): Promise<Enrollment | null> => {
+    const code = text.trim();
+    if (!code || !yearId) return null;
+
+    const here = rows.find((r) => r.student.studentNumber === code);
+    if (here) return here;
+
+    setScanning(true);
+
+    try {
+      const { students } = await listStudents({ studentNumber: code, limit: 5 });
+      const student = students.find((s) => s.studentNumber === code);
+      if (!student) return null;
+
+      const { enrollments } = await listEnrollments({
+        studentId: student.id,
+        academicYearId: yearId,
+        isActive: true,
+        limit: 100,
+      });
+
+      return enrollments[0] ?? null;
+    } finally {
+      setScanning(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#05070d] text-white">
       <AppHeader title="عرض الطلبة" subtitle="الفوج ومَن فيه">
@@ -211,71 +244,124 @@ export default function BrowsePage() {
           </div>
         )}
 
-        <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <div className="flex flex-wrap items-end gap-3">
-            <Field label="السنة الدراسية">
-              <select
-                value={yearId}
-                onChange={(e) => setYearId(e.target.value)}
-                className={selectClass}
-              >
-                {years.map((y) => (
-                  <option key={y.id} value={y.id} className="bg-[#0a0f1a]">
-                    {y.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+        <FilterPanel
+          accent={ACCENT}
+          storageKey="enrollments.browse"
+          /* اختيارُ الفوج آخرُ الحقول — وبعده يُطوى اللوح من نفسه */
+          collapseKey={filters.groupId}
+          busy={loading}
+          chips={chips}
+          onReset={resetFilters}
+          /*
+            المسحُ يفتح الملفّ لا يُرشّح القائمة.
 
-            <Field label="الطور">
-              <Picker value={filters.stageId} onChange={(v) => setFilter("stageId", v)} items={options.stages} all="كل الأطوار" />
-            </Field>
-            <Field label="المستوى">
-              <Picker value={filters.levelId} onChange={(v) => setFilter("levelId", v)} items={options.levels} all="كل المستويات" />
-            </Field>
-            <Field label="المادة">
-              <Picker value={filters.subjectId} onChange={(v) => setFilter("subjectId", v)} items={options.subjects} all="كل المواد" />
-            </Field>
-            <Field label="الأستاذ">
-              <Picker
-                value={filters.teacherId}
-                onChange={(v) => setFilter("teacherId", v)}
-                items={options.teachers.map((t) => ({ id: t.id, name: fullName(t) }))}
-                all="كل الأساتذة"
+            من مسح بطاقةً أمام الشبّاك يريد جوابَ «مَن هذا وماذا عليه؟»
+            في لحظته — لا أن يرى سطراً يضغط عليه بعدها. ويبحث في
+            المؤسسة كلِّها لا في المعروض: البطاقةُ في اليد لا تعرف بأيّ
+            مرشِّحٍ فُتحت الشاشة. ومحلُّه ترويسةُ اللوح كما في بقيّة
+            الشاشات — يبقى في متناول اليد مطويّاً اللوحُ أو مفتوحاً.
+          */
+          extra={
+            <BarcodeScanner<Enrollment>
+                accent={ACCENT}
+                busy={scanning}
+                onFound={setOpened}
+                copy={{
+                  button: "مسح بطاقة",
+                  buttonTitle: "افتح ملفّ الطالب بمسح باركود بطاقته",
+                  title: "مسح رقم تسجيل الطالب",
+                  subtitle: "يُفتح ملفُّه كاملاً — بياناته وحضوره وديونه",
+                  placeholder: "امسح باركود البطاقة، أو اكتب رقم التسجيل…",
+                  action: "افتح الملفّ",
+                  notFound:
+                    "لا طالبَ بهذا الرقم في هذه السنة الدراسية — تحقّق من الرمز أو من السنة.",
+                  hint: "الرقم مكتوبٌ تحت الباركود",
+                  steps: [
+                    <>
+                      وجّه القارئ إلى{" "}
+                      <span className="font-bold text-white/85">باركود بطاقة الطالب</span>.
+                    </>,
+                    <>القارئ يكتب الرقم في الحقل أدناه من نفسه ثمّ يُرسله.</>,
+                    <>يُفتح ملفُّه — ولو لم يكن ضمن المرشِّحات المعروضة.</>,
+                  ],
+                }}
+                resolve={scan}
               />
-            </Field>
-            <Field label="الفوج">
-              <Picker value={filters.groupId} onChange={(v) => setFilter("groupId", v)} items={options.groups} all="كل الأفواج" />
-            </Field>
+          }
+        >
+          <FilterField label="السنة الدراسية">
+            <FilterSelect
+              value={yearId}
+              onChange={setYearId}
+              items={years.map((y) => ({ id: y.id, name: y.name }))}
+              accent={ACCENT}
+            />
+          </FilterField>
 
-            {Object.values(filters).some(Boolean) && (
-              <button
-                onClick={() => setFilters(EMPTY_FILTERS)}
-                className="mb-0.5 flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-2.5 text-xs font-bold text-white/60 transition hover:bg-white/10"
-              >
-                <X className="h-3.5 w-3.5" />
-                امسح
-              </button>
-            )}
+          <FilterField label="الطور">
+            <FilterSelect
+              value={filters.stageId}
+              onChange={(v) => setFilter("stageId", v)}
+              items={options.stages}
+              placeholder="كل الأطوار"
+              accent={ACCENT}
+            />
+          </FilterField>
 
-            {loading && <Loader2 className="mb-3 h-4 w-4 animate-spin text-white/40" />}
-          </div>
-        </div>
+          <FilterField label="المستوى">
+            <FilterSelect
+              value={filters.levelId}
+              onChange={(v) => setFilter("levelId", v)}
+              items={options.levels}
+              placeholder="كل المستويات"
+              accent={ACCENT}
+            />
+          </FilterField>
+
+          <FilterField label="المادة">
+            <FilterSelect
+              value={filters.subjectId}
+              onChange={(v) => setFilter("subjectId", v)}
+              items={options.subjects}
+              placeholder="كل المواد"
+              accent={ACCENT}
+            />
+          </FilterField>
+
+          <FilterField label="الأستاذ">
+            <FilterSelect
+              value={filters.teacherId}
+              onChange={(v) => setFilter("teacherId", v)}
+              items={options.teachers.map((t) => ({ id: t.id, name: fullName(t) }))}
+              placeholder="كل الأساتذة"
+              accent={ACCENT}
+            />
+          </FilterField>
+
+          <FilterField label="الفوج">
+            <FilterSelect
+              value={filters.groupId}
+              onChange={(v) => setFilter("groupId", v)}
+              items={options.groups}
+              placeholder="كل الأفواج"
+              accent={ACCENT}
+            />
+          </FilterField>
+        </FilterPanel>
 
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
             <span className="text-xs font-bold text-white/50">
               {byStudent.length} طالباً
             </span>
-            <span className="text-[11px] text-white/30">
-              انقر على الطالب لفتح ملفّه
-            </span>
+
+            <span className="text-[11px] text-white/30">انقر على الطالب لفتح ملفّه</span>
           </div>
 
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10 text-xs text-white/50">
-                <th className="w-12 px-3 py-3 text-center font-bold">#</th>
+                <th className="w-32 px-3 py-3 text-center font-bold">رقم التسجيل</th>
                 <th className="px-4 py-3 text-start font-bold">اللقب والاسم</th>
                 <th className="px-4 py-3 text-start font-bold">المستوى</th>
                 <th className="px-4 py-3 text-start font-bold">الفوج</th>
@@ -292,14 +378,29 @@ export default function BrowsePage() {
                   </td>
                 </tr>
               ) : (
-                byStudent.map(({ row, subjects }, i) => (
+                byStudent.map(({ row, subjects }) => (
                   <tr
                     key={row.student.id}
                     onClick={() => setOpened(row)}
                     className="cursor-pointer border-b border-white/5 transition last:border-0 hover:bg-white/[0.05]"
                   >
-                    <td className="px-3 py-2.5 text-center text-white/40">{i + 1}</td>
-                    <td className="px-4 py-2.5 font-bold">{fullName(row.student)}</td>
+                    <td className="px-3 py-2.5 text-center">
+                      <span className="font-mono text-[12px] text-white/45" dir="ltr">
+                        {row.student.studentNumber}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {/* الوجهُ قبل الاسم — يُعرف الطالب به قبل أن يُقرأ سطرُه */}
+                      <span className="flex items-center gap-2.5">
+                        <Avatar
+                          src={row.student.avatar}
+                          name={fullName(row.student)}
+                          gender={row.student.gender}
+                          size={30}
+                        />
+                        <span className="font-bold">{fullName(row.student)}</span>
+                      </span>
+                    </td>
                     <td className="px-4 py-2.5 text-white/60">
                       {row.teachingAssignment.studyGroup.level.name}
                     </td>
@@ -716,37 +817,3 @@ function Pill({ label, value, tone }: { label: string; value: number; tone: stri
     </span>
   );
 }
-
-const selectClass =
-  "rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-xs font-bold outline-none transition focus:border-white/30";
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-[11px] font-bold text-white/45">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function Picker({
-  value,
-  onChange,
-  items,
-  all,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  items: { id: string; name: string }[];
-  all: string;
-}) {
-  return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} className={selectClass}>
-      <option value="" className="bg-[#0a0f1a]">{all}</option>
-      {items.map((i) => (
-        <option key={i.id} value={i.id} className="bg-[#0a0f1a]">{i.name}</option>
-      ))}
-    </select>
-  );
-}
-

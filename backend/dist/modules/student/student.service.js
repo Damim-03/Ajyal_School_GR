@@ -15,6 +15,7 @@ const studentSelect = {
     lastName: true,
     gender: true,
     birthDate: true,
+    birthPlace: true,
     avatar: true,
     phone: true,
     parentPhone: true,
@@ -22,6 +23,9 @@ const studentSelect = {
     schoolName: true,
     emergencyPhone: true,
     registrationDate: true,
+    registrationFeePaid: true,
+    registrationFeeAmount: true,
+    registrationFeePaidAt: true,
     note: true,
     isActive: true,
     levelId: true,
@@ -74,6 +78,50 @@ const ensureLevelExists = async (levelId) => {
 // --------------------------------------------------
 // List
 // --------------------------------------------------
+/**
+ * الاسمُ كما يُكتب على عجل — بلا همزةٍ ولا تاءٍ مربوطة.
+ *
+ * `utf8mb4_general_ci` تتغاضى عن حالة الحرف ولا تتغاضى عن شكله: من
+ * كتب «اروى» لا يجد «أروى»، و«فاطمه» لا تجد «فاطمة». وهو أغلبُ ما
+ * يُكتب في الشبّاك — الهمزة تُهمل عادةً في الكتابة السريعة — فكان
+ * البحثُ يقول «لا نتيجة» عن طالبٍ موجود، فيُظنّ غيرَ مسجَّل.
+ *
+ * والعلاج في الاستعلام لا في القاعدة: الحروفُ المتشابهة تُبدَّل بـ`_`
+ * وهي في LIKE «حرفٌ واحد أيّاً كان» — فـ«اروى» تصير «_روى» فتُطابق
+ * «أروى» و«اروى» معاً. ولا تُصعَّد إلى `%` فيصير البحثُ فضفاضاً بلا
+ * معنى.
+ *
+ * **وهي إضافةٌ لا استبدال:** الشروط الأصلية تبقى كما هي، فما كان
+ * يُطابق يبقى مطابقاً وتُزاد عليه صورةٌ أوسع.
+ *
+ * وشرطان يحرسانها من أن تُعيد كلَّ شيء:
+ *   • حرفان فأكثر — والحرفُ الواحد المبهَم يُطابق كلَّ شيء.
+ *   • وأن يبقى فيها حرفٌ صريحٌ واحد على الأقلّ، فـ«ام» تصير «__»
+ *     فتُرفض، و«ار» تصير «_ر» فتُقبل.
+ */
+/*
+ * الحروفُ التي تُكتب على أوجه: الألف بهمزتها وبدونها، والهاءُ والتاء
+ * المربوطة، والياءُ والألفُ المقصورة. والواوُ خارجها عمداً — «مؤمن»
+ * و«مومن» أندرُ من أن تُدفع بها كلُّ واوٍ إلى الإبهام، وكلُّ حرفٍ
+ * يُبهَم يُنقص دقّة البحث.
+ */
+const LOOSE = /[\u0627\u0623\u0625\u0622\u0671\u0629\u0647\u0649\u064A\u0626]/g;
+const looseName = (search) => {
+    const term = search.trim();
+    if (term.length < 2)
+        return [];
+    const loose = term.replace(LOOSE, "_");
+    if (loose === term)
+        return [];
+    /*
+     * حرفٌ صريحٌ واحد يكفي — والخطرُ المحروسُ منه نمطٌ كلُّه إبهام:
+     * «اوي» تصير «___» فتُطابق كلَّ اسمٍ من ثلاثة أحرف.
+     */
+    const literal = loose.length - (loose.match(/_/g)?.length ?? 0);
+    if (literal === 0)
+        return [];
+    return [{ firstName: { contains: loose } }, { lastName: { contains: loose } }];
+};
 const listStudentsService = async (query) => {
     const { skip, take, page, limit } = (0, api_response_1.getPagination)(query.page, query.limit);
     /* شروط الإسناد التدريسي المرتبط بتسجيلات الطالب */
@@ -115,6 +163,9 @@ const listStudentsService = async (query) => {
     const where = {
         ...(query.isActive !== undefined && { isActive: query.isActive }),
         ...(query.gender && { gender: query.gender }),
+        ...(query.studentNumber && {
+            studentNumber: { contains: query.studentNumber },
+        }),
         ...(query.search && {
             OR: [
                 /*
@@ -128,6 +179,7 @@ const listStudentsService = async (query) => {
                 { lastName: { contains: query.search } },
                 { phone: { contains: query.search } },
                 { parentPhone: { contains: query.search } },
+                ...looseName(query.search),
             ],
         }),
         /*
@@ -293,6 +345,7 @@ const createStudentService = async (body) => {
                         lastName: body.lastName,
                         gender: body.gender,
                         birthDate: body.birthDate ?? null,
+                        birthPlace: body.birthPlace ?? null,
                         avatar: body.avatar ?? null,
                         phone: body.phone ?? null,
                         parentPhone: body.parentPhone,
@@ -301,6 +354,9 @@ const createStudentService = async (body) => {
                         emergencyPhone: body.emergencyPhone ?? null,
                         levelId: body.levelId ?? null,
                         ...(body.registrationDate && { registrationDate: body.registrationDate }),
+                        registrationFeePaid: body.registrationFeePaid ?? false,
+                        registrationFeeAmount: body.registrationFeeAmount ?? null,
+                        registrationFeePaidAt: body.registrationFeePaidAt ?? null,
                         note: body.note ?? null,
                         isActive: body.isActive ?? true,
                     },
@@ -336,6 +392,7 @@ const updateStudentService = async (id, body) => {
             ...(body.lastName !== undefined && { lastName: body.lastName }),
             ...(body.gender !== undefined && { gender: body.gender }),
             ...(body.birthDate !== undefined && { birthDate: body.birthDate }),
+            ...(body.birthPlace !== undefined && { birthPlace: body.birthPlace }),
             ...(body.avatar !== undefined && { avatar: body.avatar }),
             ...(body.phone !== undefined && { phone: body.phone }),
             ...(body.parentPhone !== undefined && { parentPhone: body.parentPhone }),
@@ -346,6 +403,16 @@ const updateStudentService = async (id, body) => {
             }),
             ...(body.registrationDate !== undefined && {
                 registrationDate: body.registrationDate,
+            }),
+            /* حقوق التسجيل — ثلاثةُ حقولٍ تُرسَل معاً أو منفردة */
+            ...(body.registrationFeePaid !== undefined && {
+                registrationFeePaid: body.registrationFeePaid,
+            }),
+            ...(body.registrationFeeAmount !== undefined && {
+                registrationFeeAmount: body.registrationFeeAmount,
+            }),
+            ...(body.registrationFeePaidAt !== undefined && {
+                registrationFeePaidAt: body.registrationFeePaidAt,
             }),
             ...(body.note !== undefined && { note: body.note }),
             ...(body.isActive !== undefined && { isActive: body.isActive }),

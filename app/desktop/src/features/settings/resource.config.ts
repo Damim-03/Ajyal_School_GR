@@ -44,6 +44,8 @@ export type FieldKind =
   | "reference"
   | "switch"
   | "textarea"
+  /** صورةٌ تُرفع أو تُمسح — يُحفظ مسارُها كما يُرجعه /api/uploads */
+  | "image"
   /** حروفٌ مخفيّة — والفارغ عند التعديل يعني «لا تغيّرها» */
   | "password";
 
@@ -169,6 +171,21 @@ export interface ResourceSpec {
   filters?: { key: string; label: string; refPath: string; refLabel?: string[] }[];
   /** شرح ما ستفعله القيم المكتوبة — يُعرض أسفل حقول النموذج */
   explain?: (form: Record<string, unknown>) => ExplainSpec | null;
+  /**
+   * عرضٌ بالمربّعات بدل الجدول.
+   *
+   * الجدولُ يصلح لما يُقارَن سطراً بسطر — قاعةٌ وسعتُها، سنةٌ وتاريخُها.
+   * والموادُّ تُنتقى لا تُقارَن، والعينُ تعرف صورتَها قبل أن تقرأ
+   * اسمَها. فتُعرض مربّعاتٍ لمن له صورةٌ وهوية.
+   */
+  card?: {
+    /** مفتاحُ الصورة في السجلّ */
+    image?: string;
+    /** مفتاحُ العنوان — الاسم غالباً */
+    title: string;
+    /** مفاتيحُ تُعرض تحت العنوان مفصولةً بنقطة */
+    meta?: string[];
+  };
 }
 
 const ACTIVE_FIELD: FieldSpec = {
@@ -320,6 +337,7 @@ export const RESOURCES: ResourceSpec[] = [
     icon: BookOpen,
     tone: "#fcd34d",
     permission: "subject",
+    card: { image: "imagePath", title: "name", meta: ["code", "description"] },
     columns: [
       { key: "name", label: "الاسم" },
       { key: "code", label: "الرمز" },
@@ -327,6 +345,12 @@ export const RESOURCES: ResourceSpec[] = [
     ],
     fields: [
       { key: "name", label: "الاسم", kind: "text", required: true },
+      {
+        key: "imagePath",
+        label: "صورة المادة",
+        kind: "image",
+        hint: "تُعرض في مربّع المادة — وبدونها يظهر حرفُها الأوّل",
+      },
       { key: "code", label: "الرمز", kind: "text", hint: "اختياري وفريد" },
       { key: "color", label: "اللون", kind: "color" },
       { key: "description", label: "الوصف", kind: "textarea" },

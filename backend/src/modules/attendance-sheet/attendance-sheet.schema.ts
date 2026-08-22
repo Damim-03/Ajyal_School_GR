@@ -53,6 +53,8 @@ export const sheetIdSchema = z.object({
 export const sheetQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(50),
+  /** رمزُ الورقة الممسوح — يُفرد كشفاً واحداً */
+  code: z.string().trim().min(1).max(20).optional(),
   teachingAssignmentId: z.string().trim().min(1).optional(),
   academicYearId: z.string().trim().min(1).optional(),
   subjectId: z.string().trim().min(1).optional(),

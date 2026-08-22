@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loginLimiter = exports.generalLimiter = void 0;
+exports.profilesLimiter = exports.loginLimiter = exports.generalLimiter = void 0;
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const http_config_1 = require("../config/http.config");
 const error_code_enum_1 = require("../enums/error-code.enum");
@@ -43,5 +43,22 @@ exports.loginLimiter = (0, express_rate_limit_1.default)({
     standardHeaders: true,
     legacyHeaders: false,
     handler: jsonHandler("Too many login attempts, please try again in 15 minutes", error_code_enum_1.ErrorCodeEnum.AUTH_TOO_MANY_ATTEMPTS),
+});
+/**
+ * بطاقاتُ شاشة اختيار المستخدم — مسارٌ عامّ يُقرأ مرّةً عند الإقلاع.
+ *
+ * ولا يُستعمل `loginLimiter` هنا: فيه `skipSuccessfulRequests` لأنّ
+ * المقصودَ هناك عدُّ المحاولات الفاشلة. وهذا الطلبُ ينجح دائماً، فلو
+ * أُلحق به لما عُدّ له طلبٌ واحد وبقي الحدُّ زينةً لا أثرَ لها.
+ *
+ * والسقفُ سخيٌّ عمداً: الشاشةُ تُفتح وتُغلق في التجريب، وقاعةٌ فيها
+ * عدّةُ أجهزةٍ خلف بوّابةٍ واحدة تشترك في العنوان.
+ */
+exports.profilesLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 5 * 60 * 1000,
+    limit: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: jsonHandler("Too many requests, please try again shortly", error_code_enum_1.ErrorCodeEnum.AUTH_TOO_MANY_ATTEMPTS),
 });
 //# sourceMappingURL=rate-limit.middleware.js.map

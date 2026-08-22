@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteEnrollmentController = exports.transferEnrollmentController = exports.updateEnrollmentController = exports.createEnrollmentController = exports.getEnrollmentController = exports.listEnrollmentsController = void 0;
+exports.deleteEnrollmentController = exports.cancelPendingTransferController = exports.transferEnrollmentController = exports.updateEnrollmentController = exports.createEnrollmentController = exports.getEnrollmentController = exports.listEnrollmentsController = void 0;
 const api_response_1 = require("../../core/config/api-response");
 const enrollment_service_1 = require("./enrollment.service");
 const listEnrollmentsController = async (req, res) => {
@@ -30,6 +30,12 @@ const transferEnrollmentController = async (req, res) => {
     return api_response_1.ApiResponse.success(res, result, "Enrollment transferred");
 };
 exports.transferEnrollmentController = transferEnrollmentController;
+// PATCH /api/enrollments/:id/transfer/cancel
+const cancelPendingTransferController = async (req, res) => {
+    const enrollment = await (0, enrollment_service_1.cancelPendingTransferService)(req.params.id);
+    return api_response_1.ApiResponse.success(res, { enrollment }, "Pending transfer cancelled");
+};
+exports.cancelPendingTransferController = cancelPendingTransferController;
 const deleteEnrollmentController = async (req, res) => {
     await (0, enrollment_service_1.deleteEnrollmentService)(req.params.id);
     return api_response_1.ApiResponse.success(res, null, "Enrollment deleted");

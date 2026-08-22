@@ -7,6 +7,7 @@ const app_errors_1 = require("../../core/errors/app.errors");
 const error_code_enum_1 = require("../../core/enums/error-code.enum");
 const api_response_1 = require("../../core/config/api-response");
 const time_1 = require("../../core/utils/time");
+const teacher_debt_share_service_1 = require("../teacher-debt-share/teacher-debt-share.service");
 const document_number_1 = require("../../core/utils/document-number");
 const paymentSelect = {
     id: true,
@@ -111,26 +112,64 @@ const deriveInvoiceStatus = (remaining, paid) => remaining.lte(0) ? "PAID" : pai
 // --------------------------------------------------
 const listPaymentsService = async (query) => {
     const { skip, take, page, limit } = (0, api_response_1.getPagination)(query.page, query.limit);
+    /*
+     * مرشِّحاتُ الطالب — تُبنى طبقةً طبقةً لا تُكتب متداخلةً في مكانها.
+     *
+     * الطريقُ من الدفعة إلى الطالب واحد: سطرُ توزيعٍ ← فاتورة ← تسجيل ←
+     * طالب. فلو كُتب كلُّ مرشِّحٍ في موضعه لتكرّر مفتاحُ `invoice` مرّتين
+     * حين يجتمع رقمُ التسجيل والاسم — والثاني يمحو الأوّل صامتاً.
+     */
+    const studentFilter = {
+        ...(query.studentNumber && {
+            studentNumber: { contains: query.studentNumber },
+        }),
+        ...(query.studentName && {
+            OR: [
+                { firstName: { contains: query.studentName } },
+                { lastName: { contains: query.studentName } },
+            ],
+        }),
+    };
+    const enrollmentFilter = {
+        ...(query.studentId && { studentId: query.studentId }),
+        ...(Object.keys(studentFilter).length > 0 && { student: studentFilter }),
+    };
+    const lineFilter = {
+        ...(query.invoiceId && { invoiceId: query.invoiceId }),
+        ...(Object.keys(enrollmentFilter).length > 0 && {
+            invoice: { studentEnrollment: enrollmentFilter },
+        }),
+    };
     const where = {
         ...(query.status && { status: query.status }),
         ...(query.paymentMethod && { paymentMethod: query.paymentMethod }),
         ...(query.receivedById && { receivedById: query.receivedById }),
-        ...(query.search && { paymentNumber: { contains: query.search } }),
+        /**
+         * البحثُ يشمل رقم الإيصال كما يشمل رقم الدفعة.
+         *
+         * كان على `paymentNumber` وحده، وحقلُ البحث يَعِد بـ«رقم الدفعة أو
+         * الإيصال» — وعدٌ لا يُوفى. والورقةُ التي في يد الموظّف تحمل رقم
+         * **الإيصال** بارزاً وباركودُها يشفّره (`ReceiptDoc`)، فمن نسخ ما
+         * قرأ ارتدّ بلا نتيجة والورقةُ أمامه.
+         */
+        ...(query.search && {
+            OR: [
+                { paymentNumber: { contains: query.search } },
+                { receipt: { receiptNumber: { contains: query.search } } },
+            ],
+        }),
         ...((query.dateFrom || query.dateTo) && {
             paymentDate: {
                 ...(query.dateFrom && { gte: (0, time_1.startOfUtcDay)(query.dateFrom) }),
                 ...(query.dateTo && { lt: (0, time_1.addUtcDays)((0, time_1.startOfUtcDay)(query.dateTo), 1) }),
             },
         }),
-        ...((query.studentId || query.invoiceId) && {
-            paymentInvoices: {
-                some: {
-                    ...(query.invoiceId && { invoiceId: query.invoiceId }),
-                    ...(query.studentId && {
-                        invoice: { studentEnrollment: { studentId: query.studentId } },
-                    }),
-                },
-            },
+        /*
+         * `some` لا `every`: الدفعةُ الواحدة كلُّ فواتيرها لطالبٍ واحد،
+         * فمطابقةُ سطرٍ منها مطابقةٌ لها.
+         */
+        ...(Object.keys(lineFilter).length > 0 && {
+            paymentInvoices: { some: lineFilter },
         }),
     };
     const [payments, total] = await Promise.all([
@@ -243,6 +282,18 @@ const createPaymentService = async (body, receivedById) => {
                 },
             });
         }
+        /*
+         * حصةُ الأستاذ من دَينٍ حُصّل بعد تخليصه.
+         *
+         * تقع هنا لا في وظيفةٍ لاحقة: المال المقبوض والحصة المستحقّة عليه
+         * واقعةٌ واحدة — ولو انفصلتا لبقي دَينٌ حُصّل بلا حصةٍ لصاحبها لا
+         * يعرف بها أحد. وهي لا ترمي: قبضُ مال الطالب لا يُعطَّل لأنّ
+         * نسبة الأستاذ غامضة.
+         */
+        await (0, teacher_debt_share_service_1.recordDebtCollections)(tx, payment.id, body.allocations.map((allocation) => ({
+            invoiceId: allocation.invoiceId,
+            paidAmount: new prisma_1.Prisma.Decimal(allocation.paidAmount),
+        })), paymentDate);
         // إيصال لكل دفعة — Receipt.paymentId فريد وإلزامي
         await tx.receipt.create({
             data: {

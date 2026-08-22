@@ -31,6 +31,9 @@ export const createSubjectSchema = z.object({
     .regex(/^#[0-9A-Fa-f]{6}$/, "Color must be a hex value like #3B82F6")
     .nullish(),
 
+  /** صورةُ المادة — مسارٌ من /api/uploads، تُعرض في مربّعها */
+  imagePath: z.string().trim().max(255).nullish(),
+
   isActive: z.boolean().optional(),
 });
 

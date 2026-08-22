@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "motion/react";
-import { AlertTriangle, Loader2, Printer, X } from "lucide-react";
+import { AlertTriangle, CircleCheckBig, Loader2, Printer, RefreshCw, X } from "lucide-react";
 
 import { MOTION } from "../../motion/system";
+import { LAYER } from "../../motion/layers";
 import { useSchoolStore } from "../../core/stores/school.store";
 import {
   canPrintDirectly,
@@ -12,6 +14,12 @@ import {
   readPrinter,
   savePrinter,
 } from "./native-print";
+
+/** رسالة الفشل كما يقرؤها المستخدم — الجانب الأصلي يرمي نصّاً أحياناً وكائناً أخرى */
+const printFailure = (err: unknown) =>
+  typeof err === "string"
+    ? err
+    : ((err as { message?: string })?.message ?? "تعذّرت الطباعة");
 
 /**
  * معاينة ورقة الكشف — A4 أفقية بمقاسها الحقيقي.
@@ -30,6 +38,8 @@ export function SheetPreview({
   subtitle,
   warning,
   children,
+  onRefresh,
+  orientation = "landscape",
   onClose,
 }: {
   title: string;
@@ -37,12 +47,31 @@ export function SheetPreview({
   /** تنبيهٌ يُقرأ قبل إهدار ورقة — نقصُ الحصص مثلاً */
   warning?: string | null;
   children: ReactNode;
+  /**
+   * إعادةُ جلب معطيات الكشف والورقة معه.
+   *
+   * الورقة تُقرأ قبل الطباعة، وفي أثناء قراءتها يقع ما يغيّرها: حضورٌ
+   * يُدوَّن على حاسوبٍ آخر، أو حقٌّ يُسدَّد في الشبّاك. وكان تحديثُها
+   * يعني إغلاق المعاينة والعودة إلى الشاشة ثمّ فتحَها من جديد —
+   * أربعُ نقراتٍ لمعرفة ما إن كان شيءٌ قد تبدّل.
+   */
+  onRefresh?: () => void | Promise<void>;
+  /**
+   * اتّجاه الورقة — أفقيّةٌ ما لم يُقل غيرُ ذلك.
+   *
+   * ولا يكفي `@page` في CSS: الطباعة المباشرة تمرّ بأمرٍ إلى ويندوز
+   * يحمل اتّجاهَه معه وهو يغلب ما في الورقة، فتخرج الشهادةُ مستديرةً
+   * على ورقةٍ عرضُها 297.
+   */
+  orientation?: "landscape" | "portrait";
   onClose: () => void;
 }) {
   const settings = useSchoolStore((s) => s.settings);
   const brand = settings["school.brand_color"] || "#7dd3fc";
 
   const [zoom, setZoom] = useState(0.5);
+
+  const upright = orientation === "portrait";
 
   /**
    * اختيار الورقة المطبوعة.
@@ -58,15 +87,37 @@ export function SheetPreview({
   const [pages, setPages] = useState(0);
   const [only, setOnly] = useState<number | null>(null);
 
-  useEffect(() => {
-    const nodes = stageRef.current?.querySelectorAll<HTMLElement>(".sheet-page");
-    if (!nodes) return;
+  /** إظهارُ ورقةٍ واحدة — مباشرةً على DOM، لأنّ ما يُطبع هو ما استقرّ فيه */
+  const showOnly = useCallback((index: number | null) => {
+    stageRef.current
+      ?.querySelectorAll<HTMLElement>(".sheet-page")
+      .forEach((node, i) => {
+        node.style.display = index === null || index === i ? "" : "none";
+      });
+  }, []);
 
-    setPages(nodes.length);
-    nodes.forEach((node, index) => {
-      node.style.display = only === null || only === index ? "" : "none";
-    });
-  }, [only, children]);
+  /*
+   * الأوراق قد تتأخّر عن أوّل رسمة: كشف الحضور يرسم صفوفه في ورقةٍ
+   * خفيّة ليقيسها قبل أن يقسّمها، فلا `.sheet-page` واحدة في تلك اللحظة.
+   * فلا يكفي أن تُعدَّ عند تبدّل `children` — المراقب يُبلغ متى ظهرت.
+   */
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const sync = () => {
+      setPages(stage.querySelectorAll(".sheet-page").length);
+      showOnly(only);
+    };
+
+    sync();
+
+    /* `childList` وحده: تبديلُ `display` تعديلُ سمةٍ فلا يوقظ المراقب */
+    const watcher = new MutationObserver(sync);
+    watcher.observe(stage, { childList: true, subtree: true });
+
+    return () => watcher.disconnect();
+  }, [only, children, showOnly]);
 
   /*
    * التصغير يُحسب من عرض النافذة لا من قيمةٍ ثابتة: 297mm تساوي
@@ -75,7 +126,7 @@ export function SheetPreview({
    */
   useEffect(() => {
     const fit = () => {
-      const pageWidthPx = (297 * 96) / 25.4;
+      const pageWidthPx = ((upright ? 210 : 297) * 96) / 25.4;
       const available = window.innerWidth - 96;
       setZoom(Math.min(1, Math.max(0.25, available / pageWidthPx)));
     };
@@ -83,7 +134,7 @@ export function SheetPreview({
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
-  }, []);
+  }, [upright]);
 
   // --------------------------------------------------
   // الطابعة
@@ -117,22 +168,82 @@ export function SheetPreview({
     };
   }, []);
 
+  /** ما طُبع وما بقي — يظهر بين ورقةٍ وأخرى فيبقى قرارُ الإتمام للمستخدم */
+  const [progress, setProgress] = useState<{ printed: number; total: number } | null>(null);
+
+  /**
+   * ورقةٌ واحدة ثمّ وقفة.
+   *
+   * كانت الأوراق تُرسل دفعةً واحدة، فمن رأى الأولى خرجت مائلةً أو على
+   * ورقٍ خطأ لم يبقَ له إلّا أن يوقف الطابعة والورق يخرج. والوقفة بعد
+   * كلِّ ورقةٍ تجعل الاستمرار قراراً يُتَّخذ لا افتراضاً يُصحَّح.
+   */
+  const printPage = async (index: number) => {
+    setFailure(null);
+    setProgress(null);
+    setOnly(index);
+    showOnly(index);
+    setPrinting(true);
+
+    try {
+      /* رسمةٌ كاملة قبل الإرسال — الطابعة تلتقط ما في DOM لحظتَها */
+      await new Promise((done) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => done(null))),
+      );
+
+      await printDirect(printer, !upright);
+
+      if (index + 1 < pages) {
+        setProgress({ printed: index + 1, total: pages });
+      } else {
+        setOnly(null);
+        showOnly(null);
+      }
+    } catch (err) {
+      setFailure(printFailure(err));
+    } finally {
+      setPrinting(false);
+    }
+  };
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const refresh = async () => {
+    if (!onRefresh) return;
+
+    setRefreshing(true);
+    try {
+      await onRefresh();
+      /* بيانةٌ جديدة ← ما طُبع من ترتيب الأوراق لم يعد يخصّها */
+      setProgress(null);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const print = async () => {
     setFailure(null);
+    setProgress(null);
 
     if (!canPrintDirectly()) {
       window.print();
       return;
     }
 
-    setPrinting(true);
-    try {
-      await printDirect(printer);
-    } catch (err: any) {
-      setFailure(typeof err === "string" ? err : (err?.message ?? "تعذّرت الطباعة"));
-    } finally {
-      setPrinting(false);
+    /* ورقةٌ واحدة، أو ورقةٌ اختارها بنفسه: إرسالٌ واحد بلا سؤال */
+    if (pages <= 1 || only !== null) {
+      setPrinting(true);
+      try {
+        await printDirect(printer, !upright);
+      } catch (err) {
+        setFailure(printFailure(err));
+      } finally {
+        setPrinting(false);
+      }
+      return;
     }
+
+    await printPage(0);
   };
 
   /* Escape يغلق — النافذة ملءُ الشاشة فلا زرَّ ظاهراً دائماً */
@@ -142,14 +253,40 @@ export function SheetPreview({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
+  /*
+   * البوّابةُ على الجسد — لا في شجرة الصفحة التي فُتحت منها.
+   *
+   * والسببُ عطبٌ في الورق لا ترتيبٌ في الشجرة: قواعدُ الطباعة تُخفي ما
+   * ليس ورقةً بـ`visibility: hidden`، وهي **تُخفي ولا تُلغي المساحة**.
+   * فيبقى المستندُ بطول الشاشة خلفها — جدولُ خمسين طالباً مثلاً —
+   * فيقسّمه المتصفّح أوراقاً: الأولى فيها الورقة وما بعدها فراغٌ يخرج
+   * ورقاً أبيض. ومع `#root { display: none }` في وسط الطباعة يصير
+   * المستندُ هو الورقةَ وحدها وعددُ الأوراق عددَها.
+   */
+  return createPortal(
     /*
       `sheet-preview-shell` على كل صندوقٍ بين جذر النافذة والورقة، و
       `sheet-preview-chrome` على ما ليس ورقة. وعند الطباعة يُبطَل الأوّل
       (موضعٌ ثابت وقصٌّ وتحويل) ويُخفى الثاني — وإلّا لقصَّت النافذةُ
       الورقةَ أو أزاحتها، لأنّ العنصر المطلق يُنسب إلى أقرب سلفٍ موضَّع.
     */
-    <div className="sheet-preview-shell fixed inset-0 z-50">
+    <div
+      className="sheet-preview-shell fixed inset-0 text-white"
+      style={{ zIndex: LAYER.dialog }}
+    >
+      {/*
+        مقاسُ الورقة للطباعة — يُحقن ما دامت المعاينة العمودية مفتوحة.
+
+        وإعادةُ تعريف `@page sheet` نفسِها لا صفحةٍ ثانية: الإسنادُ
+        بالاسم يمرّ عبر خاصّية `page` على عنصرٍ مطلق الموضع، وهو ما لا
+        يُضمن — وثمرةُ إخفاقه ورقةٌ مُدارة. وهذه تُبدّل المقاسَ نفسَه
+        فلا يبقى للتأويل موضع. وتُرفع مع النافذة، فالكشوف بعدها أفقيّةٌ
+        كما كانت.
+      */}
+      {upright && (
+        <style>{"@media print{@page sheet{size:A4 portrait;margin:0}}"}</style>
+      )}
+
       {/* الحجاب وأدوات النافذة خارج الورقة — لا تُطبع */}
       <div onClick={onClose} className="sheet-preview-chrome absolute inset-0 bg-black/80 backdrop-blur-sm" />
 
@@ -188,9 +325,21 @@ export function SheetPreview({
             </select>
           )}
 
+          {onRefresh && (
+            <button
+              onClick={refresh}
+              disabled={refreshing || printing}
+              title="إعادة جلب الحضور والحقوق — الورقة تتبع ما استجدّ"
+              className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-bold text-white/70 transition hover:bg-white/10 disabled:opacity-40"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              تحديث
+            </button>
+          )}
+
           <button
             onClick={print}
-            disabled={printing}
+            disabled={printing || refreshing}
             className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-black text-[#04121c] transition hover:brightness-110 disabled:opacity-50"
             style={{ background: brand }}
           >
@@ -199,7 +348,11 @@ export function SheetPreview({
             ) : (
               <Printer className="h-4 w-4" />
             )}
-            طباعة
+            {only !== null
+              ? `طباعة الورقة ${only + 1}`
+              : pages > 1
+                ? `طباعة — الورقة 1 من ${pages}`
+                : "طباعة"}
           </button>
 
           <button
@@ -235,6 +388,38 @@ export function SheetPreview({
           </div>
         )}
 
+        {/* بين ورقةٍ وأخرى — الاستمرار قرارٌ لا افتراض */}
+        {progress && (
+          <div className="sheet-preview-chrome flex flex-wrap items-center gap-3 border-b border-emerald-400/20 bg-emerald-500/10 px-6 py-3 text-xs text-emerald-100">
+            <CircleCheckBig className="h-4 w-4 shrink-0" />
+
+            <span className="flex-1">
+              خرجت الورقة {progress.printed} من {progress.total} — بقيت{" "}
+              {progress.total - progress.printed}. أتطبع التي بعدها؟
+            </span>
+
+            <button
+              onClick={() => printPage(progress.printed)}
+              disabled={printing}
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-400/20 px-3 py-1.5 font-bold transition hover:bg-emerald-400/30 disabled:opacity-50"
+            >
+              {printing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
+              اطبع الورقة {progress.printed + 1}
+            </button>
+
+            <button
+              onClick={() => {
+                setProgress(null);
+                setOnly(null);
+                showOnly(null);
+              }}
+              className="rounded-lg bg-white/10 px-3 py-1.5 font-bold text-white/80 transition hover:bg-white/20"
+            >
+              يكفي
+            </button>
+          </div>
+        )}
+
         {pages > 1 && (
           <div className="sheet-preview-chrome flex flex-wrap items-center gap-2 border-b border-white/10 px-6 py-2.5">
             <span className="text-[11px] font-bold text-white/45">الأوراق:</span>
@@ -251,7 +436,7 @@ export function SheetPreview({
             ))}
 
             <span className="ms-auto text-[11px] text-white/30">
-              المطبوع هو المعروض — اطبع ورقةً ثمّ اختر التي بعدها
+              المطبوع هو المعروض — والطباعة تمضي ورقةً ورقة وتقف بينهما
             </span>
           </div>
         )}
@@ -267,7 +452,11 @@ export function SheetPreview({
         </main>
 
         <footer className="sheet-preview-chrome flex items-center gap-3 border-t border-white/10 px-6 py-3 text-[11px] text-white/35">
-          <span>A4 أفقية — 297 × 210 مم بمقاسها الحقيقي</span>
+          <span>
+            {upright
+              ? "A4 عمودية — 210 × 297 مم بمقاسها الحقيقي"
+              : "A4 أفقية — 297 × 210 مم بمقاسها الحقيقي"}
+          </span>
           <span>·</span>
           <span>
             {canPrintDirectly()
@@ -277,13 +466,14 @@ export function SheetPreview({
           <span className="ms-auto">
             {only === null
               ? pages > 1
-                ? `${pages} أوراق ستُطبع`
+                ? `${pages} أوراق — تخرج واحدةً واحدة`
                 : "ورقة واحدة"
               : `الورقة ${only + 1} وحدها ستُطبع`}
           </span>
         </footer>
       </motion.div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

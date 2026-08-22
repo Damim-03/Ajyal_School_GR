@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../core/hooks/use-auth";
 import { useSchool } from "../../core/stores/school.store";
 import { sfx, playAmbient, stopAmbient, preloadAmbient, SFX_DURATION_MS } from "../../lib/sound";
+import { notify } from "../../components/notifications/notify";
 import { uiSound } from "../../lib/ui-sound";
 import { AnimatePresence, motion, useTransform } from "motion/react";
 import { AmbientEnvironment } from "../../components/ambient/AmbientEnvironment";
-import { Avatar } from "../../components/shared/Avatar";
 import {
   SpatialNavRow, SpatialNavItem, FocusIndicator, AnimatedContextLabel,
   background as bgBase, choreography as chor, springs, useTileMetrics, expansion as ex,
@@ -20,12 +20,17 @@ import {
   useMotionStore, useMotionPhase, useFocusState, motionDispatch,
   useMotionSpeed, scaleTransition, useRushing, type InteractionSource,
 } from "../../motion/orchestrator";
+import { HomeTopBar } from "./topbar/HomeTopBar";
 import { ContextStats } from "./ContextStats";
 import { ContextPanel } from "./ContextPanel";
 import { MODULES, WALLPAPERS, type Module } from "./modules";
 import { useEnergyField, ringDistance, focusEnergy } from "../../motion/energy";
-import { boot, BOOT_STAGES, STAGE } from "../../motion/spatial/boot";
-import { Search, Settings2, Power } from "lucide-react";
+import { boot } from "../../motion/spatial/boot";
+import {
+  homeEntrance, useEntranceStages, useEntranceStill,
+  content as entranceContent, curve as entranceCurve,
+  shell as entranceShell, tileEntrance,
+} from "../../motion/home-entrance";
 
 /* اسم المركز لم يعد ثابتاً — يُقرأ من هوية المدرسة (core/stores/school.store) */
 
@@ -82,22 +87,23 @@ export function HomePage() {
   // أثناء العرض ممنوعة (ومصدر تحذيرات react-hooks/refs سابقاً).
   const [isFirstIntro] = useState(() => !homeIntroPlayed);
   /*
-   * مرحلة الاستيقاظ — عدّاد واحد يتقدّم في جدول motion/spatial/boot.ts.
+   * مرحلة الاستيقاظ — **لم تعد ملكاً لهذه الشاشة**.
    *
-   * كانت أربع حالات منطقية مستقلّة بأرقام مكتوبة في تعليق. المشكلة أنّ
-   * التسلسل لم يكن ملكاً لأحد: كل حالة تعرف موعدها ولا تعرف موعد أختها،
-   * فإضافة مرحلة تعني ضبط الجميع يدوياً — وهو ما يُنسى.
+   * كانت هنا: حالةٌ محلّية وسبعةُ مؤقّتاتٍ تتقدّم في جدول
+   * motion/spatial/boot.ts. وعيبُها أنّ الرحلةَ تبدأ قبل هذه الشاشة
+   * بكثير — عند نجاح المصادقة، في شاشةٍ أخرى — فكان نصفُ التسلسل هناك
+   * ونصفُه هنا، ولا موضعَ يعرف الرحلةَ كاملة. النتيجةُ مشهدان متعاقبان
+   * لا مشهدٌ واحد.
    *
-   * العودة من قسم تبدأ من النهاية: العالم مستيقظ أصلاً ولا يُعاد إيقاظه.
+   * الآن الجدولُ كلُّه في `motion/home-entrance`، وهذه الشاشة **قارئة**:
+   * تُركَّب في منتصف الرحلة (‏120ms) فتجد العالمَ قد بدأ يستيقظ، وتتابع
+   * من حيث بلغ. والأعلامُ بأسمائها التي كانت — لم يتبدّل إلّا مصدرُها،
+   * فلا `SpatialNavItem` ولا `FocusIndicator` ولا حقلُ الطاقة يعلم شيئاً.
    */
-  const [stage, setStage] = useState<number>(isFirstIntro ? STAGE.dark : STAGE.hero);
-  const worldLit = stage >= STAGE.world;
-  const bgReady = stage >= STAGE.stabilize;
-  const identityReady = stage >= STAGE.identity;
-  const assembled = stage >= STAGE.assembly;
-  const focusArrived = stage >= STAGE.focus;
-  const edgeReady = stage >= STAGE.edge;
-  const entered = stage >= STAGE.hero;
+  const { worldLit, bgReady, identityReady, assembled, focusArrived, edgeReady, entered, settled } =
+    useEntranceStages();
+  /** «تقليل الحركة» — يُقرأ من الجدول لا من `matchMedia` في كل مكوّن. */
+  const still = useEntranceStill();
   const [settling, setSettling] = useState(!isFirstIntro); // عند العودة: تستقرّ الخلفية والمحتوى بنعومة
   /**
    * ⓪ لحظة المقاومة (§9).
@@ -211,26 +217,79 @@ export function HomePage() {
     }
   }, []);
 
-  // جدولة مراحل الدخول (أول مرّة) — أو استقرار قصير عند العودة
+  /**
+   * الالتحاقُ بالرحلة — لا بدؤها من الصفر.
+   *
+   * ثلاثةُ طرقٍ تصل إلى هذه الشاشة، ولكلٍّ منها ملفُّه في الجدول:
+   *
+   *   • من المصادقة  — الساعةُ **تعمل منذ 120ms** وهذه الشاشةُ رُكّبت
+   *     تحت الشاشة المنسحبة. فلا تُبدأ من جديد: البدءُ هنا كان سيُرجع
+   *     المشهدَ إلى السواد بعد أن بدأ يستيقظ.
+   *   • إعادةُ تحميل — لا رحلةَ سابقة، فالإقلاعُ باردٌ بجدول `boot.ts`
+   *     كما كان تماماً.
+   *   • عودةٌ من قسم — الغلافُ لم يغادر، فالجدولُ يكتمل فوراً.
+   *
+   * ولا تنظيفَ يوقف الساعة عند التفكيك عمداً: لو غادر المستخدمُ إلى
+   * قسمٍ في منتصف الدخول، فإتمامُ الجدول إلى نهايته هو ما يضمن أنّ
+   * الحالةَ المتروكة **صالحة** (§25) — أمّا قطعُها في منتصفها فيترك
+   * خطوةً معلّقة تجدها العودةُ التالية كما هي.
+   */
   useEffect(() => {
-    if (!isFirstIntro) {
-      const s = window.setTimeout(() => setSettling(false), 40);
-      return () => window.clearTimeout(s);
-    }
     /*
-     * مؤقّت واحد لكل مرحلة، وكلّها من الجدول. لا رقم هنا — أي تعديل على
-     * الإيقاع يحدث في مكان واحد ولا يحتاج مطابقة يدوية بين أربعة مواضع.
+     * الشرطُ **الملفُّ وحده**، لا مرحلتُه.
+     *
+     * كان: «‏auth ولمّا تكتمل بعد». وقِستُه فوجدته يُشعل المقدّمةَ
+     * مرّتين: على جهازٍ مخنوق (أو نافذةٍ في الخلفية) قد تتأخّر أوّلُ تقّةٍ
+     * من الساعة حتى تتجاوز الجدولَ كلَّه، فيبلغ `complete` **قبل** أن
+     * تُركَّب هذه الشاشة أصلاً. فتصل الرئيسيةُ فتجد المرحلةَ مكتملةً،
+     * فتحكم أنّ لا رحلةَ جارية، فتبدأ إقلاعاً بارداً كاملاً — أي أنّ
+     * المستخدم يرى المشهدَ يُبنى مرّةً ثانية بعد أن رآه.
+     *
+     * والملفُّ يقول ما هو صحيحٌ فعلاً: «هذا الوصولُ جاء من مصادقة».
+     * ومن جاء منها فرحلتُه مملوكةٌ لها، اكتملت أم لم تكتمل — والعودةُ
+     * من قسمٍ لاحقاً تجده مكتملاً فتُصيّر الحالةَ النهائية مباشرةً،
+     * وهو عينُ ما يفعله ملفُّ العودة.
      */
-    const ids = BOOT_STAGES.map((at, i) =>
-      window.setTimeout(() => {
-        setStage(i + 1);
-        // آخر مرحلة: العالم اكتمل، فتبدأ حالة المعاينة الطبيعية.
-        if (i + 1 === STAGE.hero) motionDispatch({ type: "SHELL_READY" });
-      }, at),
-    );
-    return () => ids.forEach(window.clearTimeout);
+    if (homeEntrance.get().profile !== "auth") {
+      homeEntrance.start(isFirstIntro ? "cold" : "return");
+    }
+
+    /*
+     * **إعلانُ الجاهزية — في أوّل إطارٍ بعد الرسم، لا في الأثر نفسِه.**
+     *
+     * الأثرُ يجري بعد التثبيت وقبل أن يرسم المتصفّحُ شيئاً؛ والثقيلُ في
+     * هذه الشاشة (تسعُ بلاطاتٍ بطبقاتها، وطبقاتُ الخلفية، ولوحةُ الجوّ)
+     * يقع في التخطيط والرسم اللذين يليانه — 310ms مقيسةً على بناء
+     * الإنتاج. فإعلانُ الجاهزية هنا كان سيبدأ التجميعَ قبل أن توجد
+     * صورةٌ تُجمَّع، فيُبتلع أوّلُ ثلثِ المشهد في الحجب.
+     *
+     * و`requestAnimationFrame` من داخل الأثر يقع بعد ذلك كلِّه: الخيطُ
+     * فرغ، والشاشةُ التي فوقنا ما زالت معتمة، فمن هنا يبدأ الكشفُ
+     * والتجميع معاً.
+     */
+    const id = requestAnimationFrame(() => homeEntrance.ready());
+    return () => cancelAnimationFrame(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* استقرارٌ قصير عند العودة من قسم — الخلفيةُ والمحتوى يهدآن. */
+  useEffect(() => {
+    if (isFirstIntro) return;
+    const s = window.setTimeout(() => setSettling(false), 40);
+    return () => window.clearTimeout(s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /*
+   * «الغلافُ جاهز» يُعلَن عند اكتمال الجدول لا عند مرحلةٍ بعينها.
+   *
+   * كان مربوطاً بمرحلة البطل (‏STAGE.hero) داخل حلقة المؤقّتات. وربطُه
+   * بالاكتمال أصحّ: هذه هي اللحظةُ التي تصير فيها الشاشةُ تفاعليةً
+   * طبيعية، وهي بالضبط ما يعنيه `SHELL_READY` للمنسّق.
+   */
+  useEffect(() => {
+    if (settled) motionDispatch({ type: "SHELL_READY" });
+  }, [settled]);
 
   // نغمة تحميل القائمة الرئيسية ثم تُكمل موسيقى «003. Home Menu» بلا فجوة:
   // الموسيقى مُحمّلة مسبقاً من شاشة الدخول، وتبدأ قبل نهاية النغمة بقليل فتتسلّمها
@@ -242,12 +301,45 @@ export function HomePage() {
       playAmbient("home", 900);
       return;
     }
-    sfx("homeLoad", 0.6, true);
+    sfx("homeLoad", 0.95, true);
     const OVERLAP = 550; // تداخل يمنع أي فراغ سمعي
-    // المدّة هنا هي الجزء المسموع فقط (صمت بداية الملف يُتخطّى في sfx)
-    const delay = Math.max(0, (SFX_DURATION_MS.homeLoad ?? 1950) - OVERLAP);
+    /*
+      المدّة هنا هي الجزء المسموع فقط — وقد صار ذلك صحيحاً فعلاً.
+      كان التعليقُ يقول ذلك و`sfx` لا يفعله: يُشغّل الملفَّ من أوّله بما
+      فيه صمتُه. وملفُّ هذه النغمة يبدأ بعد **655ms** من صمتٍ رقميّ،
+      فكانت الموسيقى تُستلَم متأخّرةً بقدره. الآن يُتخطّى الصمتُ عند
+      التشغيل وتُحسب المدّةُ على ما يُسمع، فيقع التسليم في موضعه.
+
+      والاحتياطيّ 2360 لا 1950: هو المدّةُ المسموعة المقيسة (3000 − 640)،
+      ويُستعمل إن سُئل قبل أن يُفكّ الملفّ.
+    */
+    const delay = Math.max(0, (SFX_DURATION_MS.homeLoad ?? 2360) - OVERLAP);
     const t = window.setTimeout(() => playAmbient("home", 1100), delay);
     return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * ترحيبُ الدخول — مرّةً واحدة، وبعد أن تهدأ نغمةُ التحميل.
+   *
+   * `isFirstIntro` هي الشرط: دخولٌ جديد لا عودةٌ من قسم. ولولاه لرحّب
+   * بالمستخدم كلَّما رجع من شاشة الطلبة إلى الرئيسية — وترحيبٌ يتكرّر
+   * عشر مرّاتٍ في الساعة يصير ضجيجاً لا استقبالاً.
+   *
+   * والتأخيرُ ليزاحم شيئاً: نغمةُ تحميل الرئيسية تشغل الثانيتين
+   * الأوليين، فلو أُطلق الإشعارُ معها لتراكب صوتان في لحظةٍ واحدة
+   * ولم يُسمع أيٌّ منهما. فيأتي بعدها، ومعه الشاشةُ قد استقرّت.
+   */
+  useEffect(() => {
+    if (!isFirstIntro || !user) return;
+
+    const name = `${user.firstName} ${user.lastName}`.trim();
+
+    const timer = window.setTimeout(() => {
+      notify.welcome(`مرحباً، ${name}`, user.role?.name ?? undefined);
+    }, 2400);
+
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -267,6 +359,16 @@ export function HomePage() {
       if (ph === "EXITING") return;
       const n = ((target % L) + L) % L;
       if (n === focus.id) return;
+      /*
+       * أوّلُ تنقّلٍ يطوي ما تبقّى من مشهد الدخول (§23).
+       *
+       * ليس إلغاءً للحركة: مَن ضغط سهماً فقد أعلن أنّه لا ينتظر المشهد،
+       * ومواصلةُ عرضه بعدها تجعل الجهازَ يبدو بطيئاً مهما نعُمت الحركة.
+       * والطيُّ يُنهي الجدولَ إلى حالته النهائية الصالحة، فلا تبقى بلاطةٌ
+       * خفيّةٌ ولا تمويهٌ عالق. وقبل جاهزية الصفّ لا يفعل شيئاً — لا
+       * بلاطةَ يُنتقل إليها أصلاً.
+       */
+      homeEntrance.interrupt();
       /*
         عبر الطبقة الدلالية لا بنداءٍ مباشر: المكوّن يقول «تنقّل» ولا يعرف
         أيّ ملفٍّ يُشغَّل ولا بأيّ شدّة — ويرث معها كبحَ التتابع السريع،
@@ -325,6 +427,8 @@ export function HomePage() {
    */
   const confirmContext = useCallback(() => {
     if (useMotionStore.getState().phase === "PREVIEW_ACTIVE") return;
+    /* التأكيدُ أيضاً يطوي ما تبقّى من الدخول — لا سياقَ يُفتح فوق مشهدٍ يُبنى. */
+    homeEntrance.interrupt();
     uiSound("confirm");
     /*
      * الترتيب هنا مقصود: تُضبط المقاومة **قبل** إرسال الحدث وفي المعالج
@@ -375,7 +479,7 @@ export function HomePage() {
   // دخول بنمط PS5: تختفي الأيقونات والواجهة → تتمدّد خلفية القسم لملء الشاشة → الانتقال
   const launch = useCallback(
     (to: string, moduleId: string) => {
-      sfx("enter", 0.55); // صوت اختيار/إطلاق
+      sfx("enter", 0.92); // صوت اختيار/إطلاق
       stopAmbient(800); // الموسيقى تتلاشى مع الدخول (كما عند فتح لعبة)
       homeIntroPlayed = true; // العودة لاحقاً تدخل مباشرة بلا إعادة المقدّمة
       motionDispatch({ type: "MODULE_ENTER", module: moduleId });
@@ -534,7 +638,7 @@ export function HomePage() {
            */
           transition: launching
             ? "transform 1300ms cubic-bezier(0.4,0,0.2,1)"
-            : `transform ${entered ? ex.world.duration * 1000 : boot.dollyMs}ms cubic-bezier(0.22,1,0.36,1)`,
+            : `transform ${entered ? ex.world.duration * 1000 : entranceShell.dollyMs}ms cubic-bezier(0.22,1,0.36,1)`,
           willChange: "transform",
         }}
       >
@@ -617,7 +721,7 @@ export function HomePage() {
                 */
                 style={{
                   animation:
-                    active && !launching && stage >= STAGE.hero
+                    active && !launching && entered
                       ? "skk-bg-zoom 26s ease-in-out infinite alternate"
                       : undefined,
                 }}
@@ -680,7 +784,7 @@ export function HomePage() {
         className="absolute inset-0"
         initial={isFirstIntro ? { opacity: 0 } : false}
         animate={{ opacity: worldLit ? 1 : 0 }}
-        transition={{ duration: boot.world.duration / 1000, ease: MOTION.easing.enter }}
+        transition={{ duration: entranceShell.world, ease: entranceCurve.ambient }}
       >
         <AmbientEnvironment accent={m.accent} glow={m.glow} response={sceneResponse} deepened={expanded} />
       </motion.div>
@@ -712,76 +816,43 @@ export function HomePage() {
             المحسوبة الأولى (1) بينما يكتب motion قيمه السطرية، فتظهر
             وميضةُ إطارٍ واحد قبل أن تهدأ. الآن التحويم أيضاً من motion.
           */
-          className="flex items-center gap-5 px-9 pt-5"
+          /*
+            الغلافُ للحركة وحدها — التخطيطُ داخل `HomeTopBar`.
+            كان يحمل `flex` و`gap` و`px-9` أيضاً، فلمّا انتقل التخطيط
+            إلى المكوّن صار الحشوُ مكتوباً مرّتين (‏px-9 هنا وهناك)
+            فانزاح الشريطُ عن حافّته ضعفَ ما ينبغي.
+          */
+          className="pt-4"
           initial={isFirstIntro ? { opacity: 0, y: -10 } : false}
           animate={{ opacity: identityReady ? chor.chromeIdleOpacity : 0, y: identityReady ? 0 : -10 }}
           whileHover={identityReady ? { opacity: 1 } : undefined}
-          transition={{ duration: boot.identity.duration / 1000, ease: MOTION.easing.enter }}
+          transition={{ duration: entranceShell.identity, ease: entranceCurve.enter }}
           style={{ opacity: chor.chromeIdleOpacity }}
         >
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-black">{shortName}</span>
-            <span className="text-2xl font-black" style={{ color: brandColor }}>
-              {shortSuffix}
-            </span>
-          </div>
-          <nav className="ms-4 flex items-center gap-5">
-            <span className="text-lg font-bold text-white">الرئيسية</span>
-            <span className="text-lg text-white/40">الأقسام</span>
-          </nav>
-          <div className="flex-1" />
-          <span className="hidden text-sm text-white/60 lg:inline">{schoolName}</span>
-          {/*
-            هوية المستخدم — نفس تدرّج وحرف الأفاتار الذي اختاره في شاشة الدخول.
-            تلاشٍ فقط: بلا layoutId وبلا تكبير. كان الاثنان معاً يُنتجان عيباً
-            حقيقياً — motion يعامل الشريحة كجسم مشترك مع أفاتار شاشة الدخول
-            (165px) فيحرّكها من هناك، فتظهر بقطر ~95px خارج صفّ الترويسة ثم
-            تنكمش وتختفي. الهوية عنصر ثابت، لا حدث يستحقّ حركة دخول.
-          */}
-          {user && (
-            <motion.span
-              className="shrink-0"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: MOTION.duration.normal, delay: 0.9, ease: MOTION.easing.standard }}
-            >
-              {/*
-                الاسم المُمرَّر هو `username` لا الاسم الكامل: التدرّج
-                يُشتقّ منه، وتغييرُ المصدر يُغيّر لونَ الترويسة عمّا
-                عرفه المستخدم.
-              */}
-              <Avatar
-                src={user.avatar}
-                name={user.username}
-                gender={user.gender}
-                size={40}
-              />
-            </motion.span>
-          )}
-          <button className="grid h-10 w-10 place-items-center rounded-full bg-white/10 transition hover:bg-white/20" title="بحث">
-            <Search aria-hidden className="h-4.5 w-4.5" />
-          </button>
-          <button onClick={() => focusTo(MODULES.findIndex((x) => x.id === "settings"), "programmatic")} className="grid h-10 w-10 place-items-center rounded-full bg-white/10 transition hover:bg-white/20" title="الإعدادات">
-            <Settings2 aria-hidden className="h-4.5 w-4.5" />
-          </button>
-          <button
-            onClick={() => {
-              sfx("logout");
-              stopAmbient(600); // تُحفظ موسيقى الرئيسية عند موضعها
+          <HomeTopBar
+            user={user ?? null}
+            schoolName={schoolName}
+            shortName={shortName}
+            shortSuffix={shortSuffix}
+            brandColor={brandColor}
+            time={fmtTime(now)}
+            date={fmtDate(now)}
+            onSettings={() => focusTo(MODULES.findIndex((x) => x.id === "settings"), "programmatic")}
+            onLogout={() => {
+              sfx("logout", 0.85);
+              /*
+                ولا تُوقَف الموسيقى.
+                شاشةُ الاختيار تطلب نغمتَها عند تركيبها، و`playAmbient`
+                يُخفت السابقةَ ويُدخل التالية بتلاشٍ متداخل — فالانتقالُ
+                تسليمٌ لا انقطاع، ذهاباً إلى الرئيسية وعودةً منها.
+              */
               homeIntroPlayed = false; // الدخول القادم يستحقّ المقدّمة الكاملة
+              homeEntrance.reset(); // ولا يرث جدولَ دخولٍ اكتمل في الجلسة الماضية
               motionDispatch({ type: "RESET" }); // جلسة جديدة لا ترث موضع السابقة
               clearPageMemory(); // ولا ترث تمرير الجلسة السابقة ولا بحثها
               logout();
             }}
-            className="grid h-10 w-10 place-items-center rounded-full bg-white/10 transition hover:bg-white/20"
-            title="تسجيل الخروج"
-          >
-            <Power aria-hidden className="h-4.5 w-4.5" />
-          </button>
-          <div className="ms-2 text-right leading-tight">
-            <div className="text-xl font-black tabular-nums">{fmtTime(now)}</div>
-            <div className="text-[11px] text-white/55">{fmtDate(now)}</div>
-          </div>
+          />
         </motion.header>
 
         {/* ===== شريط التنقّل المكاني: هندسة تتمدّد + صفّ ينزلق + إطار واحد ===== */}
@@ -815,12 +886,12 @@ export function HomePage() {
           */}
           <motion.div
             ref={stripRef}
-            initial={isFirstIntro ? { y: boot.assembly.rise } : false}
-            animate={{ y: assembled ? (expanded ? ex.row.y : 0) : boot.assembly.rise }}
+            initial={isFirstIntro ? { y: entranceShell.rise } : false}
+            animate={{ y: assembled ? (expanded ? ex.row.y : 0) : entranceShell.rise }}
             transition={
               entered
                 ? { duration: ex.row.duration, ease: MOTION.easing.enter }
-                : { duration: boot.assembly.duration / 1000, ease: MOTION.easing.enter }
+                : { duration: entranceShell.riseDuration, ease: entranceCurve.enter }
             }
           >
             <SpatialNavRow
@@ -852,11 +923,34 @@ export function HomePage() {
             >
               {MODULES.map((mod, i) => {
                 const isCenter = i === focused;
+                /*
+                  دخولُ البلاطة — يُشتقّ في `motion/home-entrance/variants`.
+
+                  أربعُ قنواتٍ متزامنة (شفافية، إزاحة، مقياس، تمويه)
+                  تقرّرها ثلاثةُ مصادر (مرحلةُ الجدول، ومسافةُ البلاطة عن
+                  المركَّزة، وتفضيلُ تقليل الحركة). كتابتُها هنا كانت
+                  ستُخرج تعبيراً شرطياً من أربعة مستويات في تسعة أسطر
+                  متشابهة — ثم يصير أوّلُ ضبطٍ للإيقاع تعديلاً فيها كلّها.
+
+                  و`restOpacity` هي الوصلةُ بين شأنين مختلفين يتقاسمان
+                  الشفافية: الدخولُ يملكها حتى يكتمل، ثمّ يملكها خفوتُ
+                  الجيران عند الامتداد. تمريرُها إلى المشتقّ يمنع أن
+                  يكتب النظامان القيمةَ نفسها من موضعين.
+                */
+                const enter = tileEntrance({
+                  index: i,
+                  focused,
+                  count: L,
+                  assembled,
+                  done: settled,
+                  restOpacity: expanded && !isCenter ? ex.row.dim : 1,
+                  still,
+                });
                 return (
                   <motion.span
                     key={mod.id}
                     className="relative shrink-0"
-                    style={{ zIndex: isCenter ? LAYER.navItemFocused : LAYER.navItem }}
+                    style={{ zIndex: isCenter ? LAYER.navItemFocused : LAYER.navItem, ...enter.style }}
                     data-hovered={hovered === i ? "" : undefined}
                     /* التتابع بالمسافة عن المركَّزة — لا بترتيب القراءة. */
                     /*
@@ -869,33 +963,25 @@ export function HomePage() {
 
                       وهو تحويل محض كالإزاحة، فلا يكلّف تخطيطاً ولا رسماً.
                     */
-                    initial={isFirstIntro ? { opacity: 0, y: 14, scale: 0.95 } : false}
+                    initial={isFirstIntro ? enter.initial : false}
                     /*
                       عند الامتداد تخفت الجيران وحدهم وتبقى المركَّزة عند 1.
                       هذا هو الفرق بين «الصفّ تراجع» و«الصفّ انطفأ»: البلاطة
                       المؤكَّدة أصلُ كلّ ما انفتح، فخفتُها كان سيقطع نسبَ
                       البطل والسياق إليها في اللحظة التي يجب أن تتأكّد فيها.
                     */
-                    animate={{
-                      opacity: assembled ? (expanded && !isCenter ? ex.row.dim : 1) : 0,
-                      y: assembled ? 0 : 14,
-                      scale: assembled ? 1 : 0.95,
-                    }}
+                    animate={enter.animate}
                     /*
-                      بعد اكتمال الإقلاع يتبدّل مالك هذا الانتقال: التتابع
+                      بعد اكتمال الدخول يتبدّل مالك هذا الانتقال: التتابع
                       المتدرّج يخصّ **تجميع** الصفّ مرّةً واحدة، أمّا خفوته
                       واستعادته فيتبعان إيقاع الامتداد. لولا الفصل لورث
-                      الخفوتُ تأخيراتِ الإقلاع فتلاحقت البلاطات كأنّها
+                      الخفوتُ تأخيراتِ الدخول فتلاحقت البلاطات كأنّها
                       تُجمَّع من جديد في كلّ فتح.
                     */
                     transition={
-                      entered
+                      settled
                         ? { duration: ex.row.duration, ease: MOTION.easing.enter }
-                        : {
-                            duration: boot.assembly.duration / 1000,
-                            delay: assembled ? (ringDistance(i, focused, L) * boot.assembly.stagger) / 1000 : 0,
-                            ease: [0.22, 1, 0.36, 1],
-                          }
+                        : enter.transition
                     }
                   >
                     <SpatialNavItem
@@ -976,7 +1062,7 @@ export function HomePage() {
           <motion.div
             initial={isFirstIntro ? { opacity: 0, y: 6 } : false}
             animate={{ opacity: focusArrived ? 1 : 0, y: focusArrived ? 0 : 6 }}
-            transition={{ duration: boot.focus.duration / 1000, ease: MOTION.easing.enter }}
+            transition={{ duration: entranceContent.duration, ease: entranceCurve.enter }}
           >
             {/*
               **بجانب البلاطة لا تحتها.**
@@ -1112,7 +1198,28 @@ export function HomePage() {
               ويُقيَّد بالمقدّمة الأولى: العودة من قسم لا تُعيد الولادة —
               البطل كان هناك أصلاً.
             */
-            initial={isFirstIntro ? { opacity: 0, scale: 0.965, y: 12 } : false}
+            /*
+              ⑦ المحتوى يصل **بعد** أن يستقرّ الانتباه، وأبطأَ منه.
+
+              كان يدخل بثلاث قنوات (شفافية ومقياس وإزاحة) بأرقامٍ مكتوبة
+              هنا. أُضيفت الرابعة — التمويه — وصارت الأربعُ من الجدول:
+              البطلُ كتلةٌ بصريةٌ أكبر من البلاطة، فحدّتُه تأتي متأخّرةً
+              عنها قليلاً. وهذا هو تسلسلُ البؤرة نفسُه: تحدّ الوجهةُ
+              أوّلاً، ثمّ ما تصفه.
+
+              والإزاحةُ نزلت 12px ← 8: الصفُّ فوقه يهبط 12، ومساواتُهما
+              كانت تجعل الكتلتين تتحرّكان بالقدر نفسه فتُقرآن طبقةً
+              واحدة. الأصغرُ يتحرّك أكثر — تلك هي القاعدة التي تصنع العمق.
+            */
+            initial={
+              isFirstIntro
+                ? {
+                    opacity: 0,
+                    scale: still ? 1 : entranceContent.scale,
+                    y: still ? 0 : entranceContent.y,
+                  }
+                : false
+            }
             /*
               ولحظة المقاومة تسبق الرحلة كلّها: قبل أن يرتفع البطل يُدفع
               إلى الداخل قليلاً (‏y موجب صغير مع انضغاط 0.65%). جسمٌ يُقاوم
@@ -1178,7 +1285,18 @@ export function HomePage() {
               علويّ يثبت العنوان في مكانه وينحسر ما تحته وحده — بدل أن
               ينزلق سطرا الهويّة معاً نحو المركز.
             */
-            style={{ transformOrigin: "100% 0%" }}
+            /*
+              الوضوحُ من CSS لا من `motion` — والعلّةُ في `skk-sharpen`
+              نفسِها: `motion` يحتفظ بآخر قيمةٍ حرّكها ويُعيد كتابتها،
+              فما ملك `filter` مرّةً لا يتخلّى عنه. والحركةُ بلا
+              `fill-mode` تنتهي فتُعيد الخاصّيةَ إلى العدم.
+            */
+            style={{
+              transformOrigin: "100% 0%",
+              ...(isFirstIntro && !still && !settled
+                ? { animation: `skk-sharpen ${entranceContent.duration}s cubic-bezier(${entranceCurve.enter.join(",")})` }
+                : null),
+            }}
           >
             {/*
               ① الهويّة — ما هذا المكان.

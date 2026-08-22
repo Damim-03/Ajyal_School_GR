@@ -43,6 +43,24 @@ export const cancelSettlementSchema = z.object({
     .max(500),
 });
 
+/** ورقةٌ موقَّعة تُلحق بتخليص — الملفّ مرفوعٌ سلفاً عبر /api/uploads */
+export const attachDocumentSchema = z.object({
+  filePath: z
+    .string({ error: "File path is required" })
+    .trim()
+    .min(1, "File path is required")
+    .max(255),
+  fileName: z.string().trim().max(191).nullish(),
+  /** وجهُ الورقة — الخلفي اختياريٌّ لأنّ الورقة قد تكون من وجهٍ واحد */
+  /** رقمُ الصفحة؛ فارغُه يعني «أضِف صفحةً تالية» */
+  pageNumber: z.coerce.number().int().min(1).max(50).nullish(),
+  note: z.string().trim().max(191).nullish(),
+});
+
+export const documentIdSchema = z.object({
+  documentId: z.string().trim().min(1, "Document id is required"),
+});
+
 export const settlementQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -75,6 +93,7 @@ export type ComputeSettlementInput = z.infer<typeof computeSettlementSchema>;
 export type ConfirmSettlementInput = z.infer<typeof confirmSettlementSchema>;
 export type CancelSettlementInput = z.infer<typeof cancelSettlementSchema>;
 export type SettlementQueryInput = z.infer<typeof settlementQuerySchema>;
+export type AttachDocumentInput = z.infer<typeof attachDocumentSchema>;
 export type EstimateQueryInput = z.infer<typeof estimateQuerySchema>;
 export type DailyClearanceQueryInput = z.infer<
   typeof dailyClearanceQuerySchema

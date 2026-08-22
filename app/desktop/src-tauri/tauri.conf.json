@@ -12,11 +12,19 @@
   "app": {
     "windows": [
       {
-        "title": "desktop",
-        "width": 800,
-        "height": 600,
+        "label": "main",
+        "title": "Ajyal GR",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1100,
+        "minHeight": 680,
         "resizable": true,
-        "fullscreen": false
+        "maximized": true,
+        "fullscreen": false,
+        "decorations": false,
+        "center": true,
+        "theme": "Dark",
+        "backgroundColor": "#04060c"
       }
     ],
     "security": {

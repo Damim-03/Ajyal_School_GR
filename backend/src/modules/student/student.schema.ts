@@ -38,6 +38,9 @@ export const createStudentSchema = z.object({
     })
     .nullish(),
 
+  /** مسقطُ الرأس — تكتبه شهادة التمدرس، وهو غيرُ `address` (مسكنُه اليوم) */
+  birthPlace: z.string().trim().max(120).nullish(),
+
   /*
    * مسار الصورة كما يُعيده POST /api/uploads — لا الملف نفسه.
    * أي قيمة أخرى تُرفض: العميل لا يختار أين تُخزَّن الملفّات.
@@ -70,6 +73,16 @@ export const createStudentSchema = z.object({
 
   registrationDate: z.coerce.date().optional(),
 
+  /*
+   * حقوق التسجيل — تُقبض في الشبّاك ساعةَ التسجيل.
+   *
+   * والمبلغُ اختياريٌّ مع الحالة: المؤسسة قد تُعفي طالباً أو تؤجّله،
+   * فتُعلَّم الحالةُ ويبقى المبلغ فارغاً حتّى يُقبض.
+   */
+  registrationFeePaid: z.boolean().optional(),
+  registrationFeeAmount: z.coerce.number().min(0).max(9999999).nullish(),
+  registrationFeePaidAt: z.coerce.date().nullish(),
+
   note: z.string().trim().max(1000).nullish(),
 
   isActive: z.boolean().optional(),
@@ -97,6 +110,15 @@ export const studentQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().trim().min(1).optional(),
+  /*
+   * رقمُ التسجيل وحده — حقلٌ مستقلٌّ عن البحث الحرّ.
+   *
+   * و`search` يطابقه مطابقةً تامّة عمداً (رقمُ البطاقة يُمسح كاملاً)،
+   * فلا يصلح لحقلٍ يُكتب فيه رقمٌ خانةً خانةً وتُعرض القائمة من أوّل
+   * رقم. وهذا يطابق **جزءاً منه** ولا يمسّ الهاتف — فلا يختلط برقمٍ
+   * يحوي تلك الخانات.
+   */
+  studentNumber: z.string().trim().min(1).optional(),
   gender: z.enum(Gender).optional(),
   isActive: z
     .enum(["true", "false"])
@@ -151,6 +173,11 @@ export const putDocumentSchema = z.object({
 });
 
 export type PutDocumentInput = z.infer<typeof putDocumentSchema>;
+
+/** كشف الحساب — السنةُ إلزامية: ورقةٌ بلا سنةٍ تخلط سنتين */
+export const studentStatementQuerySchema = z.object({
+  academicYearId: z.string().trim().min(1, "Academic year is required"),
+});
 
 export const studentEnrollmentQuerySchema = z.object({
   isActive: z

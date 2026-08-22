@@ -6,10 +6,11 @@ import { ModuleAtmosphere } from "../components/ambient/ModuleAtmosphere";
 import { PATHS } from "./paths";
 
 import { HomePage } from "../features/home/HomePage";
-import LoginPage from "../modules/auth/pages/login.page";
+import SignInPage from "../modules/auth/pages/sign-in.page";
 import SchoolIdentityPage from "../features/settings/SchoolIdentityPage";
 import SettingsHubPage from "../features/settings/SettingsHubPage";
 import PrintTestPage from "../features/settings/PrintTestPage";
+import MaintenancePage from "../features/settings/MaintenancePage";
 import { ResourceScreen } from "../features/settings/ResourceScreen";
 import RolesPage from "../features/settings/RolesPage";
 import AcademicHubPage from "../features/academic/AcademicHubPage";
@@ -30,6 +31,9 @@ import AttendanceHubPage from "../modules/attendance/AttendanceHubPage";
 import DailySheetPage from "../modules/attendance/DailySheetPage";
 import MonthlyFeesPage from "../modules/attendance/MonthlyFeesPage";
 import EstimatePage from "../modules/attendance/EstimatePage";
+import SettlementArchivePage from "../modules/finance/SettlementArchivePage";
+import StudentAccountPage from "../modules/attendance/StudentAccountPage";
+import TeacherAccountPage from "../modules/attendance/TeacherAccountPage";
 import TeachersHubPage from "../modules/teachers/TeachersHubPage";
 import TeachersPage from "../modules/teachers/TeachersPage";
 import TeacherDetailPage from "../modules/teachers/TeacherDetailPage";
@@ -73,7 +77,7 @@ export function AppRouter() {
       <ModuleAtmosphere />
 
       <Routes>
-        <Route path={PATHS.login} element={<LoginPage />} />
+        <Route path={PATHS.login} element={<SignInPage />} />
 
         <Route path={PATHS.home} element={guarded(<HomePage />)} />
 
@@ -127,6 +131,15 @@ export function AppRouter() {
         <Route path={PATHS.attendanceDaily} element={guarded(<DailySheetPage />)} />
         <Route path={PATHS.attendanceMonthlyFees} element={guarded(<MonthlyFeesPage />)} />
         <Route path={PATHS.attendanceExpected} element={guarded(<EstimatePage />)} />
+        <Route path={PATHS.settlementArchive} element={guarded(<SettlementArchivePage />)} />
+        <Route
+          path={PATHS.attendanceStudentAccount}
+          element={guarded(<StudentAccountPage />)}
+        />
+        <Route
+          path={PATHS.attendanceTeacherAccount}
+          element={guarded(<TeacherAccountPage />)}
+        />
         <Route path={PATHS.attendance} element={guarded(<AttendanceHubPage />)} />
 
         {/* المالية: الشاشات قبل المحور */}
@@ -150,6 +163,7 @@ export function AppRouter() {
         <Route path={PATHS.settingsSchool} element={guarded(<SchoolIdentityPage />)} />
         <Route path={PATHS.settingsPrint} element={guarded(<PrintTestPage />)} />
         <Route path={PATHS.settingsRoles} element={guarded(<RolesPage />)} />
+        <Route path={PATHS.settingsMaintenance} element={guarded(<MaintenancePage />)} />
 
         {/* الحسابات — الموارد الوحيدة الباقية تحت الإعدادات */}
         {ADMIN_RESOURCES.map((spec) => (

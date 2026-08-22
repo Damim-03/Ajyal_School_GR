@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.dailyClearanceController = exports.settlementEstimateController = exports.cancelSettlementController = exports.paySettlementController = exports.confirmSettlementController = exports.computeSettlementController = exports.getSettlementController = exports.listSettlementsController = void 0;
+exports.dailyClearanceController = exports.settlementEstimateController = exports.removeSettlementDocumentController = exports.attachSettlementDocumentController = exports.cancelSettlementController = exports.paySettlementController = exports.confirmSettlementController = exports.computeSettlementController = exports.getSettlementController = exports.listSettlementsController = void 0;
 const api_response_1 = require("../../core/config/api-response");
 const settlement_service_1 = require("./settlement.service");
 const settlement_report_service_1 = require("./settlement.report.service");
@@ -35,6 +35,19 @@ const cancelSettlementController = async (req, res) => {
     return api_response_1.ApiResponse.success(res, { settlement }, "Settlement cancelled");
 };
 exports.cancelSettlementController = cancelSettlementController;
+// --------------------------------------------------
+// الأوراق الموقَّعة
+// --------------------------------------------------
+const attachSettlementDocumentController = async (req, res) => {
+    const document = await (0, settlement_service_1.attachSettlementDocumentService)(req.params.id, req.body, req.user.userId);
+    return api_response_1.ApiResponse.created(res, { document }, "Document attached");
+};
+exports.attachSettlementDocumentController = attachSettlementDocumentController;
+const removeSettlementDocumentController = async (req, res) => {
+    const removed = await (0, settlement_service_1.removeSettlementDocumentService)(req.params.documentId);
+    return api_response_1.ApiResponse.success(res, removed, "Document removed");
+};
+exports.removeSettlementDocumentController = removeSettlementDocumentController;
 // --------------------------------------------------
 // الكشفان
 // --------------------------------------------------
