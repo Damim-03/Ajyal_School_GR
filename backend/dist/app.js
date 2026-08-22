@@ -65,8 +65,20 @@ const isLocalOrigin = (origin) => {
 };
 app.use((0, cors_1.default)({
     origin: (origin, callback) => {
+        /*
+         * أصل نافذة Tauri يختلف بحسب المنصّة:
+         *   ماك/لينكس → tauri://localhost   (بروتوكول مخصّص)
+         *   ويندوز/أندرويد → http://tauri.localhost
+         *
+         * لأنّ WebView2 لا يسمح بتسجيل بروتوكولٍ مخصّص فيُخدَم
+         * التطبيق عبر HTTP على مضيفٍ وهمي. وإغفال الثاني كان يجعل
+         * كلَّ طلبٍ من نسخة ويندوز يسقط عند preflight بلا رسالةٍ
+         * مفهومة — والاسم `tauri.localhost` ليس ضمن LOCAL_HOSTS
+         * فلا تلتقطه isLocalOrigin.
+         */
         const allowedOrigins = [
-            app_config_1.config.FRONTEND_ORIGIN, // tauri://localhost
+            app_config_1.config.FRONTEND_ORIGIN, // tauri://localhost — ماك/لينكس
+            "http://tauri.localhost", // ويندوز/أندرويد
             "http://localhost:5173", // Vite dev
             "http://localhost:3001",
         ];

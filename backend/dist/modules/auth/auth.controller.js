@@ -8,10 +8,27 @@ const error_code_enum_1 = require("../../core/enums/error-code.enum");
 // --------------------------------------------------
 // Cookie options — refreshToken
 // --------------------------------------------------
+/*
+ * SameSite في الإنتاج `none` لا `strict`.
+ *
+ * في التطوير يكون الخادم والواجهة على localhost فالسياق موقعٌ واحد
+ * و`strict` أمتنُ ما يمكن. أمّا في الإنتاج فأصل النافذة
+ * `tauri://localhost` (أو `http://tauri.localhost` على ويندوز)
+ * والخادمُ على نطاقٍ آخر — سياقٌ عابر للمواقع، و`strict` يعني أنّ
+ * المتصفّح لا يخزّن الكوكي أصلاً ولا يرسله.
+ *
+ * والعرَض مضلِّل: الدخول ينجح لأنّ accessToken يعود في جسم
+ * الاستجابة، ثمّ بعد انقضائه تفشل /auth/refresh فيَطرد المعترضُ
+ * المستخدمَ — خروجٌ مفاجئ بعد ربع ساعةٍ من عملٍ سليم ظاهرياً.
+ *
+ * و`none` يوجب `Secure` أي HTTPS، وهو مضمونٌ في الإنتاج وحده،
+ * فالشرطان مقترنان بنفس الرايةِ عمداً.
+ */
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const REFRESH_COOKIE_OPTIONS = {
     httpOnly: true, // لا يمكن الوصول إليه من JavaScript
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: IS_PRODUCTION,
+    sameSite: IS_PRODUCTION ? "none" : "strict",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام بالـ ms
     path: "/api/auth/refresh", // Cookie متاح فقط لهذا المسار
 };
@@ -56,10 +73,15 @@ exports.refreshTokenController = refreshTokenController;
 // POST /api/auth/logout
 // --------------------------------------------------
 const logoutController = async (_req, res) => {
-    // نمسح الـ Cookie
-    res.clearCookie("refreshToken", {
-        path: "/api/auth/refresh",
-    });
+    /*
+     * المسحُ يجب أن يحمل نفس السمات التي كُتب بها.
+     *
+     * المتصفّح يطابق الكوكي بـ(الاسم + المسار + النطاق)، ويرفض كتابةَ
+     * كوكي `SameSite=None` بلا `Secure` — فمسحٌ بالمسار وحده كان
+     * يُهمَل صامتاً في الإنتاج ويبقى refreshToken حيّاً بعد الخروج.
+     */
+    const { maxAge: _maxAge, ...clearOptions } = REFRESH_COOKIE_OPTIONS;
+    res.clearCookie("refreshToken", clearOptions);
     return res.status(http_config_1.HTTPSTATUS.OK).json({
         success: true,
         message: "Logged out successfully",
