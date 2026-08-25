@@ -1,6 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "desktop",
+  "productName": "NexSchool",
+  "mainBinaryName": "NexSchool",
   "version": "0.1.0",
   "identifier": "dz.ajyal.school",
   "build": {
@@ -13,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Ajyal GR",
+        "title": "NexSchool",
         "width": 1440,
         "height": 900,
         "minWidth": 1100,
@@ -36,6 +37,7 @@
     "targets": "all",
     "icon": [
       "icons/32x32.png",
+      "icons/64x64.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",

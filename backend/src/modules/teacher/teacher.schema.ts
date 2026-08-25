@@ -40,6 +40,9 @@ export const createTeacherSchema = z.object({
 
   gender: z.enum(Gender, { error: "Gender must be MALE or FEMALE" }),
 
+  /* مسارُ الرفع لا رابطٌ خارجي — كصورة الطالب */
+  avatar: z.string().trim().max(255).nullish(),
+
   birthDate: pastDate("Birth date").nullish(),
 
   hireDate: pastDate("Hire date"),
@@ -93,6 +96,32 @@ export const teacherQuerySchema = z.object({
     .transform((value) => value === "true")
     .optional(),
 });
+
+// --------------------------------------------------
+// وثائق ملفّ الأستاذ
+// --------------------------------------------------
+
+export const teacherDocumentParamSchema = z.object({
+  id: z.string().trim().min(1, "Teacher id is required"),
+  type: z.string().trim().min(1, "Document type is required"),
+});
+
+export const putTeacherDocumentSchema = z.object({
+  filePath: z
+    .string({ error: "مسار الملف مطلوب" })
+    .trim()
+    .startsWith("/uploads/", "مسار الملف غير صالح")
+    .max(255),
+
+  fileName: z.string().trim().max(255).nullish(),
+
+  /* تسميةُ النوع المضاف — تُقرأ لمفاتيح `custom_` وحدها */
+  label: z.string().trim().min(2, "التسمية قصيرة").max(80).nullish(),
+
+  note: z.string().trim().max(300).nullish(),
+});
+
+export type PutTeacherDocumentInput = z.infer<typeof putTeacherDocumentSchema>;
 
 // --------------------------------------------------
 // Types

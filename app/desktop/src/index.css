@@ -1613,6 +1613,132 @@ body {
     text-align: center;
   }
 
+  /* ===== شهادة العمل: ما تزيده على شهادة التمدرس ===== */
+  /*
+    مقاسٌ أضيقُ من شهادة التمدرس — لأنّها تحمل أكثر منها.
+
+    شهادةُ التمدرس ثمانيةُ سطورٍ ومربّعُ مواد، وهذه تزيد عليها صفَّ
+    صورةٍ ومربّعَ وثائق. وقِيس أنّ أستاذاً بأربعة إسنادات وستِّ وثائق
+    يبلغ 310 مم في ورقةٍ متنُها 281 — أي سطراً على ورقةٍ ثانية لوثيقةٍ
+    من ورقةٍ واحدة بطبيعتها.
+    فضُيّقت المسافاتُ هنا وحدها: السطرُ 1.7 لا 1.9، وما بين السطور
+    1.5 مم لا 2.5. والحروفُ على حالها — التصغيرُ يمسّ القراءة والمسافةُ
+    لا تمسّها.
+  */
+  .sheet-page.cert.cert-employment {
+    line-height: 1.7;
+  }
+  .cert-employment .cert-line {
+    margin-bottom: 1.5mm;
+  }
+  .cert-employment .cert-title {
+    margin: 1mm 0 4mm;
+  }
+  .cert-employment .cert-lines {
+    margin-bottom: 3mm;
+  }
+  .cert-employment .cert-subjects,
+  .cert-employment .cert-docs {
+    margin: 3mm 0;
+    padding: 2.5mm 4mm;
+  }
+  .cert-employment .cert-subjects-label {
+    margin-bottom: 1.5mm;
+  }
+  /* الإمضاء يكفيه عشرة — والورقة أضيق بما تحمله */
+  .cert-employment .cert-sign {
+    margin-top: 5mm;
+  }
+  .cert-employment .cert-sign-line {
+    margin-top: 10mm;
+  }
+  .cert-employment .cert-oath {
+    margin-top: 3mm;
+  }
+
+  /*
+    صفُّ الهوية — صورةٌ ثمّ سطور.
+
+    الصورةُ 25×32 مم: مقاسُ الصورة الشمسية المعتمَد في الوثائق
+    الجزائرية، فما يُلصق في الإطار الفارغ يملؤه ولا يفيض عنه.
+  */
+  .cert-ident {
+    display: flex;
+    align-items: flex-start;
+    gap: 6mm;
+    margin: 4mm 0;
+  }
+  .cert-ident-lines {
+    flex: 1;
+    margin-bottom: 0;
+  }
+  .cert-photo {
+    flex: none;
+    width: 25mm;
+    height: 32mm;
+    border: 0.4mm solid #000;
+    border-radius: 1mm;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cert-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* الصورةُ تخرج بألوانها ولو ضبط المتصفّح توفيرَ الحبر */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  /* الإطارُ الفارغ يقول ما يُوضع فيه — فلا يُظنّ خطأً في الطباعة */
+  .cert-photo-empty {
+    font-size: 3mm;
+    letter-spacing: 0.3mm;
+  }
+
+  /* الفوجُ تحت المادة — أصغرَ منها، فالمادة هي المقروءة أوّلاً */
+  .cert-subject-group {
+    font-size: 3mm;
+  }
+
+  /* الوثائق المسلَّمة — مربّعٌ كمربّع المواد وسطورُه مؤرّخة */
+  .cert-docs {
+    margin: 4mm 0;
+    border: 0.4mm solid #000;
+    border-radius: 1.5mm;
+    padding: 3mm 4mm;
+  }
+  .cert-docs-list {
+    margin: 0;
+    padding-inline-start: 6mm;
+  }
+  .cert-docs-list li {
+    margin-bottom: 1mm;
+    display: flex;
+    align-items: baseline;
+    gap: 3mm;
+  }
+  .cert-docs-list.cols-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 6mm;
+  }
+  .cert-docs-list.cols-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    column-gap: 5mm;
+  }
+  .cert-doc-name {
+    font-weight: 700;
+  }
+  /* التاريخُ في آخر السطر — يُقرأ عمودياً حين تُمسح القائمة بالعين */
+  .cert-doc-at {
+    margin-inline-start: auto;
+    font-size: 3mm;
+    font-family: "Consolas", "Courier New", monospace;
+  }
+
   .cert-oath {
     margin: 4mm 0 0;
     font-weight: 600;

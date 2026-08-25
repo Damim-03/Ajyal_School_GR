@@ -9,9 +9,15 @@ import {
 } from "./teacher.service";
 import { getTeacherStatementService } from "./teacher-statement.service";
 import {
+  getTeacherDocumentsService,
+  putTeacherDocumentService,
+  deleteTeacherDocumentService,
+} from "./document.service";
+import {
   CreateTeacherInput,
   UpdateTeacherInput,
   TeacherQueryInput,
+  PutTeacherDocumentInput,
 } from "./teacher.schema";
 
 export const listTeachersController = async (req: Request, res: Response) => {
@@ -60,4 +66,46 @@ export const getTeacherStatementController = async (
   );
 
   return ApiResponse.success(res, statement, "Statement retrieved");
+};
+
+// --------------------------------------------------
+// وثائق ملفّ الأستاذ
+// --------------------------------------------------
+
+// GET /api/teachers/:id/documents
+export const getTeacherDocumentsController = async (
+  req: Request,
+  res: Response,
+) => {
+  const file = await getTeacherDocumentsService(req.params.id as string);
+
+  return ApiResponse.success(res, file, "Documents retrieved");
+};
+
+// PUT /api/teachers/:id/documents/:type
+export const putTeacherDocumentController = async (
+  req: Request,
+  res: Response,
+) => {
+  const file = await putTeacherDocumentService(
+    req.params.id as string,
+    req.params.type as string,
+    req.body as PutTeacherDocumentInput,
+    req.user?.userId,
+  );
+
+  return ApiResponse.success(res, file, "Document attached");
+};
+
+// DELETE /api/teachers/:id/documents/:type
+export const deleteTeacherDocumentController = async (
+  req: Request,
+  res: Response,
+) => {
+  const file = await deleteTeacherDocumentService(
+    req.params.id as string,
+    req.params.type as string,
+  );
+
+  return ApiResponse.success(res, file, "Document removed");
 };

@@ -230,6 +230,7 @@ exports.Prisma.TeacherScalarFieldEnum = {
   email: 'email',
   phone: 'phone',
   gender: 'gender',
+  avatar: 'avatar',
   birthDate: 'birthDate',
   hireDate: 'hireDate',
   address: 'address',
@@ -237,6 +238,19 @@ exports.Prisma.TeacherScalarFieldEnum = {
   specialization: 'specialization',
   salary: 'salary',
   isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TeacherDocumentScalarFieldEnum = {
+  id: 'id',
+  teacherId: 'teacherId',
+  type: 'type',
+  label: 'label',
+  filePath: 'filePath',
+  fileName: 'fileName',
+  note: 'note',
+  uploadedById: 'uploadedById',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -708,9 +722,21 @@ exports.Prisma.TeacherOrderByRelevanceFieldEnum = {
   lastName: 'lastName',
   email: 'email',
   phone: 'phone',
+  avatar: 'avatar',
   address: 'address',
   qualification: 'qualification',
   specialization: 'specialization'
+};
+
+exports.Prisma.TeacherDocumentOrderByRelevanceFieldEnum = {
+  id: 'id',
+  teacherId: 'teacherId',
+  type: 'type',
+  label: 'label',
+  filePath: 'filePath',
+  fileName: 'fileName',
+  note: 'note',
+  uploadedById: 'uploadedById'
 };
 
 exports.Prisma.StudentOrderByRelevanceFieldEnum = {
@@ -1125,6 +1151,7 @@ exports.Prisma.ModelName = {
   LessonSlot: 'LessonSlot',
   TuitionFee: 'TuitionFee',
   Teacher: 'Teacher',
+  TeacherDocument: 'TeacherDocument',
   Student: 'Student',
   StudentDocument: 'StudentDocument',
   TeachingAssignment: 'TeachingAssignment',

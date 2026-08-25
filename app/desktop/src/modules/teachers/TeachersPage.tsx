@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import {
   ArrowRight,
+  Check,
+  CheckCircle2,
+  FolderCheck,
   Loader2,
   Pencil,
   Plus,
@@ -22,17 +25,22 @@ import { MOTION } from "../../motion/system";
 import { PATHS } from "../../routes/paths";
 import { useScreenExit } from "../../lib/screen-transition";
 import { uiSound } from "../../lib/ui-sound";
+import { ImageIntake } from "../../components/shared/ImageIntake";
+import { TeacherDocumentsPanel } from "./TeacherDocuments";
 import {
   createTeacher,
   deleteTeacher,
   dmy,
+  getTeacher,
   listTeachers,
   updateTeacher,
   yearsOfService,
   GENDER_LABEL,
   type Gender,
+  uploadImage,
   type Pagination,
   type TeacherBody,
+  type TeacherDetail,
   type TeacherRow,
 } from "./teachers.api";
 
@@ -277,6 +285,7 @@ export default function TeachersPage() {
                         className="flex items-center gap-2.5 text-start transition hover:text-white"
                       >
                         <Avatar
+                          src={row.avatar}
                           name={`${row.lastName} ${row.firstName}`}
                           gender={row.gender}
                           size={32}
@@ -448,13 +457,25 @@ export default function TeachersPage() {
 }
 
 // --------------------------------------------------
-// إضافة أستاذ وتعديله
+// إضافة أستاذ وتعديله — خطوتان في نافذةٍ واحدة
 //
-// الراتب في النموذج لا في الجدول: يُكتب مرّةً عند التوظيف ويُقرأ
+// **معلوماتُه** ثمّ **وثائقُه**، على هيئة تسجيل الطالب نفسِها — وليس
+// ذلك تجميلاً ولا تقليداً: مسارُ رفع الوثيقة `/teachers/:id/documents`
+// يحتاج رقمَ الأستاذ، فلا سبيل لرفع ورقةٍ قبل حفظ سطوره. وعرضُ
+// الخانتين معاً كان سيُظهر خانات مسحٍ لا تعمل.
+//
+// فالخطوة الأولى تنتهي بحفظٍ حقيقي: الأستاذ موجودٌ قبل الثانية، ومن
+// انصرف بعدها بقي مسجَّلاً بملفٍّ ناقص — وهي حالٌ صحيحة يعرضها ملفُّه
+// صراحةً. ولهذا يختفي «إلغاء» في الثانية: لم يبقَ ما يُلغى، وإبقاؤه
+// يوهم أنّ الضغط عليه يمحو ما حُفظ.
+//
+// والراتب في النموذج لا في الجدول: يُكتب مرّةً عند التوظيف ويُقرأ
 // نادراً، وإظهاره في القائمة يعرّضه لكل عابر.
 // --------------------------------------------------
 
 const iso = (value: string | null) => (value ? value.slice(0, 10) : "");
+
+const FORM_ID = "teacher-form";
 
 function TeacherDialog({
   teacher,
@@ -463,12 +484,20 @@ function TeacherDialog({
 }: {
   teacher: TeacherRow | null;
   onClose: () => void;
+  /** يُنادى عند إغلاق النافذة بعد عملٍ محفوظ — لتُنعش القائمة خلفها */
   onDone: (message: string) => void;
 }) {
+  const [step, setStep] = useState<1 | 2>(1);
+
+  /** الأستاذ بعد حفظ الخطوة الأولى — إليه تُرفع الوثائق */
+  const [saved, setSaved] = useState<TeacherDetail | null>(null);
+  const [delivered, setDelivered] = useState(0);
+
   const [form, setForm] = useState<TeacherBody>({
     firstName: teacher?.firstName ?? "",
     lastName: teacher?.lastName ?? "",
     gender: teacher?.gender ?? "MALE",
+    avatar: teacher?.avatar ?? null,
     hireDate: iso(teacher?.hireDate ?? null),
     email: teacher?.email ?? "",
     phone: teacher?.phone ?? "",
@@ -480,12 +509,67 @@ function TeacherDialog({
   });
 
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /*
+   * العنوانُ والراتب يُجلبان عند التعديل — والقائمة لا تحملهما.
+   *
+   * الخادم يستثنيهما من تحديد القائمة عمداً (راتبٌ في جدولٍ يراه كلّ
+   * عابر)، فالصفُّ الذي تُفتح منه النافذة يصل بلا هذين. وكانا يُرسلان
+   * فارغين مع الحفظ فيُمحى راتبُ الأستاذ وعنوانُه بمجرّد تصحيح رقم
+   * هاتفه. فما لم يصل لا يُرسَل: `null` هنا معناه «لم يُقرأ بعد» لا
+   * «لا قيمة له».
+   */
+  const [extras, setExtras] = useState<{
+    address: string | null;
+    salary: number | null;
+  } | null>(teacher ? null : { address: null, salary: null });
+
+  const teacherId = teacher?.id;
+
+  useEffect(() => {
+    if (!teacherId) return;
+    let alive = true;
+
+    getTeacher(teacherId)
+      .then((detail) => {
+        if (!alive) return;
+        setExtras({ address: detail.address, salary: detail.salary });
+        setForm((prev) => ({
+          ...prev,
+          address: detail.address ?? "",
+          salary: detail.salary,
+        }));
+      })
+      .catch(() => {
+        /* تعذّر الجلب: يبقى `extras` فارغاً فلا يُرسَل الحقلان أصلاً */
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [teacherId]);
 
   const set = <K extends keyof TeacherBody>(key: K, value: TeacherBody[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const submit = async (event: React.FormEvent) => {
+  /* الصورة تُرفع فور اختيارها ويُحفظ مسارُها — كصورة الطالب */
+  const pickPhoto = async (picked: File) => {
+    setUploading(true);
+    setError(null);
+
+    try {
+      set("avatar", await uploadImage(picked));
+    } catch (err: unknown) {
+      const response = (err as { response?: { data?: { message?: string } } }).response;
+      setError(response?.data?.message ?? "تعذّر رفع الصورة");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const save = async (event: React.FormEvent) => {
     event.preventDefault();
     if (busy) return;
 
@@ -497,24 +581,27 @@ function TeacherDialog({
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       gender: form.gender,
+      avatar: form.avatar || null,
       hireDate: form.hireDate,
       email: form.email?.trim() || null,
       phone: form.phone?.trim() || null,
       birthDate: form.birthDate || null,
       qualification: form.qualification?.trim() || null,
       specialization: form.specialization?.trim() || null,
-      address: form.address?.trim() || null,
-      salary: form.salary || null,
+      /* لا يُرسلان قبل قراءتهما — والإرسالُ الفارغ محوٌ لا حفظ */
+      ...(extras && {
+        address: form.address?.trim() || null,
+        salary: form.salary || null,
+      }),
     };
 
     try {
-      if (teacher) {
-        await updateTeacher(teacher.id, body);
-        onDone("حُفظ الأستاذ");
-      } else {
-        await createTeacher(body);
-        onDone("أُضيف الأستاذ");
-      }
+      const result = teacher
+        ? await updateTeacher(teacher.id, body)
+        : await createTeacher(body);
+
+      setSaved(result);
+      setStep(2);
     } catch (err: any) {
       setError(err?.response?.data?.message ?? "تعذّر الحفظ");
     } finally {
@@ -527,112 +614,321 @@ function TeacherDialog({
     form.lastName.trim().length >= 2 &&
     Boolean(form.hireDate);
 
+  const fullName = `${form.lastName} ${form.firstName}`.trim() || "أستاذ جديد";
+
+  /** يبدأ أستاذاً جديداً في النافذة نفسها — الإدارة توظّف دفعةً معاً */
+  const again = () => {
+    setSaved(null);
+    setDelivered(0);
+    setError(null);
+    setStep(1);
+    setExtras({ address: null, salary: null });
+    setForm({
+      firstName: "",
+      lastName: "",
+      gender: "MALE",
+      avatar: null,
+      hireDate: "",
+      email: "",
+      phone: "",
+      birthDate: "",
+      qualification: "",
+      specialization: "",
+      address: "",
+      salary: null,
+    });
+  };
+
+  /* الإنهاء يُغلق النافذة ويُنعش القائمة بخبرٍ يذكر ما سُلّم */
+  const finish = () => {
+    const head = teacher ? "حُفظ الأستاذ" : "أُضيف الأستاذ";
+    onDone(delivered === 0 ? head : `${head} — ${delivered} وثيقة في ملفّه`);
+  };
+
   return (
     <FormDialog
-      icon={UserRound}
+      icon={step === 1 ? UserRound : FolderCheck}
       title={teacher ? "تعديل الأستاذ" : "أستاذ جديد"}
-      subtitle="الاسم واللقب وتاريخ التوظيف إلزامية، وما عداها يُكمَّل لاحقاً."
+      subtitle="المعلومات ثمّ الوثائق"
       tone={ACCENT}
-      onClose={onClose}
-      onSubmit={submit}
+      /* في الثانية صار العملُ محفوظاً — فالإغلاق إنهاءٌ يُنعش القائمة */
+      onClose={step === 2 ? finish : onClose}
+      /* الأولى تُرسل حقولَ الأستاذ، والثانية زرُّها إنهاءٌ لا حفظ */
+      submitForm={step === 1 ? FORM_ID : undefined}
+      onSubmit={
+        step === 2
+          ? (event) => {
+              event.preventDefault();
+              finish();
+            }
+          : undefined
+      }
       busy={busy}
-      submitDisabled={!valid}
-      submitLabel={teacher ? "حفظ" : "إضافة"}
-      submitIcon={<Plus className="h-4.5 w-4.5" />}
+      submitDisabled={step === 1 && (!valid || uploading)}
+      submitLabel={step === 1 ? "حفظ ومتابعة إلى الوثائق" : "إنهاء"}
+      submitIcon={
+        step === 1 ? <UserRound className="h-4.5 w-4.5" /> : <Check className="h-4.5 w-4.5" />
+      }
+      hideCancel={step === 2}
       error={error}
+      footerExtra={
+        step === 2 && !teacher ? (
+          <button
+            type="button"
+            onClick={again}
+            className="flex items-center gap-2 rounded-xl bg-white/10 px-5 py-3 text-sm font-bold transition hover:bg-white/20"
+          >
+            <Plus className="h-4 w-4" />
+            أستاذ آخر
+          </button>
+        ) : undefined
+      }
+      headerExtra={<Steps step={step} delivered={delivered} />}
     >
-      <FormGrid>
-        <FormRow>
-          <Input label="الاسم" required value={form.firstName} onChange={(v) => set("firstName", v)} />
-        </FormRow>
-        <FormRow>
-          <Input label="اللقب" required value={form.lastName} onChange={(v) => set("lastName", v)} />
-        </FormRow>
+      {step === 1 && (
+        /*
+          نموذجٌ بمعرّف: زرُّ الحفظ ملتصقٌ بقاع النافذة لا بآخر الحقول،
+          و`form="id"` يربطه بنموذجٍ خارجه — وهو الحلّ المعياري لا حيلة.
+        */
+        <form id={FORM_ID} onSubmit={save} className="space-y-5">
+          {/* ===== الصورة ===== */}
+          <div className="flex items-center gap-4">
+            <Avatar src={form.avatar} name={fullName} gender={form.gender} size={72} />
 
-        <FormRow>
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-bold text-white/60">الجنس</span>
-            <select
-              value={form.gender}
-              onChange={(e) => set("gender", e.target.value as Gender)}
-              className={fieldClass}
-            >
-              <option value="MALE" className="bg-[#0a0f1a]">ذكر</option>
-              <option value="FEMALE" className="bg-[#0a0f1a]">أنثى</option>
-            </select>
-          </label>
-        </FormRow>
+            <div className="flex flex-col gap-2">
+              {/*
+                نسبة 3:4 مفروضة لا مقترحة: الصورة تُطبع في إطار 25×32 مم
+                على شهادة العمل، وصورةٌ بنسبةٍ أخرى إمّا تُمطّ أو يُقتصّ
+                منها آلياً — والقصّ الآلي يقطع الذقن أو أعلى الرأس.
+              */}
+              <ImageIntake
+                aspect="3:4"
+                editorTitle="صورة الأستاذ"
+                busy={uploading}
+                onFile={pickPhoto}
+              >
+                {form.avatar ? "تغيير الصورة" : "إضافة صورة"}
+              </ImageIntake>
 
-        <FormRow>
-          <Input
-            label="تاريخ التوظيف"
-            required
-            type="date"
-            value={form.hireDate}
-            onChange={(v) => set("hireDate", v)}
-          />
-        </FormRow>
+              {form.avatar && (
+                <button
+                  type="button"
+                  onClick={() => set("avatar", null)}
+                  className="flex items-center gap-2 px-3 py-1 text-xs text-white/50 transition hover:text-rose-300"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  إزالة
+                </button>
+              )}
+            </div>
+          </div>
 
-        <FormRow>
-          <Input label="الهاتف" value={form.phone ?? ""} onChange={(v) => set("phone", v)} ltr />
-        </FormRow>
-        <FormRow>
-          <Input label="البريد" value={form.email ?? ""} onChange={(v) => set("email", v)} ltr />
-        </FormRow>
+          <FormGrid>
+            <FormRow>
+              <Input label="الاسم" required value={form.firstName} onChange={(v) => set("firstName", v)} />
+            </FormRow>
+            <FormRow>
+              <Input label="اللقب" required value={form.lastName} onChange={(v) => set("lastName", v)} />
+            </FormRow>
 
-        <FormRow>
-          <Input
-            label="تاريخ الميلاد"
-            type="date"
-            value={form.birthDate ?? ""}
-            onChange={(v) => set("birthDate", v)}
-          />
-        </FormRow>
-        <FormRow>
-          <Input
-            label="التخصّص"
-            value={form.specialization ?? ""}
-            onChange={(v) => set("specialization", v)}
-          />
-        </FormRow>
+            <FormRow>
+              <Field label="الجنس" required>
+                {/* زرّان لا قائمة: خياران اثنان يُريان بلا فتح */}
+                <div className="flex gap-2">
+                  {(["MALE", "FEMALE"] as const).map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => set("gender", g)}
+                      className="flex-1 rounded-xl border px-4 py-2.5 text-sm font-bold transition"
+                      style={
+                        form.gender === g
+                          ? { borderColor: ACCENT, background: `${ACCENT}1f`, color: ACCENT }
+                          : { borderColor: "rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.3)" }
+                      }
+                    >
+                      {g === "MALE" ? "ذكر" : "أنثى"}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+            </FormRow>
 
-        <FormRow>
-          <Input
-            label="المؤهّل"
-            value={form.qualification ?? ""}
-            onChange={(v) => set("qualification", v)}
-          />
-        </FormRow>
-        <FormRow>
-          <Input
-            label="الراتب"
-            type="number"
-            value={form.salary === null ? "" : String(form.salary)}
-            onChange={(v) => set("salary", v ? Number(v) : null)}
-            ltr
-            hint="اختياري — لا يظهر في القائمة"
-          />
-        </FormRow>
+            <FormRow>
+              <Input
+                label="تاريخ التوظيف"
+                required
+                type="date"
+                value={form.hireDate}
+                onChange={(v) => set("hireDate", v)}
+                hint="منه تُحسب الأقدميّة على شهادة العمل"
+              />
+            </FormRow>
 
-        <FormRow wide>
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-bold text-white/60">العنوان</span>
-            <textarea
-              value={form.address ?? ""}
-              onChange={(e) => set("address", e.target.value)}
-              rows={2}
-              maxLength={200}
-              className={`${fieldClass} resize-none`}
+            <FormRow>
+              <Input label="الهاتف" value={form.phone ?? ""} onChange={(v) => set("phone", v)} ltr />
+            </FormRow>
+            <FormRow>
+              <Input label="البريد" value={form.email ?? ""} onChange={(v) => set("email", v)} ltr />
+            </FormRow>
+
+            <FormRow>
+              <Input
+                label="تاريخ الميلاد"
+                type="date"
+                value={form.birthDate ?? ""}
+                onChange={(v) => set("birthDate", v)}
+              />
+            </FormRow>
+            <FormRow>
+              <Input
+                label="التخصّص"
+                value={form.specialization ?? ""}
+                onChange={(v) => set("specialization", v)}
+              />
+            </FormRow>
+
+            <FormRow>
+              <Input
+                label="المؤهّل"
+                value={form.qualification ?? ""}
+                onChange={(v) => set("qualification", v)}
+              />
+            </FormRow>
+            <FormRow>
+              <Input
+                label="الراتب"
+                type="number"
+                value={form.salary === null || form.salary === undefined ? "" : String(form.salary)}
+                onChange={(v) => set("salary", v ? Number(v) : null)}
+                ltr
+                hint="اختياري — لا يظهر في القائمة"
+              />
+            </FormRow>
+
+            <FormRow wide>
+              <Field label="العنوان">
+                <textarea
+                  value={form.address ?? ""}
+                  onChange={(e) => set("address", e.target.value)}
+                  rows={2}
+                  maxLength={200}
+                  className={`${fieldClass} resize-none`}
+                />
+              </Field>
+            </FormRow>
+          </FormGrid>
+        </form>
+      )}
+
+      {step === 2 && saved && (
+        <div className="space-y-5">
+          <div className="flex items-center gap-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/[0.07] p-5">
+            <Avatar
+              src={saved.avatar}
+              name={`${saved.lastName} ${saved.firstName}`}
+              gender={saved.gender}
+              size={52}
             />
-          </label>
-        </FormRow>
-      </FormGrid>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 text-sm font-black text-emerald-200">
+                <CheckCircle2 className="h-4 w-4" />
+                {teacher ? "حُفظت المعلومات" : "سُجِّل الأستاذ"}
+              </div>
+              <div className="text-lg font-black">
+                {saved.lastName} {saved.firstName}
+              </div>
+              <div className="text-[11px] text-white/45">
+                امسح ما سلّمه من أوراق الآن، أو أنهِ وأكملها لاحقاً من ملفّه.
+              </div>
+            </div>
+          </div>
+
+          <TeacherDocumentsPanel
+            teacherId={saved.id}
+            onChange={(file) => setDelivered(file.delivered)}
+          />
+        </div>
+      )}
     </FormDialog>
+  );
+}
+
+/** مؤشّر الخطوتين — ثابتٌ تحت الترويسة لا يتمرّر مع الحقول */
+function Steps({ step, delivered }: { step: 1 | 2; delivered: number }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Dot n={1} label="المعلومات" active={step === 1} done={step > 1} />
+      <div
+        className="h-0.5 flex-1 rounded"
+        style={{ background: step > 1 ? ACCENT : "rgba(255,255,255,0.1)" }}
+      />
+      <Dot n={2} label="الوثائق" active={step === 2} done={delivered > 0} />
+    </div>
+  );
+}
+
+function Dot({
+  n,
+  label,
+  active,
+  done,
+}: {
+  n: number;
+  label: string;
+  active: boolean;
+  done: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span
+        className="grid h-9 w-9 place-items-center rounded-full text-sm font-black transition"
+        style={
+          done
+            ? { background: "rgba(134,239,172,0.18)", color: "#86efac" }
+            : active
+              ? { background: ACCENT, color: "#04121c" }
+              : { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" }
+        }
+      >
+        {done ? <Check className="h-4 w-4" /> : n}
+      </span>
+      <span
+        className="text-sm font-bold"
+        style={{ color: active || done ? "#fff" : "rgba(255,255,255,0.4)" }}
+      >
+        {label}
+      </span>
+    </div>
   );
 }
 
 const fieldClass =
   "w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 text-sm outline-none transition focus:border-white/30";
+
+/** تسميةٌ فوق حقلٍ أيّاً كان شكلُه — زرَّين أو منطقةَ نصّ */
+function Field({
+  label,
+  required,
+  hint,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="block">
+      <span className="mb-1.5 block text-xs font-bold text-white/60">
+        {label}
+        {required && <span className="text-rose-300"> *</span>}
+      </span>
+      {children}
+      {hint && <span className="mt-1 block text-[11px] text-white/35">{hint}</span>}
+    </div>
+  );
+}
 
 function Input({
   label,
@@ -652,11 +948,7 @@ function Input({
   hint?: string;
 }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-bold text-white/60">
-        {label}
-        {required && <span className="text-rose-300"> *</span>}
-      </span>
+    <Field label={label} required={required} hint={hint}>
       <input
         type={type}
         value={value}
@@ -664,7 +956,6 @@ function Input({
         dir={ltr ? "ltr" : undefined}
         className={fieldClass}
       />
-      {hint && <span className="mt-1 block text-[11px] text-white/35">{hint}</span>}
-    </label>
+    </Field>
   );
 }

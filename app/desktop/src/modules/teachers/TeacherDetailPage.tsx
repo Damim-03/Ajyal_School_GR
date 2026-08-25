@@ -7,10 +7,12 @@ import {
   CalendarClock,
   CalendarDays,
   ClipboardCheck,
+  FileText,
   Loader2,
   Mail,
   MapPin,
   Phone,
+  ScrollText,
   Users,
   X,
 } from "lucide-react";
@@ -24,6 +26,8 @@ import { PATHS } from "../../routes/paths";
 import { useScreenExit } from "../../lib/screen-transition";
 import { uiSound } from "../../lib/ui-sound";
 import { DAYS, subjectTone, SESSION_TONE } from "../schedules/schedules.api";
+import { EmploymentCertificatePreview } from "./EmploymentCertificate";
+import { TeacherDocumentsPanel } from "./TeacherDocuments";
 import {
   countTeacherStudents,
   dmy,
@@ -69,6 +73,15 @@ export default function TeacherDetailPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * الشهادةُ تتبع السنةَ المعروضة ولا تتجمّد على ما فُتحت عليه.
+   *
+   * اسمُ السنة يُقرأ عند الرسم لا عند الفتح: من بدّل السنةَ والمعاينةُ
+   * مفتوحة كانت إسناداتُها تتبدّل والعنوانُ يبقى — فتخرج ورقةٌ تقول
+   * سنةً وتعدّد موادَّ سنةٍ أخرى.
+   */
+  const [certificate, setCertificate] = useState(false);
+  const [documentCount, setDocumentCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (yearId || years.length === 0) return;
@@ -141,6 +154,17 @@ export default function TeacherDetailPage() {
           ))}
         </select>
 
+        {teacher && (
+          <button
+            onClick={() => setCertificate(true)}
+            className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black text-[#041f1c] transition hover:brightness-110"
+            style={{ background: ACCENT }}
+          >
+            <ScrollText className="h-4 w-4" />
+            شهادة عمل
+          </button>
+        )}
+
         <button
           onClick={() => exitTo(PATHS.teachersList)}
           className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-bold transition hover:bg-white/20"
@@ -149,6 +173,17 @@ export default function TeacherDetailPage() {
           رجوع
         </button>
       </AppHeader>
+
+      {certificate && teacher && (
+        <EmploymentCertificatePreview
+          teacher={teacher}
+          assignments={yearAssignments}
+          academicYear={years.find((y) => y.id === yearId)?.name ?? "—"}
+          /* صورةٌ تُضاف من المعاينة تظهر في الملفّ خلفها بلا إعادة جلب */
+          onTeacherChange={setTeacher}
+          onClose={() => setCertificate(false)}
+        />
+      )}
 
       <div className="mx-auto max-w-[1500px] p-6">
         {error && (
@@ -171,6 +206,7 @@ export default function TeacherDetailPage() {
             >
               <div className="flex flex-wrap items-start gap-6">
                 <Avatar
+                  src={teacher.avatar}
                   name={`${teacher.lastName} ${teacher.firstName}`}
                   gender={teacher.gender}
                   size={64}
@@ -420,6 +456,32 @@ export default function TeacherDetailPage() {
                     </table>
                   </div>
                 )}
+              </Panel>
+            </div>
+
+            {/* ================= ملفّ وثائقه ================= */}
+            <div className="mt-5">
+              <Panel
+                icon={FileText}
+                title="وثائق ملفّه"
+                hint={
+                  documentCount === null
+                    ? undefined
+                    : documentCount === 0
+                      ? "لا وثيقة بعد"
+                      : `${documentCount} مسلَّمة`
+                }
+              >
+                {/*
+                  الرفعُ هنا لمن يملك التعديل وحده — ومن لا يملكه يرى ما
+                  سُلّم ولا يمسّه. والعرضُ لا يُخفى عنه: سؤالُ «هل سلّم
+                  شهادته؟» يسأله الاستقبالُ لا الإدارةُ وحدها.
+                */}
+                <TeacherDocumentsPanel
+                  teacherId={teacher.id}
+                  readOnly={!can("teacher.update")}
+                  onChange={(f) => setDocumentCount(f.delivered)}
+                />
               </Panel>
             </div>
           </>

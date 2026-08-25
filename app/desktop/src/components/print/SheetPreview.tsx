@@ -40,6 +40,7 @@ export function SheetPreview({
   children,
   onRefresh,
   orientation = "landscape",
+  controls,
   onClose,
 }: {
   title: string;
@@ -47,6 +48,16 @@ export function SheetPreview({
   /** تنبيهٌ يُقرأ قبل إهدار ورقة — نقصُ الحصص مثلاً */
   warning?: string | null;
   children: ReactNode;
+  /**
+   * ضوابطُ الورقة نفسِها — شريطٌ تحت الترويسة لا يُطبع.
+   *
+   * ما يُبدّل **محتوى** الوثيقة قبل خروجها: صورةُ الأستاذ على شهادة
+   * العمل مثلاً. وهي غيرُ ضوابط الطباعة (الطابعة والأوراق) لأنّها من
+   * شأن المستند لا من شأن الجهاز، فتُمرَّر من الشاشة التي تعرفه.
+   *
+   * وتُصنَّف `sheet-preview-chrome` فتغيب عن الورق كبقية الغلاف.
+   */
+  controls?: ReactNode;
   /**
    * إعادةُ جلب معطيات الكشف والورقة معه.
    *
@@ -363,6 +374,12 @@ export function SheetPreview({
             إغلاق
           </button>
         </header>
+
+        {controls && (
+          <div className="sheet-preview-chrome flex flex-wrap items-center gap-3 border-b border-white/10 px-6 py-3">
+            {controls}
+          </div>
+        )}
 
         {warning && (
           <div className="sheet-preview-chrome flex items-start gap-2.5 border-b border-amber-400/20 bg-amber-500/10 px-6 py-3 text-xs leading-relaxed text-amber-100">

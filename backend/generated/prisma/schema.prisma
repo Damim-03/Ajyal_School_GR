@@ -352,6 +352,11 @@ model Teacher {
   email          String?   @unique
   phone          String?
   gender         Gender
+  /// مسار الصورة كما يُرجعه /api/uploads — مثل "/uploads/1712-93.jpg"
+  ///
+  /// وهي غيرُ وثيقة «صورة شمسية» في `TeacherDocument`: تلك ورقةٌ سُلّمت
+  /// وتُذكر في قائمة ما سُلّم، وهذه وجهُه في الشاشات وعلى شهادة العمل.
+  avatar         String?
   birthDate      DateTime?
   hireDate       DateTime
   address        String?
@@ -368,8 +373,45 @@ model Teacher {
   lessonSlots         LessonSlot[]
   debtShares          TeacherDebtShare[]
   teacherPayments     TeacherPayment[]
+  documents           TeacherDocument[]
 
   @@index([lastName])
+}
+
+// ------------------------------------------------------
+// TeacherDocument
+// ------------------------------------------------------
+
+/// وثائقُ ملفّ الأستاذ — كوثائق الطالب في بنيتها، وتفترقان في شيء:
+/// أنواعُ الطالب مغلقةٌ في الشيفرة، وهذه **تفتحها الإدارة**.
+///
+/// السببُ أنّ ملفّ التوظيف يختلف باختلاف الجهة التي تطلبه: مؤسّسةٌ
+/// تطلب صحيفةَ السوابق، وأخرى تطلب شهادةَ الإقامة، وثالثةٌ تطلب
+/// وثيقةً لا تخطر ببال من كتب الكتالوج. فبقي الافتراضيُّ في الشيفرة
+/// وفُتح للإدارة أن تضيف نوعاً بمفتاحٍ `custom_…` وتسميةٍ من عندها،
+/// وتسميتُه محفوظةٌ في الصفّ نفسِه لأنّه لا كتالوجَ يحملها.
+model TeacherDocument {
+  id           String   @id @default(cuid())
+  teacherId    String
+  /// مفتاح النوع — photo, id_card, ... أو custom_xxxxx لما تضيفه الإدارة
+  type         String   @db.VarChar(64)
+  /// تسميةُ النوع المضاف — تُقرأ للأنواع `custom_` وحدها
+  label        String?  @db.VarChar(80)
+  /// مسار الملف كما يُرجعه /api/uploads
+  filePath     String
+  /// الاسم الأصلي للعرض والتنزيل
+  fileName     String?
+  note         String?
+  uploadedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  teacher    Teacher @relation(fields: [teacherId], references: [id])
+  uploadedBy User?   @relation("TeacherDocUploadedBy", fields: [uploadedById], references: [id])
+
+  @@unique([teacherId, type])
+  @@index([teacherId])
+  @@index([type])
 }
 
 // ------------------------------------------------------
@@ -745,6 +787,7 @@ model User {
   receipts          Receipt[]            @relation("ReceiptPrintedBy")
   cancelledReceipts Receipt[]            @relation("ReceiptCancelledBy")
   documents         StudentDocument[]    @relation("DocumentUploadedBy")
+  teacherDocuments  TeacherDocument[]    @relation("TeacherDocUploadedBy")
   settlementDocs    SettlementDocument[] @relation("SettlementDocUploadedBy")
 
   confirmedSettlements     Settlement[]        @relation("SettlementConfirmedBy")

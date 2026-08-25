@@ -26,6 +26,8 @@ const teacherListSelect = {
   email: true,
   phone: true,
   gender: true,
+  /* الصورة في القائمة أيضاً — الصفُّ يُعرف بوجهه قبل سطره */
+  avatar: true,
   birthDate: true,
   hireDate: true,
   specialization: true,
@@ -175,6 +177,7 @@ export const createTeacherService = async (body: CreateTeacherInput) => {
       email: body.email ?? null,
       phone: body.phone ?? null,
       gender: body.gender,
+      avatar: body.avatar ?? null,
       birthDate: body.birthDate ?? null,
       hireDate: body.hireDate,
       address: body.address ?? null,
@@ -214,6 +217,7 @@ export const updateTeacherService = async (
       ...(body.email !== undefined && { email: body.email }),
       ...(body.phone !== undefined && { phone: body.phone }),
       ...(body.gender !== undefined && { gender: body.gender }),
+      ...(body.avatar !== undefined && { avatar: body.avatar }),
       ...(body.birthDate !== undefined && { birthDate: body.birthDate }),
       ...(body.hireDate !== undefined && { hireDate: body.hireDate }),
       ...(body.address !== undefined && { address: body.address }),
@@ -253,5 +257,15 @@ export const deleteTeacherService = async (id: string) => {
     );
   }
 
-  await prisma.teacher.delete({ where: { id } });
+  /*
+   * الوثائق تُحذف معه لا قبله بيدِ المستخدم.
+   *
+   * صفوفُها تشير إليه بمفتاحٍ أجنبي، فحذفُه دونها يفشل برسالةِ قاعدةِ
+   * بيانات لا يفهمها من يقرؤها. ولا معنى لوثيقةِ توظيفٍ لأستاذٍ مُحيت
+   * سطورُه — أمّا صورُها على القرص فتبقى، وتنظيفُها شأنُ الصيانة.
+   */
+  await prisma.$transaction([
+    prisma.teacherDocument.deleteMany({ where: { teacherId: id } }),
+    prisma.teacher.delete({ where: { id } }),
+  ]);
 };

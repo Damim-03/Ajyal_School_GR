@@ -24,6 +24,8 @@ export interface TeacherRow {
   email: string | null;
   phone: string | null;
   gender: Gender;
+  /** مسار الصورة كما يُرجعه /api/uploads — وجهُه في الشاشات وعلى شهادته */
+  avatar: string | null;
   birthDate: string | null;
   hireDate: string;
   specialization: string | null;
@@ -67,6 +69,7 @@ export interface TeacherBody {
   lastName: string;
   gender: Gender;
   hireDate: string;
+  avatar?: string | null;
   email?: string | null;
   phone?: string | null;
   birthDate?: string | null;
@@ -123,6 +126,90 @@ export const updateTeacher = async (id: string, body: Partial<TeacherBody>) => {
 
 export const deleteTeacher = async (id: string) => {
   await apiClient.delete(`/teachers/${id}`);
+};
+
+// --------------------------------------------------
+// وثائق ملفّ الأستاذ
+//
+// كوثائق الطالب في شكلها، وتفترق عنها في أنّ الأنواع مفتوحة: خاناتٌ
+// افتراضية يُرسلها الخادم، ومعها ما تسمّيه الإدارةُ بنفسها.
+// --------------------------------------------------
+
+export interface TeacherDocumentType {
+  key: string;
+  label: string;
+  hint?: string;
+}
+
+export interface TeacherDocument {
+  id: string;
+  type: string;
+  label: string | null;
+  filePath: string;
+  fileName: string | null;
+  note: string | null;
+  createdAt: string;
+  uploadedBy: { id: string; username: string } | null;
+}
+
+export interface TeacherCatalogueEntry extends TeacherDocumentType {
+  /** أضافته الإدارة — يُحذف بحذف ملفّه ولا يبقى خانةً فارغة */
+  custom: boolean;
+  document: TeacherDocument | null;
+}
+
+export interface TeacherFile {
+  catalogue: TeacherCatalogueEntry[];
+  delivered: number;
+}
+
+/**
+ * مفتاحٌ لنوعٍ تضيفه الإدارة.
+ *
+ * يُولَّد هنا لا يُشتقّ من التسمية: تسميةٌ عربية لا تصلح مفتاحاً،
+ * وتحويلُها بالحروف اللاتينية يجعل «شهادة الخبرة» و«شهادة الخبرة
+ * المهنية» مفتاحاً واحداً فتُستبدل إحداهما بالأخرى صامتةً.
+ */
+export const customDocumentKey = () =>
+  `custom_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-4)}`;
+
+export const getTeacherDocumentTypes = async () => {
+  const { data } = await apiClient.get("/teachers/document-types");
+  return data.data.types as TeacherDocumentType[];
+};
+
+export const getTeacherFile = async (teacherId: string) => {
+  const { data } = await apiClient.get(`/teachers/${teacherId}/documents`);
+  return data.data as TeacherFile;
+};
+
+export const putTeacherDocument = async (
+  teacherId: string,
+  type: string,
+  body: { filePath: string; fileName?: string | null; label?: string | null },
+) => {
+  const { data } = await apiClient.put(
+    `/teachers/${teacherId}/documents/${type}`,
+    body,
+  );
+  return data.data as TeacherFile;
+};
+
+export const deleteTeacherDocument = async (teacherId: string, type: string) => {
+  const { data } = await apiClient.delete(
+    `/teachers/${teacherId}/documents/${type}`,
+  );
+  return data.data as TeacherFile;
+};
+
+/** رفع ملف → المسار الذي يُحفظ في الوثيقة */
+export const uploadImage = async (file: File): Promise<string> => {
+  const form = new FormData();
+  form.append("file", file);
+
+  const { data } = await apiClient.post("/uploads", form);
+
+  return data.data.path as string;
 };
 
 // --------------------------------------------------
