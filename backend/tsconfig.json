@@ -16,7 +16,8 @@
     "typeRoots": ["./src/@Types", "./node_modules/@types"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"],
+  "//": "الاختبارات خارج بناء الإنتاج — لا تُرفع إلى الخادم. تُفحص أنواعُها في tsconfig.test.json",
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts"],
   "ts-node": {
     "files": true
   }

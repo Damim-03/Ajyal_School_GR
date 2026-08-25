@@ -44,7 +44,15 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({
+/**
+ * ويُصدَّر ليُعاد استعمالُه في التهيئة الأولى.
+ *
+ * فشاشةُ «مؤسستك» ترفع شعاراً قبل أن يوجد مستخدمٌ في القاعدة — أي
+ * قبل أن يكون ثمّة توكن، وهذا الراوترُ كلُّه خلف `authMiddleware`.
+ * ومسارُ التهيئة يستعمل **هذا** المُهيّأ نفسَه (نفسَ المجلَّد والحدِّ
+ * والامتدادات المسموحة)، فلا يُفتح بابٌ ثانٍ بقواعدَ أرخى.
+ */
+export const imageUpload = multer({
   storage,
   limits: { fileSize: 3 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
@@ -65,7 +73,7 @@ router.use(authMiddleware);
 // POST /api/uploads — multipart، الحقل: file
 router.post(
   "/",
-  upload.single("file"),
+  imageUpload.single("file"),
   asyncHandler(async (req: Request, res: Response) => {
     if (!req.file) {
       throw new BadRequestException(

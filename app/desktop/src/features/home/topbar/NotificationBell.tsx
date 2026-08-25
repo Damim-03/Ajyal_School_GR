@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Bell, CircleAlert, CircleCheck, Hand, Info, Sparkles } from "lucide-react";
+import {
+  Bell,
+  CircleAlert,
+  CircleCheck,
+  Hand,
+  Info,
+  Sparkles,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
 
 import { LAYER } from "../../../motion/layers";
 import { MOTION } from "../../../motion/system";
@@ -31,6 +40,15 @@ const TONE: Record<NoticeKind, { edge: string; icon: typeof Info }> = {
   error: { edge: "#e88f9a", icon: CircleAlert },
   trophy: { edge: "#d9b8f0", icon: Sparkles },
   welcome: { edge: "#f0dcb8", icon: Hand },
+  /*
+   * الانقطاعُ والعودةُ في السجلّ أيضاً — وهو موضعُهما الأنفع.
+   *
+   * فبطاقةُ الانقطاع تُرفع من نفسها متى عاد الخادم، وقد لا يكون
+   * المستخدمُ ناظراً حينها. والسجلُّ يُبقي الأثر: «انقطع 10:14،
+   * عاد 10:16» — وبه يُعرف هل كان العطبُ في الشبكة أم في العمل.
+   */
+  offline: { edge: "#e88f9a", icon: WifiOff },
+  restored: { edge: "#7fd4a8", icon: Wifi },
 };
 
 /** عرضُ اللوحة — رقمٌ لا صنف: يقرؤه حسابُ الموضع أدناه. */

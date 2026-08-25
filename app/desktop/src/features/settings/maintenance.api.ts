@@ -89,6 +89,31 @@ export const resetSystem = async (body: {
   };
 };
 
+/**
+ * **إعادةُ فتح شاشات التهيئة الأولى.**
+ *
+ * ولماذا هنا ومسارُها `/system/first-boot`: لأنّ صلاحيتَها
+ * `maintenance.reset` — هي فعلُ صيانةٍ لا خطوةُ تهيئة، ومَن يملكها هو
+ * من يقف أمام هذه الشاشة. وخدماتُ التهيئة في `features/first-boot`
+ * **لا تستعمل `apiClient` بقرارٍ موثَّق** (تتجنّب مُعترِضَ الـ401 لأنّها
+ * تعمل قبل وجود جلسة)، وهذه وحدها تحتاج المصادقة — فوضعُها هناك كان
+ * سينقض ذلك القرار.
+ *
+ * **وهي النقطةُ الوحيدة التي تُعيد الشاشات.** لا `‏/maintenance/reset`
+ * ولا حذفُ الصفوف من القاعدة: الأولى لا تمسّ مفاتيح `system.first_boot.*`
+ * إطلاقاً، والثاني يجعل `loadState` يرى مديراً وسنةً جارية **فيتبنّى
+ * التركيبَ من جديد** ويعلّمه مكتملاً. ولذلك تكتب هذه الخدمةُ
+ * `NOT_STARTED` صراحةً ولا تكتفي بالحذف.
+ */
+export const reopenFirstBoot = async () => {
+  const { data } = await apiClient.post("/system/first-boot/reset", {
+    /* الكلمةُ حرفيةٌ في مخطّط الخادم — الحرسُ الثالث بعد المصادقة والصلاحية */
+    confirm: "RESET",
+  });
+
+  return data.data as { status: string; current: string; done: string[] };
+};
+
 /** «9.9 م.ب» — الحجم يُقرأ لا يُحسب */
 export const humanBytes = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} بايت`;

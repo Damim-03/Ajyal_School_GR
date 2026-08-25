@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from "motion/react";
-import { Maximize2, Power, Settings2 } from "lucide-react";
+import { Maximize2, Power, Search } from "lucide-react";
 
 import { Avatar } from "../../../components/shared/Avatar";
 import { toggleFullscreen } from "../../../lib/app-window";
@@ -32,7 +32,7 @@ export function HomeTopBar({
   brandColor,
   time,
   date,
-  onSettings,
+  onSearch,
   onLogout,
 }: {
   user: User | null;
@@ -42,7 +42,14 @@ export function HomeTopBar({
   brandColor: string;
   time: string;
   date: string;
-  onSettings: () => void;
+  /**
+   * البحثُ العامّ — حلَّ محلَّ «الإعدادات» في هذا الموضع.
+   *
+   * والزرُّ القديم كان يفعل ما تفعله بلاطةُ الإعدادات في الصفّ تحته
+   * بالضبط: يُركّز عليها. أي أنّه يشغل أثمنَ موضعٍ في الشاشة بطريقٍ
+   * ثانٍ إلى وجهةٍ لها طريقُها الظاهر — والبحثُ لا طريقَ له غير هذا.
+   */
+  onSearch: () => void;
   onLogout: () => void;
 }) {
   const still = useReducedMotion();
@@ -125,8 +132,8 @@ export function HomeTopBar({
           <Maximize2 aria-hidden strokeWidth={1.8} className="h-full w-full" />
         </QuickAction>
 
-        <QuickAction label="الإعدادات" onClick={onSettings}>
-          <Settings2 aria-hidden strokeWidth={1.8} className="h-full w-full" />
+        <QuickAction label="بحث (Ctrl+K)" onClick={onSearch}>
+          <Search aria-hidden strokeWidth={1.8} className="h-full w-full" />
         </QuickAction>
 
         {/*

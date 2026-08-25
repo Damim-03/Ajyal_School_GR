@@ -65,6 +65,28 @@ export const loginLimiter = rateLimit({
  * والسقفُ سخيٌّ عمداً: الشاشةُ تُفتح وتُغلق في التجريب، وقاعةٌ فيها
  * عدّةُ أجهزةٍ خلف بوّابةٍ واحدة تشترك في العنوان.
  */
+/**
+ * مساراتُ التهيئة الأولى — **مفتوحةٌ بلا مصادقة، وهذا هو سببُ الحدّ**.
+ *
+ * ولا مفرّ من فتحها: لا حسابَ في القاعدة قبل أن تُنشئه شاشةُ المدير،
+ * فاشتراطُ توكنٍ يجعلها بابَاً لا يُفتح إلّا من داخله. والنافذةُ
+ * تُغلق من نفسها: متى صارت الحالةُ `COMPLETED` رُدَّت كلُّ خطوةٍ
+ * بـ409 مهما تكرّرت (§38).
+ *
+ * فيبقى خطرُ من يقصف الباب في الدقائق التي تسبق الإتمام — وهذا حدُّه.
+ * والسقفُ يسع تهيئةً كاملةً بأخطائها وإعاداتها ولا يسع أكثر.
+ */
+export const setupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: jsonHandler(
+    "Too many setup requests, please try again shortly",
+    ErrorCodeEnum.ACCESS_FORBIDDEN,
+  ),
+});
+
 export const profilesLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   limit: 60,

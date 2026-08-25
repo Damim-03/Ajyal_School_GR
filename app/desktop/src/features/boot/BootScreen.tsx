@@ -1,67 +1,86 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+
 import { LAYER } from "../../motion/layers";
 import nexschoolLogo from "../../assets/nexschool/nexschool.png";
-import { useEffect, useRef, useState } from "react";
-import { CinematicEnvironment } from "../../components/environment/CinematicEnvironment";
 import { UserSelectionScreen } from "../../components/user-selection/UserSelectionScreen";
 import { sfx, playAmbient } from "../../lib/sound";
 import { useSchool } from "../../core/stores/school.store";
 import { curve, environment, useHomeRevealed } from "../../motion/home-entrance";
-
-const LOGO_MS = 6000; // الشعار وحده على الأسود (تلاشٍ داخل/خارج)
-const NOTICE_MS = 5000; // جملة التحذير الصحّي
-const SOUND_DELAY_MS = 2000; // الصوت يبدأ بعد ظهور الجملة بثانيتين
+import { BootStage } from "./engine/BootStage";
+import type { BootPhase } from "./engine/boot.config";
 
 /**
- * شاشة بدء التشغيل بأربع مراحل (نمط PS5):
- * 1) شعار NexSchool وحده على أسود — 6 ثوانٍ بتلاشٍ داخل ثم خارج.
- * 2) جملة تحذير الصحّة والسلامة (الصوت يبدأ بعد ظهورها بثانيتين).
- * 3) كشف سلس للخلفية + «اضغط Enter».
- * 4) اختيار المستخدم — فوق البيئة نفسها بلا إعادة تركيب.
+ * **شاشةُ الإقلاع — مشهدٌ حقيقيٌّ على الوحدة الرسومية، لا تتابعُ مؤقّتات.**
+ *
+ * ما كان: أربعُ مراحلَ يقودها `setTimeout` (شعارٌ ستَّ ثوانٍ، ثمّ تحذيرٌ
+ * خمساً، ثمّ «اضغط Enter»)، وخلفها مشهدٌ على `canvas 2d` يرسم ألفَ جسيمٍ
+ * بالمعالج المركزيّ.
+ *
+ * وما صار: **جدولٌ واحدٌ حتميّ** يملك تسعَ ثوانٍ بثلاثةَ عشرَ طوراً
+ * (`engine/BootTimeline`)، ومحرّكُ جسيماتٍ على WebGL2 يقرأ منه
+ * (`engine/BootRenderer`). ولا `setTimeout` في الملفّ كلِّه.
+ *
+ * ## تقسيمُ المسؤولية
+ *
+ *   المحرّك (خارج React)  →  الجسيمات، الحقل، الوهج، الجوّ
+ *   هذا الملفّ (React)     →  الشعار، الحجاب، هويّةُ المؤسسة، المصادقة
+ *
+ * والوصلُ بينهما خيطٌ واحد: `onPhase` يُنادى عند **تبدّل الطور** فقط —
+ * ثلاثَ عشرةَ مرّةً في تسع ثوانٍ، لا ستّين مرّةً في الثانية.
+ *
+ * ## ولماذا لا تُفكَّك الطبقةُ بعد التسليم
+ *
+ * تبقى مركَّبةً فوق الرئيسية تنسحب (§6 في نظام الدخول): لو فُكّكت في
+ * الإطار الذي تُركَّب فيه الرئيسيةُ تحتها لومض السوادُ بينهما. ولذلك
+ * قاعُها **مشروط**: أسودُ ما دامت هي الشاشة، وشفّافٌ حين تصير طبقةً
+ * منسحبة.
  */
-export function BootScreen({ onDone }: { onDone: () => void }) {
-  /*
-   * أربعُ مراحل في مكوّنٍ واحد — واختيارُ المستخدم منها لا صفحةٌ في
-   * الموجّه. والسببُ واحد: `CinematicEnvironment` يُركَّب هنا مرّةً،
-   * فبقاؤه مركَّباً عبر المراحل يعني أنّ الغبار يواصل انجرافه والنغمة
-   * تمتدّ بلا انقطاع. ولو كانت صفحةً في الموجّه لأُعيد تركيبُ اللوحة
-   * وبدأ المشهد من الصفر — وهو نقيضُ «البقاء داخل الفضاء نفسه».
-   */
-  const [phase, setPhase] = useState<"logo" | "notice" | "press" | "users">("logo");
 
+/** الأطوارُ التي يُرى فيها الشعار. */
+const LOGO_PHASES = new Set<BootPhase>(["BOOT_IDLE", "LOGO_REVEAL", "LOGO_HOLD"]);
+
+/** أوّلُ طورٍ يُسمع فيه صوت — مع أوّل بذرة، لا قبلها. */
+const SOUND_AT: BootPhase = "BLUE_SEED";
+
+/** الأطوارُ التي تُعرض فيها هويّةُ المؤسسة — أثناء بناء الحقل. */
+const NOTICE_PHASES = new Set<BootPhase>([
+  "BLUE_FLOW",
+  "GOLD_INTRODUCTION",
+  "BLUE_GOLD_INTERACTION",
+  "WARM_BLOOM",
+]);
+
+export function BootScreen({
+  onDone,
+  skipIntro = false,
+}: {
+  onDone: () => void;
   /**
-   * شدّةُ الفضاء — **تخفت عند نجاح الدخول ولا تنطفئ** (§4).
+   * تخطّي المشهد — ويُرفع بعد التهيئة الأولى مباشرةً.
    *
-   * كانت تُصفَّر، فتموت الأقراصُ والغبارُ والضبابُ قبل التسليم بثلث
-   * ثانية: يرى المستخدمُ الفضاءَ ينطفئ ثمّ يرى فضاءً آخرَ يُشعَل. وهذا
-   * نقيضُ ما يجب أن تكونه هذه اللحظة — هو لم يغادر المكان، إنّما أُضيء
-   * له ما فيه.
-   *
-   * 0.82: خفوتٌ محسوسٌ يقول «شيءٌ ما يتبدّل»، والجسيماتُ تواصل انجرافها
-   * إلى آخر إطارٍ تُرسم فيه.
+   * المستخدمُ خرج للتوّ من رحلةٍ انتهت بـ«أنت جاهز»، فأن يُعرض عليه
+   * تسعُ ثوانٍ من الجسيمات ليختار الحسابَ الذي أنشأه قبل نصف دقيقة
+   * نقضٌ للحظة التي بُنيت لأجلها تلك الشاشة. فيُقفز إلى الفضاء المستقرّ
+   * ويُدخَل مباشرةً إلى اختيار المستخدم.
    */
-  const [envIntensity, setEnvIntensity] = useState(1);
+  skipIntro?: boolean;
+}) {
+  /** الطورُ الجاري — يكتبه المحرّكُ عند تبدّله وحده. */
+  const [phase, setPhase] = useState<BootPhase>(
+    skipIntro ? "AUTHENTICATION_READY" : "BOOT_IDLE",
+  );
 
-  /**
-   * التسليم — الرئيسيةُ **رُسمت**، لا مجرّد رُكّبت.
-   *
-   * والفرقُ بين الأمرين هو كلُّ الفرق بين تسليمٍ نظيفٍ وآخرَ يكشف
-   * مشهداً نصفَ مبنيّ. تركيبُ الرئيسية يحجب الخيطَ ~310ms؛ ولو بدأ
-   * الانسحابُ عنده لمضى على المُركِّب — وهو لا ينتظر الخيطَ المحجوب —
-   * فانكشفت من خلفه رئيسيةٌ لم تُرسم بعد.
-   *
-   * فالإشارةُ هي `revealed`: يرفعها المنسّقُ حين تُعلن الرئيسيةُ
-   * جاهزيّتها في أوّل إطارٍ بعد رسمها. وعندها تتوقّف شاشةُ الإقلاع عن
-   * كونها الشاشة: تصير طبقةً منسحبةً فوق أخرى حيّة. فتُرفع عنها ثلاثةُ
-   * أشياء دفعةً واحدة — سوادُ قاعها (وإلّا حجبت ما تحتها)، والتقاطُها
-   * للمؤشّر (وإلّا ابتلعت أوّل نقرةٍ في الرئيسية §23)، وتماسكُها
-   * البصريّ (تتلاشى).
-   */
-  const departing = useHomeRevealed();
+  /** اختيارُ المستخدم مفتوح — بعد Enter، أو فوراً في مسار التخطّي. */
+  const [choosing, setChoosing] = useState(skipIntro);
+
+  /** المصادقةُ نجحت — الطبقةُ تنسحب. */
+  const [leaving, setLeaving] = useState(false);
+
+  const soundStarted = useRef(false);
 
   /*
-   * الإقلاع يسبق الدخول، وقراءة الهوية تحتاج مصادقة — فتُعرض هنا
-   * افتراضياتُ المتجر أو آخر قيمةٍ عرفها هذا الجهاز. أوّل تشغيلٍ
-   * في مدرسة جديدة يُظهر الافتراضي ثوانيَ ثم يصير باسمها بعد أوّل دخول.
+   * الإقلاعُ يسبق الدخول، وقراءةُ الهوية تحتاج مصادقة — فتُعرض هنا
+   * افتراضياتُ المتجر أو آخرُ قيمةٍ عرفها هذا الجهاز.
    */
   const shortName = useSchool("school.short_name");
   const shortSuffix = useSchool("school.short_suffix");
@@ -69,176 +88,227 @@ export function BootScreen({ onDone }: { onDone: () => void }) {
   const nameEn = useSchool("school.name_en");
   const brand = useSchool("school.brand_color");
 
-  const NOTICE = `${schoolName} — الاستعمال مقيَّد بالمخوَّلين.`;
-  const soundStarted = useRef(false);
+  /**
+   * التسليم — الرئيسيةُ **رُسمت**، لا مجرّد رُكّبت.
+   *
+   * والإشارةُ `revealed` يرفعها المنسّقُ حين تُعلن الرئيسيةُ جاهزيّتها
+   * في أوّل إطارٍ بعد رسمها. وعندها تُرفع عن هذه الطبقة ثلاثةُ أشياء
+   * دفعةً واحدة: سوادُ قاعها، والتقاطُها للمؤشّر، وتماسكُها البصريّ.
+   */
+  const departing = useHomeRevealed();
 
-  // تسلسل المراحل: شعار → تحذير → اضغط Enter
-  useEffect(() => {
-    const toNotice = window.setTimeout(() => setPhase("notice"), LOGO_MS);
-    const toPress = window.setTimeout(() => setPhase("press"), LOGO_MS + NOTICE_MS);
-    return () => {
-      window.clearTimeout(toNotice);
-      window.clearTimeout(toPress);
-    };
-  }, []);
+  /**
+   * تبدّلُ الطور — الخيطُ الوحيد بين المحرّك وReact.
+   *
+   * وثابتُ الهويّة (`useCallback` بلا تبعيات متغيّرة): لو تبدّلت هويّتُه
+   * في كلّ عرضٍ لأُعيد إنشاءُ السياق الرسوميّ — أربعةُ برامجَ تُترجم
+   * وثلاثةُ أنسجةٍ ملءَ الشاشة تُخصَّص — لأنّ `BootStage` يقرؤه في
+   * أثرٍ بلا تبعيات.
+   */
+  const onPhase = useCallback((next: BootPhase) => {
+    setPhase(next);
 
-  // النغمة تبدأ بعد ظهور جملة التحذير بثانيتين — مؤقّت مستقلّ عن المراحل فلا تقطعه
-  // مرحلة تالية. نغمة واحدة فقط («002. Select User») تستمرّ عبر شاشة انتظار Enter
-  // ثم شاشة اختيار المستخدم بلا إعادة تشغيل (playAmbient يتجاهل الطلب المكرّر).
-  useEffect(() => {
-    const t = window.setTimeout(() => {
-      if (soundStarted.current) return; // مرّة واحدة فقط
+    /*
+     * النغمةُ تبدأ مع **أوّل بذرة** لا مع الشعار.
+     *
+     * فالصمتُ البصريّ (§7) يجب أن يكون صمتاً سمعياً أيضاً: نغمةٌ تعمل
+     * فوق شاشةٍ سوداءَ صامتة تُقرأ خطأً في التشغيل. ومع أوّل نقطة ضوءٍ
+     * يُقرأ الصوتُ **مصاحباً** لها.
+     *
+     * ونغمةٌ واحدة تمتدّ عبر المشهد كلِّه وعبر اختيار المستخدم بعده —
+     * و`playAmbient` يُهمل الطلبَ المكرّر فلا تُستأنف من أوّلها.
+     */
+    if (next === SOUND_AT && !soundStarted.current) {
       soundStarted.current = true;
       playAmbient("select");
-    }, LOGO_MS + SOUND_DELAY_MS);
-    return () => window.clearTimeout(t);
+    }
   }, []);
 
-  // لا دخول إلا بضغط Enter
+  /*
+   * مسارُ التخطّي: الفضاءُ مستقرٌّ والنغمةُ تبدأ فوراً — لا صمتَ يسبقها
+   * لأنّه لا مشهدَ يسبقها.
+   */
   useEffect(() => {
-    if (phase !== "press") return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        sfx("enter", 0.92);
-        setPhase("users");
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [phase]);
+    if (!skipIntro || soundStarted.current) return;
+    soundStarted.current = true;
+    playAmbient("select");
+  }, [skipIntro]);
 
-  const revealed = phase === "press" || phase === "users";
+  /* لا دخولَ إلا بضغط Enter — وهو سلوكٌ قائمٌ في المنتج، أُبقي كما هو. */
+  useEffect(() => {
+    if (choosing || phase !== "AUTHENTICATION_READY") return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      sfx("enter", 0.92);
+      setChoosing(true);
+    };
+
+    window.addEventListener("keydown", onKey);
+
+    return () => window.removeEventListener("keydown", onKey);
+  }, [choosing, phase]);
+
+  const showLogo = LOGO_PHASES.has(phase);
+  const showNotice = NOTICE_PHASES.has(phase);
+  const ready = phase === "AUTHENTICATION_READY";
 
   return (
-    /*
-      القاعُ الأسودُ مشروط، لا ثابت.
+    <div
+      className="fixed inset-0 select-none overflow-hidden text-white"
+      style={{
+        zIndex: LAYER.boot,
+        /*
+          القاعُ مشروطٌ لا ثابت: سوادٌ دائمٌ فيه كان سيحجب ما جاءت هذه
+          الطبقةُ تكشفه — تتلاشى الطبقاتُ كلُّها فوق سوادٍ لا يتلاشى.
+        */
+        backgroundColor: departing ? "transparent" : "#04060c",
+        opacity: departing ? 0 : 1,
+        transition: `opacity ${environment.fade}ms cubic-bezier(${curve.ambient.join(",")})`,
+        /* أوّلُ نقرةٍ بعد التسليم تخصّ الرئيسية لا هذه الطبقة (§23). */
+        pointerEvents: departing ? "none" : "auto",
+      }}
+    >
+      {/*
+        ===== المحرّك =====
 
-      كان `bg-black` صنفاً دائماً — وهو صحيحٌ ما دامت هذه الشاشةُ هي
-      الشاشة. لكنّها صارت تبقى مركَّبةً بعد التسليم لتنسحب فوق الرئيسية،
-      وسوادٌ دائمٌ في قاعها كان سيحجب ما جاءت تكشفه: تتلاشى الطبقاتُ
-      كلُّها فوق سوادٍ لا يتلاشى، فلا يظهر تحتها شيء.
-    */
-    <div className="fixed inset-0 select-none overflow-hidden text-white"
-         style={{
-           zIndex: LAYER.boot,
-           backgroundColor: departing ? "transparent" : "#000",
-           opacity: departing ? 0 : 1,
-           /* البيئةُ تُغلق المشهد: تلحق آخرَ طبقةٍ منسحبة ولا تتخلّف عنها. */
-           transition: `opacity ${environment.fade}ms cubic-bezier(${curve.ambient.join(",")})`,
-           /* أوّلُ نقرةٍ بعد التسليم تخصّ الرئيسية لا هذه الطبقة (§23). */
-           pointerEvents: departing ? "none" : "auto",
-         }}>
-      {/* البيئة السينمائية — تُركَّب مرّة واحدة وتبقى حيّة عبر كل مراحل الإقلاع
-          (لا تُعاد تهيئتها عند تغيّر المرحلة). المراحل السوداء تعلوها ثم تنكشف.
-          و`focusY` موضعُ مفتاح Enter — حوله يُضيء الغبارُ قليلاً. */}
-      <CinematicEnvironment focusY={0.5} intensity={envIntensity} />
+        يُركَّب مرّةً ويبقى عبر الأطوار كلِّها — بما فيها اختيارُ المستخدم
+        فوقه. فالمصادقةُ ترث الجوَّ الذي نشأت فيه ولا تبدأ فضاءً آخر
+        (§23/§24): الجسيماتُ تتبدّد ويبقى الغلافُ الأزرقُ حيّاً تحتها.
 
-      {/* ستار أسود يغطّي البيئة أثناء المرحلتين الأوليين ثم ينقشع بنعومة
-          (بدل إزالة غطاء معتم فجأة عند تبديل المرحلة). */}
+        و`leaving` يخفت اللوحةَ ولا يُفكّكها: التفكيكُ يُتلف السياق
+        الرسوميّ في اللحظة التي تُبنى فيها الرئيسيةُ تحتها.
+      */}
       <div
-        className="absolute inset-0 bg-black"
+        className="absolute inset-0"
         style={{
-          opacity: revealed ? 0 : 1,
-          transition: "opacity 2000ms cubic-bezier(0.22,1,0.36,1)",
+          opacity: leaving ? environment.intensity : 1,
+          transition: `opacity ${environment.fade}ms cubic-bezier(${curve.ambient.join(",")})`,
+        }}
+      >
+        <BootStage settled={skipIntro} onPhase={onPhase} />
+      </div>
+
+      {/*
+        ===== الحجابُ الأسود =====
+
+        بين الشعار والبذرة الأولى (§7). ومن هنا يُرى الجسيمُ الأوّل:
+        نقطةُ ضوءٍ في عتمةٍ تامّة، لا نقطةٌ تُضاف إلى مشهدٍ نصفِ مضاء.
+      */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[#04060c]"
+        style={{
+          opacity: showLogo || phase === "BLACK_TRANSITION" ? 1 : 0,
+          transition: "opacity 900ms cubic-bezier(0.33,0,0.2,1)",
         }}
       />
 
-      {/* ===== المرحلة 1: شعار البرنامج وحده على أسود ===== */}
-      {phase === "logo" && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          {/*
-            شعارُ **المنتَج** لا شعارُ المؤسسة — والتفريقُ مقصود.
+      {/*
+        ===== ① الشعار =====
 
-            لحظةُ الإقلاع تقول «هذا هو البرنامج الذي يعمل»، كما تفعل
-            الأجهزةُ حين تُشعَل. وهويةُ المدرسة تأتي بعدها: اسمُها في
-            جملة التحذير، وشعارُها في شاشة اختيار المستخدم. فلو وُضع
-            شعارُ المدرسة هنا لضاع الفرقُ بين الاثنين ولم يبقَ في
-            الشاشة كلِّها ما يسمّي البرنامج.
+        شعارُ **المنتَج** لا شعارُ المؤسسة: هذه اللحظة تقول «هذا هو
+        البرنامج الذي يعمل»، وهويّةُ المدرسة تأتي بعدها.
 
-            والقياسُ بـ`clamp` لا بقيمةٍ ثابتة: الشعارُ مربّعٌ يملأ
-            ارتفاعَه، وقيمةٌ ثابتة تجعله لطخةً على 4K وبقعةً على 1280.
-          */}
-          <img
-            src={nexschoolLogo}
-            alt="NexSchool"
-            draggable={false}
-            className="select-none"
-            style={{
-              /*
-               * والصورةُ أكبرُ من علامتها: حول العلامة هامشٌ شفّافٌ في
-               * ملفّ PNG يأكل نحوَ الثلث من كلّ ضلع. فالارتفاعُ المكتوب
-               * هنا ارتفاعُ **الصندوق** لا ما يُرى منه، ولذلك يبدو
-               * الشعارُ أصغرَ ممّا يقوله الرقم بمقدارٍ محسوس.
-               */
-              height: "clamp(280px, 48vh, 600px)",
-              width: "auto",
-              animation: `skk-logo-cycle ${LOGO_MS}ms ease-in-out both`,
-            }}
-          />
-        </div>
-      )}
+        وظهورٌ ومقياسٌ فحسب — لا دوران، ولا ارتداد، ولا تشويه (§6).
+        والمقياسُ من 1.02 لا 0.9: استقرارٌ لا قدوم.
+      */}
+      <div
+        className="pointer-events-none absolute inset-0 flex items-center justify-center"
+        style={{
+          opacity: showLogo ? 1 : 0,
+          transform: showLogo ? "scale(1)" : "scale(1.02)",
+          transition:
+            "opacity 700ms cubic-bezier(0.33,0,0.2,1), transform 900ms cubic-bezier(0.16,1,0.3,1)",
+        }}
+      >
+        <img
+          src={nexschoolLogo}
+          alt="NexSchool"
+          draggable={false}
+          className="select-none"
+          /*
+            الصورةُ أكبرُ من علامتها: حولها هامشٌ شفّافٌ يأكل نحوَ الثلث
+            من كلّ ضلع، فالارتفاعُ المكتوب ارتفاعُ **الصندوق** لا ما يُرى.
+          */
+          style={{ height: "clamp(240px, 38vh, 480px)", width: "auto" }}
+        />
+      </div>
 
-      {/* ===== المرحلة 2: تحذير الصحّة والسلامة ===== */}
-      {phase === "notice" && (
-        <div className="absolute inset-0 flex items-center justify-center px-8">
-          <p
-            dir="ltr"
-            className="max-w-2xl text-center text-lg font-light leading-relaxed tracking-wide text-white/75"
-            style={{ animation: `skk-notice-cycle ${NOTICE_MS}ms ease-in-out both` }}
-          >
-            {NOTICE}
-          </p>
-        </div>
-      )}
+      {/*
+        ===== ② هويّةُ المؤسسة =====
 
-      {/* ===== المرحلة 4: اختيار المستخدم ===== */}
-      {phase === "users" && (
+        سطرٌ واحدٌ هادئ أثناء بناء الحقل — لا شاشةٌ تحجزه خمسَ ثوانٍ.
+        فالمشهدُ يعمل، والسطرُ يمرّ فوقه.
+      */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-[14%] flex justify-center px-8"
+        style={{
+          opacity: showNotice ? 1 : 0,
+          transition: "opacity 1100ms ease-out",
+        }}
+      >
+        <p className="max-w-2xl text-center text-sm font-light leading-relaxed tracking-wide text-white/45">
+          {schoolName} — الاستعمال مقيَّد بالمخوَّلين.
+        </p>
+      </div>
+
+      {/* ===== ③ اختيارُ المستخدم ===== */}
+      {choosing && (
         <UserSelectionScreen
-          onLeaving={() => setEnvIntensity(environment.intensity)}
+          onLeaving={() => setLeaving(true)}
           onAuthenticated={onDone}
         />
       )}
 
-      {/* ===== المرحلة 3: اضغط Enter (فوق الخلفية المنكشفة) ===== */}
-      {phase === "press" && (
+      {/*
+        ===== ④ بوّابةُ Enter =====
+
+        تظهر حين يستقرّ المشهد. والكشفُ متدرّجٌ (§25): السطرُ، ثمّ
+        المفتاح، ثمّ الهويّة — بفواصلَ قصيرة وبلا ارتداد.
+      */}
+      {!choosing && ready && (
         <div className="relative flex h-full flex-col items-center justify-center">
-          {/* الجملة */}
           <p
             dir="ltr"
-            className="absolute top-[22%] text-center text-2xl font-light tracking-wide text-white/90 drop-shadow-[0_2px_18px_rgba(0,0,0,0.8)]"
-            style={{ animation: "skk-fade-up 1100ms ease-out both", animationDelay: "700ms" }}
+            className="absolute top-[24%] text-center text-2xl font-light tracking-wide text-white/85 drop-shadow-[0_2px_18px_rgba(0,0,0,0.8)]"
+            style={{ animation: "skk-fade-up 900ms ease-out both" }}
           >
             Press Enter button on your keyboard.
           </p>
 
-          {/* مفتاح Enter داخل حلقة نابضة */}
-          <div className="relative grid place-items-center" style={{ animation: "skk-fade-up 1100ms cubic-bezier(0.22,1,0.36,1) both", animationDelay: "1000ms" }}>
-            <span className="absolute h-40 w-40 rounded-full border border-white/40" style={{ animation: "skk-ring-pulse 2.6s ease-in-out infinite" }} />
-            <span className="absolute h-40 w-40 rounded-full border border-white/20" />
-            {/*
-              توهّج ساكن بدل تنفّسٍ متحرّك: الحلقة حوله هي القائد البصري،
-              والمفتاح يحضر بمادّته لا بحركته. (وظلٌّ متحرّك لانهائي أغلى
-              ما يُرسَم في هذه الشاشة.)
-            */}
+          <div
+            className="relative grid place-items-center"
+            style={{ animation: "skk-fade-up 900ms cubic-bezier(0.22,1,0.36,1) both", animationDelay: "160ms" }}
+          >
             <span
-              className="grid h-[74px] w-[104px] place-items-center rounded-xl border border-white/35 bg-white/10 text-3xl font-light backdrop-blur-md"
-              style={{ boxShadow: "0 0 34px rgba(255,255,255,0.20)" }}
+              className="absolute h-40 w-40 rounded-full border border-white/35"
+              style={{ animation: "skk-ring-pulse 2.6s ease-in-out infinite" }}
+            />
+            <span className="absolute h-40 w-40 rounded-full border border-white/15" />
+            <span
+              className="grid h-[74px] w-[104px] place-items-center rounded-xl border border-white/30 bg-white/8 text-3xl font-light backdrop-blur-md"
+              style={{ boxShadow: "0 0 34px rgba(255,255,255,0.18)" }}
             >
               ↵
             </span>
-            <span className="absolute -bottom-9 text-xs font-bold tracking-[0.3em] text-white/55">ENTER</span>
+            <span className="absolute -bottom-9 text-xs font-bold tracking-[0.3em] text-white/50">
+              ENTER
+            </span>
           </div>
 
-          {/* هوية المحل أسفل */}
-          <div className="absolute inset-x-0 bottom-10 flex flex-col items-center gap-1" style={{ animation: "skk-fade-up 1000ms ease-out both", animationDelay: "1300ms" }}>
+          <div
+            className="absolute inset-x-0 bottom-10 flex flex-col items-center gap-1"
+            style={{ animation: "skk-fade-up 900ms ease-out both", animationDelay: "320ms" }}
+          >
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-black">{shortName}</span>
               <span className="text-2xl font-black" style={{ color: brand }}>
                 {shortSuffix}
               </span>
             </div>
-            <div className="text-xs text-white/50">
+            <div className="text-xs text-white/45">
               {schoolName}
               {nameEn && ` — ${nameEn}`}
             </div>

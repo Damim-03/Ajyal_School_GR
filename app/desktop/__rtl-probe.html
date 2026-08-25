@@ -1,0 +1,26 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head><meta charset="utf-8"><title>probe</title>
+<style>body{margin:0;background:#05070d;direction:rtl}
+.box{height:260px;width:520px;margin:12px}</style></head>
+<body>
+<div class="box" id="a"></div>
+<div class="box" id="b" style="direction:ltr"></div>
+<script type="module">
+import * as echarts from "echarts";
+const opt = {
+  legend:{ orient:"vertical", left:12, top:"middle", itemWidth:10, itemHeight:10, itemGap:10,
+    formatter:(n)=>`${n}  1.500 دج` },
+  series:[{ type:"pie", radius:["52%","76%"], center:["64%","50%"],
+    label:{show:false},
+    data:[{name:"مسدَّدة",value:8},{name:"مغلقة",value:1}] }],
+};
+for (const id of ["a","b"]) {
+  const c = echarts.init(document.getElementById(id), null, {renderer:"svg"});
+  c.setOption(opt);
+}
+window.__probe = () => [...document.querySelectorAll("#a text, #b text")]
+  .map(t=>({p:t.closest(".box").id, x:t.getAttribute("x"), anchor:getComputedStyle(t).textAnchor,
+            dir:getComputedStyle(t).direction, w:Math.round(t.getBBox().width), txt:t.textContent}));
+</script>
+</body></html>

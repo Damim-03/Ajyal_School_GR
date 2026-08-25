@@ -6,9 +6,10 @@
  */
 export {
   springs, durations, delays, geometry, depth, reduced,
-  background, choreography, expansion, neighbor,
+  background, choreography, expansion, neighbor, focusFrame,
 } from "./tokens";
 export { SpatialNavRow } from "./SpatialNavRow";
+export { railTravel, focusAnchorPx, focusFrameBox } from "./rail-geometry";
 export { SpatialNavItem } from "./SpatialNavItem";
 export { FocusIndicator } from "./FocusIndicator";
 export { AnimatedContextLabel } from "./AnimatedContextLabel";

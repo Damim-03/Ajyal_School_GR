@@ -5,11 +5,17 @@
   "windows": [
     "main"
   ],
+  "comment": "التكبير/الاستعادة لشاشة العرض في التهيئة الأولى — الخيار هناك يحرّك النافذة فعلاً، ولا يحرّكها بلا هذين الإذنين.",
   "permissions": [
     "core:default",
     "core:window:allow-close",
     "core:window:allow-start-dragging",
     "core:window:allow-set-fullscreen",
-    "core:window:allow-is-fullscreen"
+    "core:window:allow-is-fullscreen",
+    "core:window:allow-maximize",
+    "core:window:allow-unmaximize",
+    "core:window:allow-is-maximized",
+    "core:window:allow-scale-factor",
+    "core:window:allow-inner-size"
   ]
 }

@@ -19,16 +19,41 @@ import teacherDebtShareRoutes from "../modules/teacher-debt-share/teacher-debt-s
 import userRoutes from "../modules/user/user.route";
 import roleRoutes, { permissionRouter } from "../modules/role/role.route";
 import reportRoutes from "../modules/report/report.route";
+import reportsWorkspaceRoutes from "../modules/reports/reports.route";
 import uploadRoutes from "../modules/upload/upload.route";
 import maintenanceRoutes from "../modules/maintenance/maintenance.route";
+import systemRoutes from "../modules/system/first-boot.route";
+import { requireInitialized } from "../core/middleware/initialized.middleware";
 
 const mainRoute: Router = Router();
+
+// --------------------------------------------------
+// System — التهيئة الأولى
+//
+// **قبل الحارس** لأنّها هي التي تُنهيه: مسارٌ يُركَّب بعده لا يُنادى
+// إلّا في نظامٍ مهيَّأ، والتهيئةُ لا تقوم في نظامٍ مهيَّأ.
+// --------------------------------------------------
+
+mainRoute.use("/system", systemRoutes);
 
 // --------------------------------------------------
 // Auth
 // --------------------------------------------------
 
 mainRoute.use("/auth", authRoutes);
+
+// --------------------------------------------------
+// حارسُ التهيئة (§62)
+//
+// كلُّ ما بعده يحتاج نظاماً مهيَّأً. وموضعُه هنا — لا في كلّ راوترٍ
+// على حدة — هو ما يجعل الحمايةَ شاملةً بلا سطرٍ يُنسى: وحدةٌ تُضاف
+// غداً تحته تُحرَس بلا أن يتذكّر كاتبُها شيئاً.
+//
+// و`/settings/school` قراءةً مستثناةٌ داخله: شاشاتُ التهيئة تعرض
+// اسمَ المؤسسة وشعارَها.
+// --------------------------------------------------
+
+mainRoute.use(requireInitialized);
 
 // --------------------------------------------------
 // Settings — subjects, levels, classrooms ...
@@ -84,8 +109,25 @@ mainRoute.use("/permissions", permissionRouter);
 
 // --------------------------------------------------
 // Reports
+//
+// وحدتان تتعايشان في أثناء الانتقال:
+//
+//   /reports      القديمة — تخدم شاشاتٍ تعمل اليوم
+//   /reports/v2   الجديدة — منظومة التقارير قيد البناء
+//
+// وبادئةٌ مستقلّة لا مسارٌ واحد، لأنّ `/financial` موجودٌ في
+// الاثنتين. وتركيبُهما على `/reports` معاً كان سيجعل الراوتر
+// الأوّل يلتقطه فلا يصل طلبٌ واحد إلى الجديد — عطبٌ صامت: المسار
+// يردّ 200 ببيانات النسخة القديمة، فيبدو أنّ الجديد يعمل.
+//
+// والأخصُّ يُركَّب أوّلاً: `/reports/v2` قبل `/reports` حتى لا
+// يعتمد الوصولُ إليه على أن يُمرِّر القديمُ ما لا يعرفه.
+//
+// ومتى غطّت الجديدةُ كلَّ ما تغطّيه القديمة، تُبدَّل البادئتان
+// وتُحذف القديمة — استبدالٌ بخطوةٍ واحدة لا إعادةُ كتابة.
 // --------------------------------------------------
 
+mainRoute.use("/reports/v2", reportsWorkspaceRoutes);
 mainRoute.use("/reports", reportRoutes);
 
 // --------------------------------------------------

@@ -25,11 +25,21 @@ import { uiSound } from "../../lib/ui-sound";
  *   error   ← «شيءٌ انكسر»
  *   trophy  ← إنجازٌ يستحقّ الوقوف — نادرٌ عمداً
  *   welcome ← ترحيبُ الدخول — مرّةً واحدة في الجلسة
+ *   offline ← انقطع الطريقُ إلى الخادم — **لا يُطوى من نفسه**
+ *   restored ← عاد الاتصال
  *
  * والتصنيفُ ليس لوناً فحسب: هو الذي يقرّر النغمة والمدّة وهل يُطوى
  * تلقائياً. ولو كان واحداً لتساوى «حُفظ» و«تعذّر الاتصال» في الأذن.
  */
-export type NoticeKind = "info" | "success" | "action" | "error" | "trophy" | "welcome";
+export type NoticeKind =
+  | "info"
+  | "success"
+  | "action"
+  | "error"
+  | "trophy"
+  | "welcome"
+  | "offline"
+  | "restored";
 
 export interface Notice {
   id: number;
@@ -119,6 +129,15 @@ const TTL: Record<NoticeKind, number> = {
   trophy: 5200,
   /* أطولُ قليلاً: يُقرأ اسمٌ ودور، ويقع مرّةً فلا يُزعج بقاؤه */
   welcome: 5600,
+  /*
+   * الانقطاعُ **حالةٌ لا خبر** — فلا يُطوى بمؤقّت.
+   *
+   * وطيُّه بعد سبع ثوانٍ كان سيعني أن يعود المستخدمُ إلى الكتابة في
+   * نموذجٍ لن يُحفظ، وقد رأى التحذيرَ ونسيه. فيبقى ما دام السببُ
+   * قائماً، ويرفعه `connection-notice` حين يعود الخادم — لا مؤقّتٌ.
+   */
+  offline: 0,
+  restored: 3600,
 };
 
 const SOUND = {
@@ -128,6 +147,8 @@ const SOUND = {
   error: "notifyError",
   trophy: "notifyTrophy",
   welcome: "notifyWelcome",
+  offline: "notifyError",
+  restored: "notifySuccess",
 } as const;
 
 const push = (
@@ -187,6 +208,11 @@ export const notify = {
   /** يبقى حتى يُفعَل أو يُطوى بيد — فيه زرٌّ ينتظر */
   action: (title: string, label: string, run: () => void, detail?: string) =>
     push("action", title, { detail, action: { label, run } }),
+
+  /** انقطاعُ الاتصال — يبقى حتى يُرفع بـ`dismiss` عند العودة */
+  offline: (title: string, detail?: string) => push("offline", title, { detail }),
+  restored: (title: string, detail?: string) =>
+    push("restored", title, { detail }),
 
   dismiss: (id: number) => useNotices.getState().dismiss(id),
   clear: () => useNotices.setState({ notices: [] }),

@@ -1,7 +1,7 @@
 import axios from "axios";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { appConfig } from "../config/app.config";
+import { apiBaseUrl } from "../api/base-url";
 import type { User } from "../types";
 
 // --------------------------------------------------
@@ -84,14 +84,14 @@ export const useAuthStore = create<AuthState>()(
         restoring = (async () => {
           try {
             const { data } = await axios.post(
-              `${appConfig.API_URL}/auth/refresh`,
+              `${apiBaseUrl()}/auth/refresh`,
               {},
               { withCredentials: true },
             );
 
             const accessToken = data.data.accessToken as string;
 
-            const me = await axios.get(`${appConfig.API_URL}/auth/me`, {
+            const me = await axios.get(`${apiBaseUrl()}/auth/me`, {
               headers: { Authorization: `Bearer ${accessToken}` },
               withCredentials: true,
             });

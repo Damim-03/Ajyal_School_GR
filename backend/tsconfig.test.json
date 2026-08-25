@@ -1,0 +1,9 @@
+{
+  "//": "فحصُ أنواع الاختبارات وحدها. tsconfig.json يستثنيها لئلا تُبنى إلى dist وتُرفع للإنتاج، فتُفحص هنا.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

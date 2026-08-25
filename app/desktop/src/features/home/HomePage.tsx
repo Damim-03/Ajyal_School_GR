@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../core/hooks/use-auth";
+import { useAuthStore } from "../../core/stores/auth.store";
 import { useSchool } from "../../core/stores/school.store";
 import { sfx, playAmbient, stopAmbient, preloadAmbient, SFX_DURATION_MS } from "../../lib/sound";
 import { notify } from "../../components/notifications/notify";
+import { GlobalSearchDialog } from "../search/GlobalSearchDialog";
 import { uiSound } from "../../lib/ui-sound";
 import { AnimatePresence, motion, useTransform } from "motion/react";
 import { AmbientEnvironment } from "../../components/ambient/AmbientEnvironment";
 import {
-  SpatialNavRow, SpatialNavItem, FocusIndicator, AnimatedContextLabel,
-  background as bgBase, choreography as chor, springs, useTileMetrics, expansion as ex,
+  SpatialNavRow, SpatialNavItem, AnimatedContextLabel,
+  background as bgBase, choreography as chor, useTileMetrics, expansion as ex,
 } from "../../motion/spatial";
 import { MOTION } from "../../motion/system";
 import { useCameraLayer, useCameraZoom, useCameraNudge } from "../../motion/camera";
@@ -27,7 +29,7 @@ import { MODULES, WALLPAPERS, type Module } from "./modules";
 import { useEnergyField, ringDistance, focusEnergy } from "../../motion/energy";
 import { boot } from "../../motion/spatial/boot";
 import {
-  homeEntrance, useEntranceStages, useEntranceStill,
+  homeEntrance, useEntranceStages, useEntranceStill, useHomeRevealed, useFocusFrameStage,
   content as entranceContent, curve as entranceCurve,
   shell as entranceShell, tileEntrance,
 } from "../../motion/home-entrance";
@@ -49,6 +51,34 @@ const fmtDate = (d: Date) =>
 // المقدّمة الكاملة تُعرض مرّة واحدة بعد تسجيل الدخول؛ العودة من الأقسام تدخل مباشرة
 // باستقرار لطيف بدل إعادة المقدّمة ونغمة التحميل في كل مرّة.
 let homeIntroPlayed = false;
+
+/**
+ * **ترحيبٌ واحدٌ لكلّ جلسة تشغيل — لا لكلّ تحميلِ واجهة.**
+ *
+ * `homeIntroPlayed` أعلاه متغيّرٌ في الوحدة، وإعادةُ التحميل (‏Ctrl+R،
+ * وكلُّ إعادةِ بناءٍ ساخنة في التطوير) تُنشئ الوحدةَ من جديد فيعود
+ * صفراً. فكان المستخدم يُرحَّب به كلَّما حُدِّثت الواجهة — والترحيبُ
+ * المتكرّر ينقض نفسَه: ما يُقال مرّةً استقبالٌ، وما يُقال في كلّ تحميلٍ
+ * ضجيج.
+ *
+ * و`sessionStorage` هو الحدُّ الصحيح لهذا المعنى بالضبط: يعبر إعادةَ
+ * التحميل ولا يعبر إغلاقَ التطبيق — وهو تعريفُ «الجلسة» نفسِه، والمفتاحُ
+ * الذي يُقاس به الإقلاعُ أصلاً (`ajyal_booted`). ويُمحى عند الخروج من
+ * الحساب: الجلسةُ التالية دخولٌ جديد يستحقّ ترحيبَه.
+ */
+const WELCOMED_KEY = "ajyal_welcomed";
+
+/** الترحيبُ لم يُقَل في هذه الجلسة بعد — ويُعلَّم أنّه قيل. */
+const claimWelcome = (): boolean => {
+  try {
+    if (sessionStorage.getItem(WELCOMED_KEY) === "1") return false;
+    sessionStorage.setItem(WELCOMED_KEY, "1");
+    return true;
+  } catch {
+    /* لا مخزنَ للجلسة — يُرحَّب ولا يُمنع أحدٌ لأجل تفصيلٍ تقنيّ. */
+    return true;
+  }
+};
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -100,8 +130,10 @@ export function HomePage() {
    * من حيث بلغ. والأعلامُ بأسمائها التي كانت — لم يتبدّل إلّا مصدرُها،
    * فلا `SpatialNavItem` ولا `FocusIndicator` ولا حقلُ الطاقة يعلم شيئاً.
    */
-  const { worldLit, bgReady, identityReady, assembled, focusArrived, edgeReady, entered, settled } =
+  const { worldLit, bgReady, identityReady, assembled, focusArrived, entered, settled } =
     useEntranceStages();
+  /** مرحلةُ بناء إطار التركيز — وهجٌ ثمّ زجاجٌ ثمّ حدّ (③④⑤). */
+  const frameStage = useFocusFrameStage();
   /** «تقليل الحركة» — يُقرأ من الجدول لا من `matchMedia` في كل مكوّن. */
   const still = useEntranceStill();
   const [settling, setSettling] = useState(!isFirstIntro); // عند العودة: تستقرّ الخلفية والمحتوى بنعومة
@@ -158,7 +190,28 @@ export function HomePage() {
    */
   /** مقاسات الشريط بالبكسل — تُحسب عند التركيب وتغيّر الحجم فقط. */
   const metrics = useTileMetrics();
-  const energyField = useEnergyField(focusArrived ? focused : focused - boot.entryTravel, L);
+  /**
+   * **حقلُ الطاقة يبدأ في موضعه — لا يسافر إليه من خارج الصفّ.**
+   *
+   * كان هدفُه قبل مرحلة التركيز `focused - boot.entryTravel`، أي أنّ
+   * الطاقة تُقبل من خارج الشريط فتُضيء ما تمرّ عليه. مشهدٌ جميل، وقد
+   * سقط لسببين لا مفرّ منهما:
+   *
+   *   ① **المواصفة تمنعه**: «الأيقونات موجودة منذ البداية — لا تطير من
+   *     الخارج، لا قفزات». والطاقةُ تقود **عرضَ** البلاطة، فسفرُها من
+   *     الخارج يعني أنّ البلاطات تولد مضغوطةً ثمّ تتمدّد.
+   *
+   *   ② **الإطارُ صار ثابتاً**، وموضعُه محسوبٌ على البلاطة في مقاسها
+   *     النهائي. فبلاطةٌ مضغوطةٌ في مطلع المشهد تقف **خارج مركز إطارها**
+   *     بمقدار (focused − compact) ÷ 2 — نحو 19px على شاشةٍ عريضة —
+   *     ثمّ تنزلق إليه. أي أنّ أوّلَ ما يراه المستخدم إطارٌ لا يطابق ما
+   *     فيه.
+   *
+   * و«تأكيدُ العنصر» (⑥) لم يضع: انتقل من تمدّدٍ في التخطيط إلى لقطات
+   * `scale` حول المركز (‏`settle` في جدول الدخول) — «أكبرُ قليلاً» بلا
+   * إزاحةٍ ولا خروجٍ عن الإطار.
+   */
+  const energyField = useEnergyField(focused, L);
   /*
    * اعتراف البيئة بالتركيز — شدّة البلاطة المستقرّ عليها الانتباه.
    *
@@ -175,9 +228,38 @@ export function HomePage() {
    */
   const [labelAnchor, setLabelAnchor] = useState(0);
 
+  /**
+   * نافذةُ البحث العامّ — تُفتح من الشريط العلوي أو بـ`Ctrl+K`.
+   *
+   * وحالتُها هنا لا في الشريط: النافذة تُصيَّر خارج الشريط (فوق كلّ شيء)،
+   * ولو ملكها الشريطُ لصارت طبقةٌ ملءَ الشاشة ابناً لصفٍّ من الأزرار —
+   * وترتيبُها البصريّ يتبع عندئذٍ سياقَ تكديسه لا سياق الشاشة.
+   */
+  const [searchOpen, setSearchOpen] = useState(false);
+
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  /*
+   * `Ctrl+K` — الاختصارُ الذي يتوقّعه من يعرف هذا النوع من البحث.
+   *
+   * و`capture` مقصود: الرئيسيةُ تلتقط الأسهم وEnter وEsc للتنقّل المكاني،
+   * والالتقاطُ في مرحلة الهبوط يضمن أن يصل هذا المفتاح قبلها. ولا يتعارض
+   * معها: المفتاحُ مقترنٌ بـCtrl فلا يشبه شيئاً من مفاتيح الصفّ.
+   */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        uiSound("openLayer");
+        setSearchOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, []);
 
   /*
@@ -291,57 +373,80 @@ export function HomePage() {
     if (settled) motionDispatch({ type: "SHELL_READY" });
   }, [settled]);
 
-  // نغمة تحميل القائمة الرئيسية ثم تُكمل موسيقى «003. Home Menu» بلا فجوة:
-  // الموسيقى مُحمّلة مسبقاً من شاشة الدخول، وتبدأ قبل نهاية النغمة بقليل فتتسلّمها
-  // بتلاشٍ متداخل ناعم (لا صمت بينهما).
+  /*
+   * العودةُ من قسم: الموسيقى تُستأنف بهدوء — بلا نغمة تحميلٍ ولا ترحيب.
+   * والتجهيزُ هنا لكلا الطريقين، احتياطاً إن لم تُجهَّز من الشاشة السابقة.
+   */
   useEffect(() => {
-    preloadAmbient("home"); // احتياط إن لم تُجهَّز من الشاشة السابقة
-    // عند العودة من قسم: استأنف الموسيقى بهدوء بلا إعادة نغمة التحميل
-    if (!isFirstIntro) {
-      playAmbient("home", 900);
-      return;
-    }
-    sfx("homeLoad", 0.95, true);
-    const OVERLAP = 550; // تداخل يمنع أي فراغ سمعي
-    /*
-      المدّة هنا هي الجزء المسموع فقط — وقد صار ذلك صحيحاً فعلاً.
-      كان التعليقُ يقول ذلك و`sfx` لا يفعله: يُشغّل الملفَّ من أوّله بما
-      فيه صمتُه. وملفُّ هذه النغمة يبدأ بعد **655ms** من صمتٍ رقميّ،
-      فكانت الموسيقى تُستلَم متأخّرةً بقدره. الآن يُتخطّى الصمتُ عند
-      التشغيل وتُحسب المدّةُ على ما يُسمع، فيقع التسليم في موضعه.
-
-      والاحتياطيّ 2360 لا 1950: هو المدّةُ المسموعة المقيسة (3000 − 640)،
-      ويُستعمل إن سُئل قبل أن يُفكّ الملفّ.
-    */
-    const delay = Math.max(0, (SFX_DURATION_MS.homeLoad ?? 2360) - OVERLAP);
-    const t = window.setTimeout(() => playAmbient("home", 1100), delay);
-    return () => window.clearTimeout(t);
+    preloadAmbient("home");
+    if (!isFirstIntro) playAmbient("home", 900);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
-   * ترحيبُ الدخول — مرّةً واحدة، وبعد أن تهدأ نغمةُ التحميل.
+   * **مشهدُ الوصول الصوتي — مرساتُه لحظةُ الكشف، ومقياسُه الملفُّ نفسُه.**
    *
-   * `isFirstIntro` هي الشرط: دخولٌ جديد لا عودةٌ من قسم. ولولاه لرحّب
-   * بالمستخدم كلَّما رجع من شاشة الطلبة إلى الرئيسية — وترحيبٌ يتكرّر
-   * عشر مرّاتٍ في الساعة يصير ضجيجاً لا استقبالاً.
+   * كان يبدأ عند **تركيب** هذه الشاشة. وكان ذلك صحيحاً حين كان التركيبُ
+   * هو الوصول؛ ولم يعد: الرئيسيةُ تُركَّب الآن تحت ستار الشعار وهو معتمٌ
+   * تماماً (`handoff.mount`)، فنغمةٌ تُطلق عند التركيب كانت ستُسمع
+   * والمستخدمُ ينظر إلى شعارٍ لا إلى رئيسية — صوتُ مكانٍ لم يصله بعد.
    *
-   * والتأخيرُ ليزاحم شيئاً: نغمةُ تحميل الرئيسية تشغل الثانيتين
-   * الأوليين، فلو أُطلق الإشعارُ معها لتراكب صوتان في لحظةٍ واحدة
-   * ولم يُسمع أيٌّ منهما. فيأتي بعدها، ومعه الشاشةُ قد استقرّت.
+   * فصارت المرساةُ `revealed`: اللحظةَ التي ينقشع فيها الستار. من هناك
+   * ثلاثةُ أشياء على خطٍّ واحد:
+   *
+   *   ①  0            نغمةُ تحميل الرئيسية — تُفتح مع انقشاع الستار.
+   *   ②  audible−550  الموسيقى تتسلّم بتلاشٍ متداخل، فلا صمتَ بينهما.
+   *   ③  audible      الترحيب — عند آخر نَفَسٍ من النغمة بالضبط.
+   *
+   * **و`audible` مقيسٌ من الملفّ لا مكتوبٌ بيد.** كان الترحيبُ على 2400
+   * مضبوطةٍ بالتخمين، فأيُّ استبدالٍ لملفّ النغمة كان يُزيح الإشعارَ إلى
+   * وسطها أو يترك بعدها صمتاً. والآن يقرأ الثلاثةُ الرقمَ نفسَه الذي
+   * تحسبه `lib/sound` عند فكّ الملفّ (وهو مدّةُ **ما يُسمع** بعد تخطّي
+   * صمت البداية) — فيبقى التزامنُ صحيحاً بلا ضبطٍ يدوي.
+   *
+   * ولماذا عند نهايتها لا معها: للترحيب نغمتُه الخاصّة، وإطلاقُهما معاً
+   * يجعل صوتين يتزاحمان في لحظةٍ واحدة فلا يُسمع أيٌّ منهما. فيقع
+   * الإشعارُ حيث تُسلّم النغمةُ الأولى — تتابعٌ يُقرأ سبباً ونتيجة.
+   *
+   * والاحتياطيّ 2360 هو المدّةُ المسموعة المقيسة (3000 − 640)، يُستعمل
+   * إن سُئل قبل أن يُفكّ الملفّ.
    */
+  const revealed = useHomeRevealed();
+
   useEffect(() => {
-    if (!isFirstIntro || !user) return;
+    if (!isFirstIntro || !revealed) return;
 
-    const name = `${user.firstName} ${user.lastName}`.trim();
+    sfx("homeLoad", 0.95, true);
 
-    const timer = window.setTimeout(() => {
-      notify.welcome(`مرحباً، ${name}`, user.role?.name ?? undefined);
-    }, 2400);
+    /** مدّةُ ما يُسمع من النغمة — تقرأها الموسيقى والترحيبُ معاً. */
+    const audible = SFX_DURATION_MS.homeLoad ?? 2360;
+    /** تداخلٌ يمنع أيّ فراغٍ سمعيّ بين النغمة والموسيقى. */
+    const OVERLAP = 550;
 
-    return () => window.clearTimeout(timer);
+    const toMusic = window.setTimeout(
+      () => playAmbient("home", 1100),
+      Math.max(0, audible - OVERLAP),
+    );
+
+    const toWelcome = window.setTimeout(() => {
+      /*
+       * `getState` لا الحالةُ الملتقَطة: بين الكشف ونهاية النغمة يصل
+       * `/auth/me` بصلاحياته فيُعاد كتابةُ المستخدم، والاسمُ الملتقَط
+       * لحظةَ جدولة المؤقّت قد يكون أقدمَ ممّا صار معلوماً.
+       */
+      const who = useAuthStore.getState().user;
+      if (!who || !claimWelcome()) return;
+
+      const name = `${who.firstName} ${who.lastName}`.trim();
+      notify.welcome(`مرحباً، ${name}`, who.role?.name ?? undefined);
+    }, audible);
+
+    return () => {
+      window.clearTimeout(toMusic);
+      window.clearTimeout(toWelcome);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [revealed]);
 
   /**
    * التنقّل صار **حدثاً دلالياً** لا تغيير حالة (§12).
@@ -786,7 +891,20 @@ export function HomePage() {
         animate={{ opacity: worldLit ? 1 : 0 }}
         transition={{ duration: entranceShell.world, ease: entranceCurve.ambient }}
       >
-        <AmbientEnvironment accent={m.accent} glow={m.glow} response={sceneResponse} deepened={expanded} />
+        {/*
+          الجوُّ مكبوحٌ حتى تستقرّ الشاشة (§11).
+
+          كان يبلغ شدّتَه كاملةً منذ أوّل إطار، فينافس التركيزَ في اللحظة
+          التي يجب أن يكون فيها التركيزُ وحده. و`settled` هو الشرط: بعده
+          يستعيد المكانُ أنفاسه.
+        */}
+        <AmbientEnvironment
+          accent={m.accent}
+          glow={m.glow}
+          response={sceneResponse}
+          deepened={expanded}
+          restrained={isFirstIntro && !settled}
+        />
       </motion.div>
       </div>
 
@@ -837,7 +955,10 @@ export function HomePage() {
             brandColor={brandColor}
             time={fmtTime(now)}
             date={fmtDate(now)}
-            onSettings={() => focusTo(MODULES.findIndex((x) => x.id === "settings"), "programmatic")}
+            onSearch={() => {
+              uiSound("openLayer");
+              setSearchOpen(true);
+            }}
             onLogout={() => {
               sfx("logout", 0.85);
               /*
@@ -847,6 +968,8 @@ export function HomePage() {
                 تسليمٌ لا انقطاع، ذهاباً إلى الرئيسية وعودةً منها.
               */
               homeIntroPlayed = false; // الدخول القادم يستحقّ المقدّمة الكاملة
+              /* والترحيبُ معها: الجلسةُ التالية دخولٌ جديد لا تحديثُ واجهة */
+              try { sessionStorage.removeItem(WELCOMED_KEY); } catch { /* رفاهية */ }
               homeEntrance.reset(); // ولا يرث جدولَ دخولٍ اكتمل في الجلسة الماضية
               motionDispatch({ type: "RESET" }); // جلسة جديدة لا ترث موضع السابقة
               clearPageMemory(); // ولا ترث تمرير الجلسة السابقة ولا بحثها
@@ -896,8 +1019,21 @@ export function HomePage() {
           >
             <SpatialNavRow
               activeIndex={focused}
-              itemCount={L}
-              rtl
+              metrics={metrics}
+              /*
+                الإطارُ يُبنى على ثلاث خطوات (③ وهج ④ زجاج ⑤ حدّ)، وهي
+                مرحلةٌ متدرّجة يقرؤها العارضُ لا عَلَمٌ ثنائي — العَلَمُ
+                كان يُشعل الطبقات الثلاث معاً فيُقرأ الإطارُ «يظهر» لا
+                «يتشكّل».
+              */
+              present={assembled}
+              frameStage={frameStage}
+              arrivalKey={focused}
+              /*
+                ولا `rtl` مكتوبةً هنا (§35): العارضُ يقرأ اتّجاه المستند
+                بنفسه. وتثبيتُها كان يعني أنّ الصفّ ينعكس صامتاً يوم
+                تُفعَّل الفرنسية — وهو خطأٌ لا يُنبّه عليه شيء.
+              */
               /*
                 حشوٌ غير متماثل: فسحةٌ فوق الصفّ، والتصاقٌ تحته.
 
@@ -918,31 +1054,27 @@ export function HomePage() {
                 من بلاطته — ولا يُقصّ شيءٌ حين يُشدّ.
               */
               className="px-10 pt-8 pb-1"
-              gap={metrics.gap}
               onAnchor={setLabelAnchor}
             >
               {MODULES.map((mod, i) => {
                 const isCenter = i === focused;
                 /*
-                  دخولُ البلاطة — يُشتقّ في `motion/home-entrance/variants`.
+                  **لا دخولَ للبلاطة — إلّا تأكيدُ المركَّزة.**
 
-                  أربعُ قنواتٍ متزامنة (شفافية، إزاحة، مقياس، تمويه)
-                  تقرّرها ثلاثةُ مصادر (مرحلةُ الجدول، ومسافةُ البلاطة عن
-                  المركَّزة، وتفضيلُ تقليل الحركة). كتابتُها هنا كانت
-                  ستُخرج تعبيراً شرطياً من أربعة مستويات في تسعة أسطر
-                  متشابهة — ثم يصير أوّلُ ضبطٍ للإيقاع تعديلاً فيها كلّها.
+                  كانت لكلٍّ منها شفافيةٌ وتأخيرٌ خاصّان (‏60ms بحسب البعد
+                  عن المركَّزة)، فتُقرأ الأيقوناتُ **هي** الحدث. والحدثُ
+                  هو التركيز. فصعدت الشفافيةُ إلى الصفّ كطبقةٍ واحدة
+                  (`present`)، ولم يبقَ هنا إلّا لقطاتُ مقياسٍ على
+                  المركَّزة وحدها عند المرحلة ⑥.
 
-                  و`restOpacity` هي الوصلةُ بين شأنين مختلفين يتقاسمان
-                  الشفافية: الدخولُ يملكها حتى يكتمل، ثمّ يملكها خفوتُ
-                  الجيران عند الامتداد. تمريرُها إلى المشتقّ يمنع أن
-                  يكتب النظامان القيمةَ نفسها من موضعين.
+                  و`restOpacity` باقية: هي خفوتُ الجيران عند امتداد
+                  الصفحة — حالةٌ تفاعليةٌ تعيش بعد المشهد، لا دخولٌ.
                 */
                 const enter = tileEntrance({
                   index: i,
                   focused,
-                  count: L,
-                  assembled,
-                  done: settled,
+                  /* ⑥ تأكيدُ العنصر — «أوضحُ وأكبرُ قليلاً». */
+                  confirmed: focusArrived,
                   restOpacity: expanded && !isCenter ? ex.row.dim : 1,
                   still,
                 });
@@ -950,7 +1082,17 @@ export function HomePage() {
                   <motion.span
                     key={mod.id}
                     className="relative shrink-0"
-                    style={{ zIndex: isCenter ? LAYER.navItemFocused : LAYER.navItem, ...enter.style }}
+                    /*
+                      لا `enter.style` بعد اليوم.
+
+                      كان الغلافُ يستقبل من مشتقّ الدخول حقلَ `style`
+                      يحمل `filter: blur(...)` وانتقالَه — بمحرّكٍ من CSS
+                      لا من `motion`، لأنّ `motion` لا يتخلّى عن `filter`
+                      متى ملكه فيبقى `blur(0px)` عالقاً على تسع بلاطات.
+                      وقد سقط التمويهُ من الدخول كلِّه (المرجعُ لا يموّه،
+                      والالتفافُ أغلى ما يُرسَم)، فسقط معه ذلك الاحتياط.
+                    */
+                    style={{ zIndex: isCenter ? LAYER.navItemFocused : LAYER.navItem }}
                     data-hovered={hovered === i ? "" : undefined}
                     /* التتابع بالمسافة عن المركَّزة — لا بترتيب القراءة. */
                     /*
@@ -963,7 +1105,7 @@ export function HomePage() {
 
                       وهو تحويل محض كالإزاحة، فلا يكلّف تخطيطاً ولا رسماً.
                     */
-                    initial={isFirstIntro ? enter.initial : false}
+                    initial={false}
                     /*
                       عند الامتداد تخفت الجيران وحدهم وتبقى المركَّزة عند 1.
                       هذا هو الفرق بين «الصفّ تراجع» و«الصفّ انطفأ»: البلاطة
@@ -1028,11 +1170,19 @@ export function HomePage() {
                         style={{ color: mod.accent }}
                       />
                     </SpatialNavItem>
-                    {/* إطار التركيز الوحيد — ينتقل بين البلاطات لا يُرسم على كلٍّ منها */}
-                    {/* الحافّة آخر ما يُعرَّف — بعد أن تستقرّ الطاقة. */}
-                    {isCenter && edgeReady && (
-                      <FocusIndicator size={metrics.focused} arrivalKey={focused} />
-                    )}
+                    {/*
+                      **ولا إطارَ هنا.**
+
+                      كان `<FocusIndicator>` يُركَّب في هذا الموضع بالذات —
+                      داخل غلاف البلاطة المركَّزة — وينتقل بين البلاطات
+                      بـ`layoutId`. أي أنّ المتحرّك هو الإطار، والصفُّ
+                      يساعده أحياناً ويقف أحياناً (كان انزلاقه مكبوحاً عند
+                      الطرفين). وهذا بعينه ما يجعل التجربة تُقرأ «مربّعٌ
+                      أبيض يتجوّل بين الأيقونات».
+
+                      الإطارُ الآن ابنٌ للعارض، ثابتٌ عند المرساة، والصفُّ
+                      وحده هو الذي يمرّ تحته — انظر `SpatialNavRow`.
+                    */}
                   </motion.span>
                 );
               })}
@@ -1211,6 +1361,20 @@ export function HomePage() {
               كانت تجعل الكتلتين تتحرّكان بالقدر نفسه فتُقرآن طبقةً
               واحدة. الأصغرُ يتحرّك أكثر — تلك هي القاعدة التي تصنع العمق.
             */
+            /*
+              **المحاذاة صارت `style` لا `animate` — وهي الآن ثابتة.**
+
+              كانت تستوفي إلى `labelAnchor` بنابض الصفّ، و`labelAnchor`
+              يتغيّر مع كل تنقّل. أي أنّ **عمود المحتوى كلَّه** — البطل
+              وعنوانه ووصفه وزرّه — كان يتحرّك بحركةِ تخطيطٍ (`margin`) في
+              كل ضغطة سهم: إعادةُ تخطيطٍ كاملة ستّين مرّةً في الثانية على
+              أثقل شجرةٍ في الشاشة (§37/§38).
+
+              وبتثبيت التركيز زال السبب من أصله: البلاطةُ المركَّزة تقف
+              دائماً في الموضع نفسه، فعمودُها لا يتزحزح. والمحاذاة قيمةُ
+              تخطيطٍ تُكتب مرّةً — والحركةُ كلُّها في الصفّ، حيث ينبغي أن
+              تكون.
+            */
             initial={
               isFirstIntro
                 ? {
@@ -1229,27 +1393,19 @@ export function HomePage() {
               opacity: 1,
               scale: launching ? 1.06 : bracing ? ex.brace.scale : expanded ? 0.975 : 1,
               y: launching ? -6 : bracing ? ex.brace.y : expanded ? -12 : 0,
-              marginInlineStart: labelAnchor,
               /*
-               * **اللون المميّز هويّةٌ مستمرّة، لا خاصّيةُ عنصرٍ جديد.**
+               * **ولا `color` هنا بعد اليوم.**
                *
-               * كان يُكتب مباشرةً على السطر التعريفي — وهو عقدة تُولَد مع كل
-               * تبدّل قسم. فالعقدة الجديدة تصل بلونها النهائي دفعةً واحدة،
-               * والقديمة تخرج بلونها القديم: **تعاقبُ هويّتين** لا انتقالُ
-               * هويّة واحدة. والبيئة كانت تستوفي اللون بالفعل (‏`tint` في
-               * AmbientEnvironment)، فيسبقها البطل إلى لونه الجديد ويصل
-               * الجوّ متأخّراً — تنافرٌ بين طرفَي الشيء نفسه.
+               * كانت الحاوية تستوفي لونَ القسم وتورّثه للسطر التعريفي —
+               * حيلةٌ مقصودة: العقدة تُستبدل مع كل قسم فتصل بلونها
+               * النهائي دفعةً واحدة، أمّا الحاوية الباقية فتستوفي.
                *
-               * الآن يُستوفى `color` على **الحاوية الباقية** ويرثه السطر
-               * التعريفي. فالوليد يقرأ اللون الجاري لحظةَ ولادته — أي يرثه
-               * في منتصف رحلته بدل أن يبدأ هويّةً ثانية.
-               *
-               * (جُرّب متغيّر CSS أولاً فكتبه motion سلسلةَ `undefined`:
-               *  المحرّك يحتاج قيمةً ابتدائية قابلة للتحليل ليستوفي، ولا
-               *  يملكها لمتغيّرٍ لم يُعرَّف على العنصر. وخاصّية `color`
-               *  قياسية، فالاستيفاء فيها مضمون — والوراثة تبلّغه للأبناء.)
+               * وقد حُذف السطرُ التعريفي، فلم يبقَ لهذا اللون مستهلك:
+               * العنوان `text-white`، والوصف `text-white/70`، والزرّ
+               * يقود لونَه بنفسه، و`ContextStats` تأخذ `accent` وسيطاً
+               * صريحاً. وتركُه هنا كان سيصبّغ صامتاً أوّلَ ابنٍ يُضاف بلا
+               * لونٍ معلَن.
                */
-              color: m.accent,
             }}
             /*
               المحوران لا يستقرّان معاً (§15): الانضغاط ينتهي عند 440ms
@@ -1269,11 +1425,6 @@ export function HomePage() {
               /* ⑧ ثالثُ محورٍ بمدّةٍ ثالثة: الوجود يكتمل قبل الهندسة.
                  لا شيء في البطل يستقرّ مع شيء آخر فيه. */
               opacity: { duration: ex.hero.duration * 0.8, ease: MOTION.easing.enter },
-              /* المحاذاة تتبع البلاطة بنابض الصفّ نفسه — عمودٌ واحد:
-                 البلاطة، ثم اسمها، ثم بطلها. */
-              marginInlineStart: springs.navigation,
-              /* اللون يستوفي بإيقاع الجوّ نفسه، فيصل طرفا الهويّة معاً. */
-              color: { duration: MOTION.duration.cinematic, ease: MOTION.easing.standard },
             }}
             /*
               منشأ التحوّل: **الزاوية الأقرب إلى البلاطة**، لا مركز البطل.
@@ -1292,6 +1443,7 @@ export function HomePage() {
               `fill-mode` تنتهي فتُعيد الخاصّيةَ إلى العدم.
             */
             style={{
+              marginInlineStart: labelAnchor,
               transformOrigin: "100% 0%",
               ...(isFirstIntro && !still && !settled
                 ? { animation: `skk-sharpen ${entranceContent.duration}s cubic-bezier(${entranceCurve.enter.join(",")})` }
@@ -1338,12 +1490,18 @@ export function HomePage() {
                 transition={scaleTransition({ duration: chor.title.duration, delay: chor.title.delay, ease: [0.22, 1, 0.36, 1] }, speed)}
               >
                 {/*
-                  بلا لونٍ خاص — **يرث** الهويّة الجارية من الحاوية الباقية.
-                  العقدة تُستبدل مع كل قسم، واللون لا يُستبدل معها.
+                  **بلا سطرٍ تعريفيّ فوق العنوان.**
+
+                  كان هنا `m.tagline` ملوّناً بلون القسم («الحضور والحقوق
+                  والحسابات» فوق «الكشوف»). وحُذف لأنّه يقول ما يقوله
+                  جاراه: الاسمُ تحته يسمّي القسم، والوصفُ أسفل الزرّ يشرحه
+                  — فكان سطراً ثالثاً بينهما يزاحمهما ولا يضيف. ولونُه
+                  المشبَع كان يسبق العنوانَ إلى العين وهو ليس الأهمّ.
+
+                  و`tagline` باقيةٌ في `modules.ts`: ترويسةُ شاشات الأقسام
+                  (`AppHeader`) تقرؤها، وهناك موضعُها الصحيح — سطرٌ صغيرٌ
+                  بجانب الاسم في شريطٍ ضيّق، لا سطرٌ فوق عنوانٍ بحجم 64px.
                 */}
-                <div className="text-sm font-black tracking-wide">
-                  {m.tagline}
-                </div>
                 <motion.h1
                   /*
                     الحجم يتبع ارتفاع النافذة لا رقماً ثابتاً: على نافذة
@@ -1356,7 +1514,7 @@ export function HomePage() {
                     وتورّثه، والعنوان ليس هويّةً لونية — هو الاسم، ووزنه
                     من حجمه وظلّه لا من لونه.
                   */
-                  className="mt-1 font-black leading-[1.02] text-white"
+                  className="font-black leading-[1.02] text-white"
                   style={{ fontSize: "clamp(34px, 6.1vh, 64px)" }}
                   /*
                     مادّة البطل تتطوّر مع الامتداد (§11).
@@ -1437,12 +1595,14 @@ export function HomePage() {
                 </AnimatePresence>
               </motion.button>
               {/*
-                نصّ الإرشاد كان يصف عطلاً لا سلوكاً: «‏Enter ثم مسافة
-                للدخول» — والمسافة كانت الحيلة الوحيدة الباقية لأنّ Enter
-                معطَّل على الزرّ. وقد زال السبب، فيصف السطر الآن ما يفعله
-                النظام فعلاً: Enter يستكشف، وEsc يرجع.
+                **ولا سطرَ إرشادٍ بجانب الزرّ.**
+
+                كان «← → للتنقّل · Enter للاستكشاف · Esc للرجوع». وحُذف
+                لأنّه يشغل الموضع الذي يجب أن يخلو: بجانب الفعل الأساسيّ
+                مباشرةً. والمفاتيحُ الثلاثة تُكتشف بالضغطة الأولى، ومن
+                احتاجها بقيت له في لوحة السياق عند فتحها (`ContextPanel`)
+                — حيث تصف ما هو معروضٌ أمامه فعلاً.
               */}
-              <span className="hidden text-xs text-white/40 sm:inline">← → للتنقّل · Enter للاستكشاف · Esc للرجوع</span>
             </motion.div>
 
             {/* ③ التفاصيل — تنفتح من العنوان (ونفس علّة الغلاف أعلاه) */}
@@ -1511,11 +1671,8 @@ export function HomePage() {
 
             محاذاتها تتبع البلاطة كما يتبعها البطل — العمود نفسه.
           */}
-          <motion.div
-            animate={{ marginInlineStart: labelAnchor }}
-            initial={false}
-            transition={springs.navigation}
-          >
+          {/* المحاذاة ثابتة كمحاذاة البطل — العمود نفسه، ولا حركةَ تخطيط. */}
+          <div style={{ marginInlineStart: labelAnchor }}>
             {/*
               بلا `key` على القسم — وهذا مقصود بعد عطلٍ قِسته.
 
@@ -1548,7 +1705,7 @@ export function HomePage() {
                 />
               )}
             </AnimatePresence>
-          </motion.div>
+          </div>
         </div>
       </div>
 
@@ -1569,6 +1726,16 @@ export function HomePage() {
           transitionDelay: launching ? "880ms" : "0ms",
         }}
       />
+
+      {/*
+        نافذةُ البحث — آخرُ ما في الشجرة، فوق كلّ طبقاتها.
+
+        و`AnimatePresence` كي يُرى انصرافُها: بلا ذلك تُفكَّك في إطارٍ
+        واحد، وهو ما ترفضه لغةُ الحركة هنا («لا شيء يظهر ولا يختفي»).
+      */}
+      <AnimatePresence>
+        {searchOpen && <GlobalSearchDialog onClose={() => setSearchOpen(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

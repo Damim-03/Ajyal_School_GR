@@ -14,6 +14,7 @@ import MaintenancePage from "../features/settings/MaintenancePage";
 import { ResourceScreen } from "../features/settings/ResourceScreen";
 import RolesPage from "../features/settings/RolesPage";
 import AcademicHubPage from "../features/academic/AcademicHubPage";
+import WelcomePage from "../features/onboarding/WelcomePage";
 import {
   RESOURCES,
   FINANCE_RESOURCES,
@@ -43,6 +44,7 @@ import StudentAssignmentPage from "../modules/enrollments/StudentAssignmentPage"
 import TransferPage from "../modules/enrollments/TransferPage";
 import BrowsePage from "../modules/enrollments/BrowsePage";
 import WeeklySchedulePage from "../modules/schedules/WeeklySchedulePage";
+import { reportsRoutes } from "../modules/reports/reports.routes";
 
 /**
  * ملاحظة معمارية منقولة عن SKK (متعمَّدة):
@@ -78,6 +80,8 @@ export function AppRouter() {
 
       <Routes>
         <Route path={PATHS.login} element={<SignInPage />} />
+
+        <Route path={PATHS.welcome} element={guarded(<WelcomePage />)} />
 
         <Route path={PATHS.home} element={guarded(<HomePage />)} />
 
@@ -141,6 +145,15 @@ export function AppRouter() {
           element={guarded(<TeacherAccountPage />)}
         />
         <Route path={PATHS.attendance} element={guarded(<AttendanceHubPage />)} />
+
+        {/*
+          التقارير — شجرةٌ فرعية كاملة بتخطيطها الخاصّ.
+
+          تُركَّب دالّةً لا عنصراً لأنّها تحتاج `guarded` وهو معرَّفٌ
+          هنا. وتمريرُه معاملاً يُبقي وحدةَ التقارير مستقلّةً عن شجرة
+          التوجيه، فلا تستورد من `routes/guards`.
+        */}
+        {reportsRoutes(guarded)}
 
         {/* المالية: الشاشات قبل المحور */}
         <Route path={PATHS.invoices} element={guarded(<InvoicesPage />)} />

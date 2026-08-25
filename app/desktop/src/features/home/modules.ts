@@ -64,7 +64,13 @@ export interface Module {
   end: string;
   accent: string;
   glow: string;
-  /** اسم ملف الخلفية (بلا امتداد) في assets/wallpapers — اختياري */
+  /**
+   * اسمُ ملفّ الخلفية في `assets/bg` — بحروفٍ صغيرة وبلا امتداد.
+   *
+   * اسمُ **الملفّ** لا اسمُ القسم: `reports` ← `"raports"` لأنّ الملفّ
+   * كُتب هكذا على القرص. ومفتاحٌ لا يطابق ملفّاً يسقط بصمت إلى الفرع
+   * البديل — وهو ما وقع في الأقسام التسعة كلِّها قبل هذا التصحيح.
+   */
   wall?: string;
   actions: Action[];
 }
@@ -72,7 +78,8 @@ export interface Module {
 export const MODULES: Module[] = [
   {
     id: "students",
-    wall: "students",
+    /* audience.jpg — قاعةٌ ممتلئة */
+    wall: "audience",
     label: "الطلبة",
     icon: GraduationCap,
     tagline: "شؤون الطلبة",
@@ -88,7 +95,8 @@ export const MODULES: Module[] = [
   },
   {
     id: "enrollments",
-    wall: "users",
+    /* classroom.jpg — الإسنادُ إلى الأقسام */
+    wall: "classroom",
     label: "إسناد الطلبة",
     icon: UserCog,
     tagline: "كل طالب في فوجه",
@@ -119,7 +127,8 @@ export const MODULES: Module[] = [
   },
   {
     id: "schedules",
-    wall: "schedules",
+    /* Timetables.jpg */
+    wall: "timetables",
     label: "الجداول",
     icon: CalendarDays,
     tagline: "التوقيت الأسبوعي",
@@ -149,7 +158,8 @@ export const MODULES: Module[] = [
   },
   {
     id: "finance",
-    wall: "finance",
+    /* money.jpg */
+    wall: "money",
     label: "المالية",
     icon: Receipt,
     tagline: "الحقوق والمدفوعات والتخليص",
@@ -167,7 +177,8 @@ export const MODULES: Module[] = [
   },
   {
     id: "reports",
-    wall: "reports",
+    /* Raports.jpg — كُتب الاسمُ على القرص هكذا */
+    wall: "raports",
     label: "التقارير",
     icon: FileBarChart,
     tagline: "لوحات وإحصاءات",
@@ -183,7 +194,8 @@ export const MODULES: Module[] = [
   },
   {
     id: "academic",
-    wall: "academic",
+    /* school_out.jpg — هيكلُ المؤسسة */
+    wall: "school_out",
     label: "البنية الدراسية",
     icon: Building,
     tagline: "هيكل المؤسسة",
@@ -224,9 +236,26 @@ export const MODULES: Module[] = [
  * فبمجرّد إضافة ملف باسم القسم يعمل دون تعديل الشيفرة. والغياب مقبول:
  * القسم بلا خلفية يظهر بتدرّجه اللوني وحده.
  */
+/**
+ * خلفياتُ الأقسام — **تُقرأ من `assets/bg` لا من مجلّدٍ لا وجود له**.
+ *
+ * كان المسار `assets/wallpapers/*`، وذلك المجلّد غير موجود في المشروع.
+ * و`import.meta.glob` لا يشتكي من نمطٍ لا يطابق شيئاً — يعيد كائناً
+ * فارغاً بصمت. فكانت `WALLPAPERS` فارغةً دائماً، وكلُّ `wall` يُرجع
+ * `undefined`، فتسقط الأقسام التسعة كلُّها إلى الفرع البديل (توهّجان
+ * وأيقونةٌ كبيرة) — وهو ما كان يُرى في الشاشة.
+ *
+ * ولم يكن العطلُ في المنطق: طبقةُ الصورة وتلاشيها المتبادل وانجرافها مع
+ * الكاميرا وتكبير Ken Burns كلُّها مبنيّةٌ وتعمل. كان المصدرُ وحده خطأً.
+ *
+ * والمفتاحُ اسمُ الملفّ بحروفٍ صغيرة بلا امتداد: `Raports.jpg` ← `raports`،
+ * و`school_out.jpg` ← `school_out`. فيُكتب في `wall` أدناه اسمُ الملفّ
+ * كما هو على القرص، لا اسمُ القسم — وإلّا عاد الانفصالُ نفسُه من بابٍ
+ * آخر.
+ */
 export const WALLPAPERS: Record<string, string> = Object.fromEntries(
   Object.entries(
-    import.meta.glob("../../assets/wallpapers/*.{jpg,jpeg,png,webp}", {
+    import.meta.glob("../../assets/bg/*.{jpg,jpeg,png,webp}", {
       eager: true,
       query: "?url",
       import: "default",

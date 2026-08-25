@@ -1,8 +1,12 @@
 import { create } from "zustand";
 
+import { prefersStillMotion } from "../../core/system/preferences";
+
 import {
-  STEP, assemblyOf, handoff, leadOf, phaseOfStep,
-  type EntranceProfile, type HomeEntrancePhase, type Mark,
+  STEP, assemblyOf, blackoutAt, curtain, curtainSettleAt, focusFrameStageOf,
+  handoff, leadOf, phaseOfStep,
+  type CurtainBeat, type EntranceProfile, type FocusFrameStage,
+  type HomeEntrancePhase, type Mark,
 } from "./tokens";
 
 /**
@@ -65,6 +69,21 @@ interface EntranceStore {
   /** هل ما زالت شاشةُ الإقلاع مركَّبةً فوق الرئيسية؟ */
   overlayHeld: boolean;
   /**
+   * أيُّ حركةٍ من حركات الستار نحن فيها الآن.
+   *
+   * ثلاثُ قيمٍ لا عَلَمان، لأنّ اللحظةَ ثلاثُ حركاتٍ لا حركتان:
+   *
+   *   `"off"`    لا شيء — قبل الرحلة وبعد الكشف.
+   *   `"mark"`   الشعارُ حاضرٌ **فوق الفضاء وهو حيّ**؛ لا سوادَ بعد.
+   *   `"black"`  الشعارُ والفضاءُ ذاهبان معاً إلى العتمة، وفيها تُبنى
+   *              الرئيسية.
+   *
+   * وعَلَمٌ واحدٌ (`قائم/ساقط`) كان يجمع الثانيةَ والثالثة في معنىً واحد
+   * — وهو بالضبط ما جعل السوادَ يبتلع الفضاءَ قبل أن يُرى الشعارُ فيه.
+   * يقرؤها `HandoffCurtain` وحده.
+   */
+  curtain: CurtainBeat;
+  /**
    * هل يقبل الصفُّ الإدخال؟ (§23)
    *
    * من `navigation` فصاعداً. قبلها لا توجد بلاطاتٌ يُنتقل بينها أصلاً،
@@ -81,6 +100,7 @@ const IDLE: EntranceStore = {
   mounted: false,
   revealed: false,
   overlayHeld: false,
+  curtain: "off",
   navReady: false,
 };
 
@@ -98,6 +118,19 @@ let startedAt = 0;
 let pending: Event[] = [];
 /** هل انطلقت مرحلةُ التجميع؟ يمنع `ready()` من أن يُنادى مرّتين. */
 let assembling = false;
+/**
+ * **بوّابةُ الكشف — شرطان لا واحد.**
+ *
+ * كان الكشفُ يقع بـ`ready()` وحده: الرئيسيةُ تُرسم فتنسحب الشاشةُ
+ * فوقها. وبدخول ستار الشعار صار للحظةِ الكشف مالكان: الرئيسيةُ يجب أن
+ * تكون مرسومةً (وإلّا انكشف مشهدٌ نصفُ مبنيّ)، **و**الستارُ يجب أن يكون
+ * قد استوفى مكوثَه (وإلّا ومض الشعارُ ومضةً لا تُقرأ على جهازٍ سريع).
+ *
+ * وأيُّهما تأخّر فهو الذي يفتح البوّابة — ولذلك عَلَمان لا مؤقّتٌ يجمع
+ * بينهما: ترتيبُ وصولهما يتبع الجهازَ لا الجدول.
+ */
+let homePainted = false;
+let curtainSettled = false;
 /**
  * شبكةُ الأمان — المؤقّتُ الوحيد في النظام كلّه، ووظيفتُه أن يُنهي.
  *
@@ -123,10 +156,26 @@ const stop = () => {
   if (guard) clearTimeout(guard);
   guard = 0;
   assembling = false;
+  homePainted = false;
+  curtainSettled = false;
 };
 
 const tick = () => {
   const t = performance.now() - startedAt;
+
+  /**
+   * الساعةُ التي نعمل عليها الآن — **ومقارنتُها شرطُ سلامةِ الحلقة**.
+   *
+   * حدثٌ في هذه الساعة قد يفتح ساعةً أخرى: علامةُ انتهاء مكوث الستار
+   * تستدعي `reveal()` وهو يبدأ جدولَ التجميع. و`pending` متغيّرٌ عامّ،
+   * فلو واصلت الحلقةُ بعده لوجدت أحداثَ الجدول **الجديد** وقارنتها
+   * بـ`t` القديمة (‏~1.7s) — فتستهلكها كلَّها في تقّةٍ واحدة، ويظهر
+   * المشهدُ الذي بُني للتتابع دفعةً واحدة.
+   *
+   * والخروجُ هنا سليمٌ تماماً: `runClock` عيّن `raf` للساعة الجديدة قبل
+   * أن نعود إليه.
+   */
+  const clock = pending;
 
   /*
    * `while` لا `if`: على جهازٍ خانق قد يقفز الإطارُ مئاتِ المللي فتفوت
@@ -135,7 +184,11 @@ const tick = () => {
    * (وأكبرُ مصادر التخلّف — تركيبُ الرئيسية — لم يعد داخل هذه الساعة
    *  أصلاً، فهذا احتياطٌ لما بقي.)
    */
-  while (pending.length && pending[0].at <= t) pending.shift()!.apply();
+  while (clock === pending && pending.length && pending[0].at <= t) {
+    pending.shift()!.apply();
+  }
+
+  if (clock !== pending) return;
 
   raf = pending.length ? requestAnimationFrame(tick) : 0;
 };
@@ -172,8 +225,58 @@ const finalState = (): Partial<EntranceStore> => ({
   mounted: true,
   revealed: true,
   overlayHeld: false,
+  curtain: "off",
   navReady: true,
 });
+
+/**
+ * **الكشف — يقع حين يستوفي الشرطان، لا حين يصل أوّلُهما.**
+ *
+ * تُنادى من موضعين: `ready()` حين تُرسم الرئيسية، وعلامةُ انتهاء مكوث
+ * الستار في جدول الطليعة. وأيُّهما جاء أخيراً هو الذي يفتح البوّابة؛
+ * والسابقُ منهما يجدها مغلقةً فيعود بلا أثر.
+ *
+ * وهذا هو ما كان في `ready()` نفسِه قبل الستار — لم يتبدّل التجميعُ
+ * ولا جدولُه، وإنّما تبدّل **من يأذن ببدئه**.
+ */
+const reveal = () => {
+  const s = useEntranceStore.getState();
+
+  if (assembling || s.phase === "complete" || s.profile === "return") return;
+  if (!homePainted) return;
+  /* والستارُ لا يقوم إلّا في طريق المصادقة — فلا ينتظره الإقلاعُ البارد. */
+  if (s.profile === "auth" && !curtainSettled) return;
+
+  assembling = true;
+  if (guard) clearTimeout(guard);
+
+  const marks = assemblyOf(s.profile);
+  if (!marks.length) return homeEntrance.complete();
+
+  /*
+   * الكشفُ وإسقاطُ الستار في كتابةٍ واحدة: الستارُ ينقشع (‏`curtain.out`)
+   * بينما تُجمَّع الرئيسيةُ تحته، فأوّلُ ما يُرى منها هو غلافُها وقد بدأ
+   * يستيقظ — لا شاشةٌ ساكنةٌ تنتظر أن تتحرّك.
+   */
+  useEntranceStore.setState({ revealed: true, curtain: "off" });
+
+  const events = marks.map(stepEvent);
+
+  if (s.profile === "auth") {
+    events.push({
+      at: handoff.release,
+      apply: () => useEntranceStore.setState({ overlayHeld: false }),
+    });
+  }
+
+  runClock(events);
+
+  /* وحارسُ التجميع: آخرُ علامةٍ زائد هامشٌ لتخلّفٍ معقول في الساعة. */
+  guard = window.setTimeout(
+    () => homeEntrance.complete(),
+    events[events.length - 1].at + 400,
+  );
+};
 
 export const homeEntrance = {
   /**
@@ -193,7 +296,7 @@ export const homeEntrance = {
       return;
     }
 
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const still = prefersStillMotion();
     const lead = leadOf(profile);
 
     useEntranceStore.setState({
@@ -214,56 +317,72 @@ export const homeEntrance = {
     const events = lead.map(stepEvent);
 
     if (profile === "auth") {
-      events.push({
-        at: handoff.mount,
-        apply: () => useEntranceStore.setState({ mounted: true }),
-      });
+      /*
+       * أربعُ علاماتٍ لطريق المصادقة، وترتيبُها هو كلُّ المعنى:
+       *
+       *   ① يحضر الشعار      — فوق الفضاء وهو حيّ، والمحتوى قد انسحب.
+       *   ② تبدأ العتمة      — الشعارُ والفضاءُ يذهبان معاً.
+       *   ③ تُركَّب الرئيسية  — والشاشةُ سوداءُ خالصة، فالحجبُ لا يُرى.
+       *   ④ ينقضي حدُّ العتمة — فيُفتح نصفُ بوّابة الكشف.
+       *
+       * والتركيبُ عند الثالثة لا قبلها: قبلها يقع الحجبُ على فضاءٍ
+       * يتحرّك فيُرى تجمّدُه، وبعد الرابعة يُرى السوادُ ينقشع عن شاشةٍ
+       * لم تُبنَ.
+       */
+      events.push(
+        {
+          at: curtain.in,
+          apply: () => useEntranceStore.setState({ curtain: "mark" }),
+        },
+        {
+          at: blackoutAt,
+          apply: () => useEntranceStore.setState({ curtain: "black" }),
+        },
+        {
+          at: handoff.mount,
+          apply: () => useEntranceStore.setState({ mounted: true }),
+        },
+        {
+          at: curtainSettleAt,
+          apply: () => {
+            curtainSettled = true;
+            reveal();
+          },
+        },
+      );
     }
 
     runClock(events);
 
     /*
-     * حارسُ الطليعة: إن لم تُعلن الرئيسيةُ جاهزيّتها خلال ثانيتين فقد
-     * تعطّل شيء — تُنهى الرحلةُ إلى حالتها الصالحة ولا تُترك معلّقة.
+     * حارسُ الطليعة: إن لم تُعلن الرئيسيةُ جاهزيّتها فقد تعطّل شيء —
+     * تُنهى الرحلةُ إلى حالتها الصالحة ولا تُترك معلّقة.
+     *
+     * والمهلةُ تُقاس **بعد** انقضاء الستار في طريق المصادقة: الكشفُ
+     * مؤجَّلٌ إليه أصلاً، فحارسٌ يسبقه كان سيقطع اللحظةَ التي بُني
+     * لأجلها ويقذف المستخدمَ إلى الحالة النهائية بلا تجميع.
      */
-    guard = window.setTimeout(() => homeEntrance.complete(), 2000);
+    guard = window.setTimeout(
+      () => homeEntrance.complete(),
+      (profile === "auth" ? curtainSettleAt : 0) + 2000,
+    );
   },
 
   /**
-   * **الرئيسيةُ رُسمت.** من هنا يبدأ التجميع.
+   * **الرئيسيةُ رُسمت** — نصفُ الإذن بالكشف، لا الإذنُ كلُّه.
    *
    * تُنادى من `HomePage` في أوّل إطارٍ بعد تركيبها — بعد أن يكون الحجبُ
    * الثقيل قد وقع وانقضى. وهي مُهمَلةٌ إن نوديت مرّتين (‏StrictMode
    * يركّب المكوّن مرّتين في التطوير) أو بعد الاكتمال.
+   *
+   * وكانت تكشف بنفسها؛ صارت ترفع عَلَمها وتَكِل القرارَ إلى `reveal`:
+   * في طريق المصادقة يبقى ستارُ الشعار قائماً بعدها، وكشفٌ عنده كان
+   * يجعل الشعارَ ومضةً بمقدار زمنِ تركيبِ الرئيسية — أي أنّه يقصُر
+   * كلّما أسرع الجهاز، وهو نقيضُ لحظةٍ قُصد بها أن تُقرأ.
    */
   ready() {
-    const s = useEntranceStore.getState();
-    if (assembling || s.phase === "complete" || s.profile === "return") return;
-
-    assembling = true;
-    if (guard) clearTimeout(guard);
-
-    const marks = assemblyOf(s.profile);
-    if (!marks.length) return homeEntrance.complete();
-
-    useEntranceStore.setState({ revealed: true });
-
-    const events = marks.map(stepEvent);
-
-    if (s.profile === "auth") {
-      events.push({
-        at: handoff.release,
-        apply: () => useEntranceStore.setState({ overlayHeld: false }),
-      });
-    }
-
-    runClock(events);
-
-    /* وحارسُ التجميع: آخرُ علامةٍ زائد هامشٌ لتخلّفٍ معقول في الساعة. */
-    guard = window.setTimeout(
-      () => homeEntrance.complete(),
-      events[events.length - 1].at + 400,
-    );
+    homePainted = true;
+    reveal();
   },
 
   /**
@@ -310,6 +429,8 @@ export const useEntranceStill = () => useEntranceStore((s) => s.still);
 export const useHomeMounted = () => useEntranceStore((s) => s.mounted);
 export const useHomeRevealed = () => useEntranceStore((s) => s.revealed);
 export const useOverlayHeld = () => useEntranceStore((s) => s.overlayHeld);
+/** يقرؤها `HandoffCurtain` وحده — أيُّ حركةٍ من حركات الستار نحن فيها. */
+export const useCurtain = () => useEntranceStore((s) => s.curtain);
 
 /**
  * أعلامُ المراحل — الشكلُ الذي كانت الرئيسية تقرأ به جدولَ `boot.ts`.
@@ -322,13 +443,33 @@ export const useOverlayHeld = () => useEntranceStore((s) => s.overlayHeld);
 export function useEntranceStages() {
   const step = useEntranceStep();
   return {
+    /** ① البيئة */
     worldLit: step >= STEP.environment,
     bgReady: step >= STEP.shell,
     identityReady: step >= STEP.shell,
+    /** ② الشريط — حاضرٌ ويبدأ وضوحُه بالارتفاع */
     assembled: step >= STEP.navigation,
-    focusArrived: step >= STEP.focus,
+    /** ③ وهجُ التركيز */
+    glowReady: step >= STEP.focusGlow,
+    /** ④ سطحُ التركيز الزجاجي */
+    plateReady: step >= STEP.focusPlate,
+    /** ⑤ الحدُّ الأبيض */
     edgeReady: step >= STEP.edge,
+    /** ⑥ تأكيدُ العنصر */
+    focusArrived: step >= STEP.focus,
+    /** ⑦ المحتوى */
     entered: step >= STEP.content,
+    /** ⑧ اكتمالُ الصفحة */
     settled: step >= STEP.complete,
   };
 }
+
+/**
+ * مرحلةُ بناء الإطار — ثلاثُ خطواتٍ في قيمةٍ واحدة يقرؤها العارض.
+ *
+ * تُشتقّ هنا لا في الرئيسية: العارضُ يحتاج «أين بلغ الإطار» لا ثلاثةَ
+ * أعلامٍ يعيد تركيبها بنفسه — ولو مُرّرت أعلاماً لصار ترتيبُها قراراً
+ * يُتّخذ في نقطة الاستدعاء.
+ */
+export const useFocusFrameStage = (): FocusFrameStage =>
+  useEntranceStore((s) => focusFrameStageOf(s.step));

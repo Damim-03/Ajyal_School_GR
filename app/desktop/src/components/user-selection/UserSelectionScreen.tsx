@@ -16,15 +16,16 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Power, RotateCcw, type LucideIcon } from "lucide-react";
 
 import { apiClient } from "../../core/api/client";
 import { useAuthStore } from "../../core/stores/auth.store";
 import { useSchool, useSchoolStore } from "../../core/stores/school.store";
 import type { User } from "../../core/types";
 import { MOTION } from "../../motion/system";
-import { authExit, homeEntrance, useHomeMounted } from "../../motion/home-entrance";
-import { closeApp, toggleFullscreen } from "../../lib/app-window";
+import { authExit, blackoutAt, homeEntrance, useHomeMounted } from "../../motion/home-entrance";
+import { toggleFullscreen } from "../../lib/app-window";
+import { requestPower } from "../../core/system/power";
 import { playAmbient, sfx, stopAmbient } from "../../lib/sound";
 import { uiSound } from "../../lib/ui-sound";
 import { Avatar } from "../shared/Avatar";
@@ -284,18 +285,21 @@ export function UserSelectionScreen({
        * هذه الشاشة عند 120ms بينما هي ما زالت تنسحب فوقها. لا مؤقّتَ
        * هنا: التسليمُ يُعلَن من الجدول ويُلتقط في الأثر أدناه.
        *
-       * **والموسيقى تخفت ولا تُقطع** — وهي وحدها بقيت على مدّتها الطويلة
-       * (‏1150ms) وقد صارت أطولَ من المشهد البصريّ كلِّه. وهذا هو
-       * المقصود: البصرُ يقبل القطعَ ولا تقبله الأذن، فتمتدّ النغمةُ عبر
-       * التسليم وتنسحب والمستخدمُ في الرئيسية — فيُقرأ الأمرُ انتقالاً
-       * داخل مكانٍ واحد لا تبديلَ صورة.
+       * **والموسيقى تخفت ولا تُقطع — على امتداد حياة الشعار بالضبط.**
        *
-       * ولا تُطفأ البيئةُ هنا: `onLeaving` يخفتها ولا يصفّرها (§4).
+       * كانت 1150ms، وهو رقمٌ اختير حين كان المشهدُ البصريّ أقصرَ منه.
+       * وصار `blackoutAt`: النغمةُ تنسحب طوالَ ما يحضر الشعارُ فوق
+       * الفضاء، وتبلغ الصمتَ في اللحظة التي يبدأ فيها الفضاءُ نفسُه
+       * بالذهاب. فيغادر السمعُ والبصرُ معاً، ولا يُقطع صوتٌ ليبدأ آخر —
+       * وهذه هي النافذةُ التي بُنيت هذه اللحظةُ لتفتحها.
+       *
+       * ولا تُطفأ البيئةُ هنا: `onLeaving` يخفتها ولا يصفّرها (§4)،
+       * فتبقى حيّةً تحت الشعار إلى أن تذهب معه.
        */
       sfx("enter", 0.92);
       setStage("leaving");
       onLeaving?.();
-      stopAmbient(1150);
+      stopAmbient(blackoutAt);
 
       homeEntrance.start("auth");
     } catch (err: unknown) {
@@ -552,18 +556,22 @@ export function UserSelectionScreen({
 
           <PowerButton
             focused={onPower && choosing}
-            title="إيقاف التطبيق"
+            title="خيارات النظام"
             onActivate={() => setConfirmingExit(true)}
           />
         </div>
       </motion.div>
 
       {/*
-        تأكيدُ الخروج.
+        **قائمةُ الطاقة.**
 
-        النافذةُ بلا زخارف فلا زرَّ إغلاقَ من ويندوز، وهذا الزرُّ هو
-        المخرج. والإغلاقُ لا رجعةَ فيه، فلا يقع بضغطةٍ واحدةٍ على زرٍّ
-        قد تصله بالسهم وأنت تتنقّل.
+        فعلان لا رجعةَ في أيّهما، فلا يقع أحدُهما بضغطةٍ واحدةٍ على زرٍّ
+        قد تصله بالسهم وأنت تتنقّل. والنافذةُ بلا زخارف فلا زرَّ إغلاقَ
+        من ويندوز — ولذلك **يبقى «الإغلاق» هنا** وإن صارت الأيقونةُ
+        تسمّي الإعادة: حذفُه كان سيسدّ المخرجَ الوحيد ويترك `Alt+F4`.
+
+        وترتيبُهما بالتكرار لا بالخطورة: الإعادةُ تُطلب كثيراً فتصدّر،
+        والإغلاقُ مرّةً في اليوم فيلي.
       */}
       <AnimatePresence>
         {confirmingExit && (
@@ -574,33 +582,80 @@ export function UserSelectionScreen({
             transition={{ duration: MOTION.duration.fast }}
             className="absolute inset-0 grid place-items-center bg-black/55 backdrop-blur-sm"
           >
-            <div className="flex w-full max-w-72 flex-col items-center gap-5 rounded-2xl border border-white/10 bg-[#080c14]/90 px-7 py-6">
-              <p className="text-center text-sm font-light text-white/80">
-                إغلاق التطبيق؟
+            <div className="flex w-full max-w-64 flex-col gap-3 rounded-2xl border border-white/10 bg-[#080c14]/92 p-3">
+              <p className="pt-1.5 text-center text-xs font-light tracking-wide text-white/45">
+                خيارات النظام
               </p>
-              <div className="flex w-full gap-3">
-                <button
-                  type="button"
-                  onClick={() => void closeApp()}
-                  className="flex-1 rounded-xl border border-white/20 bg-white/8 py-2.5 text-xs font-light text-white transition hover:bg-white/14"
-                >
-                  إغلاق
-                </button>
-                <button
-                  type="button"
+
+              <div className="flex flex-col gap-1.5">
+                <PowerChoice
+                  icon={RotateCcw}
+                  label="إعادة التشغيل"
+                  primary
                   onClick={() => {
-                    uiSound("back");
-                    setConfirmingExit(false);
+                    uiSound("confirm");
+                    requestPower("restart");
                   }}
-                  className="flex-1 rounded-xl border border-white/10 py-2.5 text-xs font-light text-white/60 transition hover:bg-white/8"
-                >
-                  تراجع
-                </button>
+                />
+
+                <PowerChoice
+                  icon={Power}
+                  label="إيقاف التشغيل"
+                  onClick={() => {
+                    uiSound("confirm");
+                    requestPower("off");
+                  }}
+                />
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  uiSound("back");
+                  setConfirmingExit(false);
+                }}
+                className="rounded-xl py-2 text-[11px] font-light text-white/40 transition hover:bg-white/6 hover:text-white/75"
+              >
+                تراجع
+              </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+/**
+ * سطرٌ في قائمة النظام — أيقونةٌ وكلمة.
+ *
+ * ولا سطرَ شارحٌ تحته: «إعادة التشغيل» و«إيقاف التشغيل» كلمتان يعرفهما
+ * كلُّ من استعمل حاسوباً، وشرحُهما يُطيل النافذةَ ويُبطئ قراراً مدّتُه
+ * ثانية. والشرحُ يجب أن يُبذل حيث يُحتاج — وهنا لا يُحتاج.
+ */
+function PowerChoice({
+  icon: Icon,
+  label,
+  primary = false,
+  onClick,
+}: {
+  icon: LucideIcon;
+  label: string;
+  primary?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-right text-[13px] font-light transition ${
+        primary
+          ? "bg-white/10 text-white hover:bg-white/16"
+          : "bg-white/4 text-white/75 hover:bg-white/10 hover:text-white"
+      }`}
+    >
+      <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+      {label}
+    </button>
   );
 }

@@ -9,6 +9,7 @@ import {
   HardDriveDownload,
   Loader2,
   RotateCcw,
+  Sparkles,
   Trash2,
   Upload,
   X,
@@ -25,6 +26,7 @@ import {
   getMaintenance,
   humanBytes,
   listBackups,
+  reopenFirstBoot,
   resetSystem,
   restoreBackup,
   restoreFromFile,
@@ -56,6 +58,7 @@ export default function MaintenancePage() {
 
   const [restoring, setRestoring] = useState<BackupFile | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
+  const [reopenOpen, setReopenOpen] = useState(false);
 
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -342,6 +345,51 @@ export default function MaintenancePage() {
                 </button>
               </section>
             )}
+
+            {/* ============ إعادةُ فتح شاشات التهيئة ============ */}
+            {/*
+              **قسمٌ مستقلٌّ عن إعادة التهيئة فوقه — وهما يُخلطان دائماً.**
+
+              ذاك يمحو **البيانات** ولا يمسّ شاشاتِ التركيب إطلاقاً (فحصتُ
+              `maintenance.service`: لا ذكرَ لمفاتيح `system.first_boot.*`
+              فيه). وهذا يفتح **الشاشات** ولا يمحو صفّاً واحداً.
+
+              ووضعُهما متجاورين هو ما يمنع الخلط: يقرأ المستخدمُ الفرقَ
+              مكتوباً قبل أن يضغط، بدل أن يضغط الأحمرَ ظنّاً أنّه يُعيد
+              التركيب فيُضيّع بياناته ويبقى حيث هو.
+
+              ولونُه ليس أحمر: هذا فعلٌ **لا يمحو شيئاً** — والتحذيرُ
+              بلونٍ لا يستحقّه يُفقد اللونَ معناه حين يستحقّه.
+            */}
+            {can("maintenance.reset") && overview && (
+              <section
+                className="rounded-2xl border p-5"
+                style={{ borderColor: `${ACCENT}33`, background: `${ACCENT}0a` }}
+              >
+                <h2 className="mb-1 flex items-center gap-2 text-base font-black" style={{ color: ACCENT }}>
+                  <Sparkles className="h-4.5 w-4.5" />
+                  إعادة فتح شاشات التهيئة الأولى
+                </h2>
+
+                <p className="mb-4 max-w-3xl text-[13px] leading-relaxed text-white/55">
+                  تُعرض شاشاتُ التركيب الخمس عشرة من جديد عند الإقلاع التالي.
+                  <span className="font-bold text-white/80"> ولا تُمحى بياناتٌ ولا حسابات</span> —
+                  البرنامج يسألك عن اختياراتك فحسب، وما تُعيد كتابته يحلّ محلّ
+                  ما كان. وهي ما تحتاجه إن كان النظام قد <span className="font-bold text-white/80">تبنّى</span>
+                  {" "}التركيبَ تلقائياً ولم تمرّ بالشاشات أصلاً.
+                </p>
+
+                <button
+                  onClick={() => setReopenOpen(true)}
+                  disabled={busy !== null}
+                  className="flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-black transition hover:brightness-125 disabled:opacity-40"
+                  style={{ borderColor: `${ACCENT}55`, background: `${ACCENT}14`, color: ACCENT }}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  افتح شاشات التهيئة…
+                </button>
+              </section>
+            )}
           </>
         )}
       </div>
@@ -352,6 +400,16 @@ export default function MaintenancePage() {
           busy={busy === "restore"}
           onClose={() => setRestoring(null)}
           onConfirm={() => runRestore(restoring)}
+        />
+      )}
+
+      {reopenOpen && (
+        <ReopenFirstBootDialog
+          onClose={() => setReopenOpen(false)}
+          onError={(message) => {
+            setReopenOpen(false);
+            setError(message);
+          }}
         />
       )}
 
@@ -478,6 +536,151 @@ function ConfirmRestore({
  * الأعدادُ الحقيقية: كم صفّاً يُمحى وكم يبقى، ومن أيّ جدول. ومعها
  * تحذيرٌ إن لم تكن ثمّة نسخةٌ محفوظة — وهو الحال الذي يُندَم عليه.
  */
+/**
+ * **إعادةُ فتح شاشات التهيئة — نافذةُ تأكيدٍ لا تُخيف، وتشرح ما ستقع.**
+ *
+ * والحرسُ كتابةُ الكلمة، وهي `RESET` بحروفها اللاتينية عمداً: تلك هي
+ * الكلمةُ التي يشترطها مخطّطُ الخادم حرفياً (`z.literal("RESET")`). فما
+ * يكتبه المستخدمُ هو **نفسُه** ما يُرسل — لا ترجمةَ بينهما تُخفي ما
+ * يُصرَّح به.
+ *
+ * ## وإعادةُ التحميل جزءٌ من الفعل لا زينةٌ بعده
+ *
+ * بوّابةُ التهيئة تُسأل مرّةً واحدة عند تركيب `App`. فبلا إعادة تحميلٍ
+ * يبقى المستخدمُ في شاشة الصيانة ولا يرى شيئاً، ويظنّ أنّ الزرَّ لم
+ * يعمل — والحالُ أنّه عمل وسيظهر أثرُه غداً.
+ *
+ * ويُمحى معها `ajyal_booted` من `sessionStorage`: بغيره تبدأ الجلسةُ
+ * التالية وهي تحسب أنّ الإقلاع قد جرى، فيُتخطّى تسلسلُ الشعار واختيارِ
+ * المستخدم بعد انتهاء التهيئة. ومحوُه يجعل ما يلي التهيئةَ مطابقاً
+ * لتركيبٍ جديدٍ تماماً.
+ */
+function ReopenFirstBootDialog({
+  onClose,
+  onError,
+}: {
+  onClose: () => void;
+  onError: (message: string) => void;
+}) {
+  const [typed, setTyped] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const ready = typed.trim().toUpperCase() === "RESET" && !busy;
+
+  const run = async () => {
+    if (!ready) return;
+
+    setBusy(true);
+
+    try {
+      await reopenFirstBoot();
+
+      /* الجلسةُ التالية تبدأ من أوّل التسلسل لا من منتصفه. */
+      try {
+        sessionStorage.removeItem("ajyal_booted");
+      } catch {
+        /* رفاهية — لا تُعطّل الفعل */
+      }
+
+      window.location.reload();
+    } catch (err) {
+      const data = (err as { response?: { data?: { message?: string } } }).response?.data;
+      setBusy(false);
+      onError(data?.message ?? "تعذّر فتح شاشات التهيئة");
+    }
+  };
+
+  return (
+    <MotionDialog onClose={busy ? () => {} : onClose} labelledBy="reopen-title">
+      <div className="flex w-[min(92vw,460px)] flex-col gap-5 p-6">
+        <div className="flex items-start gap-3">
+          <span
+            aria-hidden
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
+            style={{ background: `${ACCENT}1a`, color: ACCENT }}
+          >
+            <Sparkles className="h-5 w-5" />
+          </span>
+
+          <div className="flex flex-col gap-1">
+            <h3 id="reopen-title" className="text-base font-black leading-tight">
+              إعادة فتح شاشات التهيئة
+            </h3>
+            <p className="text-[13px] leading-relaxed text-white/55">
+              يُعاد تشغيل البرنامج فوراً، وتبدأ شاشاتُ التركيب من أوّلها.
+            </p>
+          </div>
+        </div>
+
+        {/* ما يقع وما لا يقع — الفرقُ عن «إعادة التهيئة» يُقال هنا صراحةً */}
+        <ul className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-[12px] leading-relaxed">
+          <li className="flex items-start gap-2 text-white/70">
+            <Check aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} />
+            تُعرض الشاشاتُ الخمس عشرة من جديد
+          </li>
+          <li className="flex items-start gap-2 text-white/70">
+            <Check aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} />
+            حسابُك وكلمةُ مرورك كما هما — ولن يُنشأ حسابٌ ثانٍ باسمك
+          </li>
+          <li className="flex items-start gap-2 text-white/70">
+            <X aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/35" />
+            <span>
+              <span className="font-bold text-white/85">لا تُمحى</span> بياناتٌ ولا طلبةٌ ولا
+              أساتذةٌ ولا نسخٌ احتياطية
+            </span>
+          </li>
+        </ul>
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="reopen-confirm" className="text-[12px] text-white/55">
+            اكتب <span className="font-black" style={{ color: ACCENT }}>RESET</span> للتأكيد
+          </label>
+          <input
+            id="reopen-confirm"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void run();
+              }
+            }}
+            placeholder="RESET"
+            dir="ltr"
+            autoComplete="off"
+            className="rounded-xl border bg-white/5 px-4 py-2.5 text-center text-sm font-black tracking-widest text-white outline-none transition placeholder:font-normal placeholder:tracking-normal placeholder:text-white/25"
+            style={{
+              borderColor: ready ? `${ACCENT}88` : "rgba(255,255,255,0.12)",
+            }}
+          />
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={run}
+            disabled={!ready}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black text-[#04202b] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35"
+            style={{ background: ACCENT }}
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {busy ? "يُعاد التشغيل…" : "افتح وأعد التشغيل"}
+          </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="rounded-xl border border-white/12 px-4 py-2.5 text-sm font-black text-white/60 transition hover:bg-white/8 disabled:opacity-40"
+          >
+            تراجع
+          </button>
+        </div>
+      </div>
+    </MotionDialog>
+  );
+}
+
 function ResetDialog({
   overview,
   backups,

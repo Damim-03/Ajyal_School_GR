@@ -57,6 +57,7 @@ const teacher_debt_share_route_1 = __importDefault(require("../modules/teacher-d
 const user_route_1 = __importDefault(require("../modules/user/user.route"));
 const role_route_1 = __importStar(require("../modules/role/role.route"));
 const report_route_1 = __importDefault(require("../modules/report/report.route"));
+const reports_route_1 = __importDefault(require("../modules/reports/reports.route"));
 const upload_route_1 = __importDefault(require("../modules/upload/upload.route"));
 const maintenance_route_1 = __importDefault(require("../modules/maintenance/maintenance.route"));
 const mainRoute = (0, express_1.Router)();
@@ -105,7 +106,24 @@ mainRoute.use("/roles", role_route_1.default);
 mainRoute.use("/permissions", role_route_1.permissionRouter);
 // --------------------------------------------------
 // Reports
+//
+// وحدتان تتعايشان في أثناء الانتقال:
+//
+//   /reports      القديمة — تخدم شاشاتٍ تعمل اليوم
+//   /reports/v2   الجديدة — منظومة التقارير قيد البناء
+//
+// وبادئةٌ مستقلّة لا مسارٌ واحد، لأنّ `/financial` موجودٌ في
+// الاثنتين. وتركيبُهما على `/reports` معاً كان سيجعل الراوتر
+// الأوّل يلتقطه فلا يصل طلبٌ واحد إلى الجديد — عطبٌ صامت: المسار
+// يردّ 200 ببيانات النسخة القديمة، فيبدو أنّ الجديد يعمل.
+//
+// والأخصُّ يُركَّب أوّلاً: `/reports/v2` قبل `/reports` حتى لا
+// يعتمد الوصولُ إليه على أن يُمرِّر القديمُ ما لا يعرفه.
+//
+// ومتى غطّت الجديدةُ كلَّ ما تغطّيه القديمة، تُبدَّل البادئتان
+// وتُحذف القديمة — استبدالٌ بخطوةٍ واحدة لا إعادةُ كتابة.
 // --------------------------------------------------
+mainRoute.use("/reports/v2", reports_route_1.default);
 mainRoute.use("/reports", report_route_1.default);
 // --------------------------------------------------
 // Uploads — صور الطلبة وشعار المدرسة

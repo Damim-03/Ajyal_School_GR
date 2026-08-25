@@ -43,6 +43,15 @@ const ACK = 0.09;
  */
 const DEEPEN_SCALE = ex.world.light;
 
+/**
+ * شدّةُ الضوء المحيط أثناء بناء الشاشة.
+ *
+ * 0.42: يبقى الجوُّ **مرئياً وحيّاً** — لا يُطفأ ولا يُسطَّح — لكنّه يترك
+ * الصدارةَ لما يُبنى فوقه. والفرقُ بينه وبين شدّته الكاملة هو بالضبط
+ * الفرقُ بين خلفيةٍ **تسند** الواجهة وخلفيةٍ **تزاحمها**.
+ */
+const RESTRAINT = 0.42;
+
 export function AmbientEnvironment({
   /** لون القسم الحالي — يُستوفى بهدوء، والدورة لا تتأثّر. */
   accent,
@@ -64,11 +73,24 @@ export function AmbientEnvironment({
    * تُمرَّر منفصلةً عن `response` ولها منحناها الخاصّ وزمنها الخاص.
    */
   deepened = false,
+  /**
+   * **الجوُّ مكبوحٌ الآن — الشاشةُ ما زالت تُبنى.**
+   *
+   * الضوءُ المحيط يبلغ شدّتَه كاملةً منذ أوّل إطار، فينافس التركيزَ في
+   * اللحظة التي يجب أن يكون فيها التركيزُ وحده. والمشكلة ليست في وجوده
+   * بل في **توقيته**: البيئةُ تصل قبل من جاءت لتخدمه.
+   *
+   * فتُكبح إلى `RESTRAINT` طوال الدخول، ثمّ ترتفع إلى شدّتها الطبيعية بعد
+   * أن يستقرّ كلُّ شيء. والحياةُ لا تُمسّ — الحبيباتُ والضبابُ والنسيجُ
+   * والدورةُ كلُّها تعمل، وإنّما يُخفَض ضوءان.
+   */
+  restrained = false,
 }: {
   accent: string;
   glow: string;
   response?: MotionValue<number>;
   deepened?: boolean;
+  restrained?: boolean;
 }) {
   const still = useReducedMotion();
   /* أعماق مختلفة ⇒ سرعات مختلفة مع الكاميرا. الفرق هو ما يولّد المسافة. */
@@ -105,7 +127,29 @@ export function AmbientEnvironment({
     return () => controls.stop();
   }, [deepened, deepen, still]);
 
-  const ack = useTransform(ackSource, (v) => (still ? 1 : 1 - ACK + ACK * v));
+  /**
+   * كبحُ الدخول — قيمةٌ تصعد من `RESTRAINT` إلى 1 حين تستقرّ الشاشة.
+   *
+   * `animate` لا انتقالُ CSS: القيمةُ تُضرب في اعتراف التركيز، ولو كان
+   * لكلٍّ منهما مالكٌ مختلف لتغلّب أحدهما على الآخر صامتاً — وهو العطلُ
+   * الموثَّق أسفل هذا الملف.
+   *
+   * والصعودُ أبطأُ من الدخول نفسِه (‏0.9s): لو بلغ الضوءُ ذروتَه مع آخر
+   * علامةٍ في الجدول لقُرئ **حدثاً** يقع عند النهاية. وهو ليس حدثاً —
+   * هو المكانُ يستعيد أنفاسه بعد أن فرغ البناء.
+   */
+  const restraint = useMotionValue(restrained ? RESTRAINT : 1);
+  useEffect(() => {
+    const to = restrained ? RESTRAINT : 1;
+    if (still) { restraint.set(to); return; }
+    const controls = animate(restraint, to, { duration: 0.9, ease: MOTION.easing.standard });
+    return () => controls.stop();
+  }, [restrained, restraint, still]);
+
+  const ack = useTransform(
+    [ackSource, restraint] as const,
+    ([v, r]: number[]) => (still ? r : (1 - ACK + ACK * v) * r),
+  );
 
   /*
    * الاعتراف بالامتداد يركب **الاتّساع** لا الشفافية.

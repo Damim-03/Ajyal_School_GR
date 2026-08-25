@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { prefersStillMotion } from "../../core/system/preferences";
 import { motion } from "motion/react";
 import {
   ArrowRight,
@@ -1124,7 +1125,7 @@ export default function DailySheetPage() {
      * الأفقيّ — الجدول يمتدّ ثمانيَ حصصٍ يميناً، ولا شأن للتمرير
      * الرأسيّ بموضع الأعمدة.
      */
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const still = prefersStillMotion();
 
     glowRow.current?.scrollIntoView({
       block: "center",

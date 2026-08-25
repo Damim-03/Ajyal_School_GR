@@ -171,8 +171,15 @@ export function SpatialNavItem({
    * تحتاج نسيجاً وسيطاً ونواةَ التفافٍ لكل بلاطة، إلى مصفوفة لونية تُطبَّق
    * أثناء التركيب. الفارق كلّه على الثماني غير المركَّزة، وهي التي تتغيّر
    * قيمتها طوال التنقّل.
+   *
+   * وانضمّ إليه `saturate` — وهو من الفصيلة نفسِها: يُدمج مع السطوع في
+   * **مصفوفةٍ واحدة**، فالقناتان بكلفة قناة. وهو يعطي للصفّ عمقاً لا
+   * تعطيه الشفافيةُ وحدها: البعيدُ يخفت لونُه كما يخفت في الهواء.
    */
-  const filter = useTransform(i, (v) => `brightness(${energyResponse(v).brightness})`);
+  const filter = useTransform(i, (v) => {
+    const r = energyResponse(v);
+    return `brightness(${r.brightness}) saturate(${r.saturation})`;
+  });
   const badgeOpacity = useTransform(i, (v) => energyResponse(v).badge);
 
   /* المادّة — تسعة مخارج من مدخل واحد، كلّها شفافيات وتحويلات. */
@@ -214,6 +221,19 @@ export function SpatialNavItem({
       onPointerEnter={onHover ? () => onHover(true) : undefined}
       onPointerLeave={onHover ? () => onHover(false) : undefined}
       title={label}
+      /*
+       * **الدلالةُ لا يحملها الإطار** (§36).
+       *
+       * الإطارُ زخرفيٌّ (`aria-hidden` و`pointer-events: none`) ولا يقع
+       * داخل البلاطة أصلاً، فلا شيء في شجرة الوصول يقول أيُّ قسمٍ هو
+       * الحالي. و`aria-current` يقوله صراحةً لقارئ الشاشة بلا اعتمادٍ
+       * على ما يُرى.
+       *
+       * و`aria-label` لا `title` وحده: التلميحُ لا يُقرأ في كلّ الحالات،
+       * والاسمُ هنا هو المحتوى الوحيد (الرمز مجرَّد).
+       */
+      aria-label={label}
+      aria-current={selected ? "true" : undefined}
       data-spatial-item={selected ? "selected" : "idle"}
       className={`relative block shrink-0 outline-none ${className ?? ""}`}
       /*

@@ -1,5 +1,9 @@
 import axios from "axios";
-import { appConfig } from "../config/app.config";
+import { apiBaseUrl } from "./base-url";
+import {
+  reportRequestFailure,
+  reportRequestSuccess,
+} from "../system/connection";
 import { useAuthStore } from "../stores/auth.store";
 
 // --------------------------------------------------
@@ -7,7 +11,6 @@ import { useAuthStore } from "../stores/auth.store";
 // --------------------------------------------------
 
 export const apiClient = axios.create({
-  baseURL: appConfig.API_URL,
   withCredentials: true, // للـ refresh token cookie
   headers: {
     "Content-Type": "application/json",
@@ -15,10 +18,20 @@ export const apiClient = axios.create({
 });
 
 // --------------------------------------------------
-// Request Interceptor — إضافة Access Token
+// Request Interceptor — العنوان ثمّ التوكن
 // --------------------------------------------------
 
 apiClient.interceptors.request.use((config) => {
+  /*
+   * العنوانُ يُحقن هنا لا في `axios.create`.
+   *
+   * فالمُنشئ يُنفَّذ مرّةً عند تحميل الوحدة، وقد صار العنوانُ يُضبط
+   * زمنَ التشغيل من شاشة الشبكة (`core/api/base-url.ts`). ولو خُبز
+   * في المُنشئ لظلّت الطلباتُ تذهب إلى الخادم القديم حتى يُعاد
+   * تشغيل التطبيق — أي أنّ تبديل الخادم يبدو أنّه فشل.
+   */
+  config.baseURL = apiBaseUrl();
+
   const token = useAuthStore.getState().accessToken;
 
   if (token) {
@@ -59,10 +72,29 @@ const processQueue = (error: unknown, token: string | null) => {
 };
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    /*
+     * كلُّ ردٍّ يصل دليلٌ على أنّ الطريق قائم.
+     *
+     * وهذا هو مقياسُ الاتصال الأدقّ في التطبيق: لا فحصَ دوريٌّ يسأل
+     * عمّا لا يُستعمل، بل عملُ المستخدم نفسُه يُخبر. والفحصُ الدوريُّ
+     * لا يعمل إلّا **أثناء الانقطاع** ليكشف العودة (`connection.ts`).
+     */
+    reportRequestSuccess();
+
+    return response;
+  },
 
   async (error) => {
     const originalRequest = error.config;
+
+    /*
+     * **بلا ردٍّ** يعني أنّ الطلبَ لم يبلغ الخادم: انقطعت الشبكة أو
+     * سقطت الخدمة. أمّا 500 و403 فردودٌ — الخادمُ حيٌّ وعطبُه في
+     * موضعٍ آخر، ورفعُ «انقطع الاتصال» عليها يُرسل المستخدمَ يفحص
+     * الكابلاتِ لأجل خطأٍ في الشيفرة.
+     */
+    if (!error.response) reportRequestFailure();
 
     // إذا انتهى التوكن — نجدده مرة واحدة
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -81,7 +113,7 @@ apiClient.interceptors.response.use(
 
       try {
         const { data } = await axios.post(
-          `${appConfig.API_URL}/auth/refresh`,
+          `${apiBaseUrl()}/auth/refresh`,
           {},
           { withCredentials: true },
         );

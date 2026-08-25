@@ -1,0 +1,182 @@
+/* ======================================================
+   ورقةُ التقرير — تركب نظامَ الكشوف
+
+   الأصنافُ العامّة (`sheet-print`, `sheet-page`, `sheet-print-top`,
+   `sheet-print-table`, `sheet-print-foot`) معرَّفةٌ في `index.css`
+   منذ كشوف الحضور: تُخفي الواجهةَ عند الطباعة، وتفرض A4 أفقية
+   بـ`@page sheet`، وتتكرّر ترويستُها في كلّ ورقة.
+
+   وما هنا زياداتُ التقرير وحدها — ولا يُعاد تعريفُ شيءٍ منها،
+   فتعريفُه ثانيةً يجعل ورقةَ التقرير تنحرف عن ورقة الكشف عند أوّل
+   تعديلٍ هناك.
+   ====================================================== */
+
+/* ---------- عنوانُ التقرير في الترويسة ---------- */
+
+/*
+  الرمزُ نفسُه من `SheetBarcode` بأصنافه القياسية — لا شيءَ هنا له.
+  وكانت لي أصنافٌ خاصّة فخرج أصغرَ من رمز الكشف وبإطارٍ حوله.
+*/
+
+.report-sheet .report-sheet-title {
+  font-size: 4.4mm;
+  font-weight: 900;
+  text-decoration: underline;
+  margin: 0.6mm 0 0;
+}
+
+.report-sheet-filters {
+  display: block;
+  direction: ltr;
+  text-align: left;
+  font-size: 2.2mm;
+  color: #444;
+  max-width: 60mm;
+}
+
+/* ---------- المؤشّرات ---------- */
+
+.report-sheet-metrics {
+  display: grid;
+  /*
+    ستٌّ في السطر: الورقةُ أفقيةٌ عرضُها 297 مم.
+    وأربعٌ كانت تترك ثلثَ العرض فارغاً وتدفع الجدولَ إلى ورقةٍ ثانية.
+  */
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1.4mm;
+  margin: 2mm 0 3mm;
+}
+
+.report-sheet-metric {
+  border: 0.2mm solid #b8c0c8;
+  border-radius: 1mm;
+  padding: 1.4mm;
+}
+
+.report-sheet-metric-label {
+  display: block;
+  font-size: 2.3mm;
+  color: #444;
+  line-height: 1.3;
+}
+
+.report-sheet-metric-value {
+  display: block;
+  /* الرقمُ هو البطل — §76 يطلب «أرقاماً واضحة جداً» */
+  font-size: 4mm;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  margin-top: 0.4mm;
+}
+
+/* ---------- أقسام التفصيل ---------- */
+
+.report-sheet-section {
+  margin-bottom: 2.5mm;
+}
+
+.report-sheet-section h4,
+.report-sheet-subtitle {
+  font-size: 3.2mm;
+  font-weight: 800;
+  border-bottom: 0.2mm solid #ccc;
+  padding-bottom: 0.5mm;
+  margin: 0 0 1.2mm;
+}
+
+.report-sheet-section dl {
+  display: grid;
+  /* ثلاثةُ أعمدة على الأفقي — العموديُّ كان يترك نصفَ العرض فارغاً */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4mm 4mm;
+  margin: 0;
+}
+
+.report-sheet-section dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 2mm;
+  border-bottom: 0.15mm dotted #ddd;
+  padding-bottom: 0.3mm;
+}
+
+.report-sheet-section dt {
+  color: #444;
+  font-size: 2.6mm;
+}
+
+.report-sheet-section dd {
+  margin: 0;
+  font-weight: 600;
+  font-size: 2.8mm;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- الجدول ---------- */
+
+/*
+  `sheet-print-table` يحمل الحدودَ والترويسةَ المتكرّرة من
+  `index.css`. وما هنا ما يخصّ التقرير: التخطيطُ الثابت والتناوب.
+*/
+.report-sheet .sheet-print-table {
+  /*
+    التخطيطُ ثابتٌ لا تلقائي.
+
+    والتلقائيُّ يوزّع العرضَ على طول المحتوى، فعمودُ «ملاحظة» فيه
+    جملةٌ طويلة يبتلع نصفَ الورقة ويضغط أعمدةَ المبالغ حتى تلتفّ
+    أرقامُها سطرين — وعمودُ مالٍ ملتفٌّ لا يُقرأ ولا يُقارَن.
+  */
+  table-layout: fixed;
+  font-size: 2.5mm;
+}
+
+.report-sheet .sheet-print-table td,
+.report-sheet .sheet-print-table th {
+  /* الكلماتُ الطويلة تُكسر ولا تمدّ الخانة */
+  overflow-wrap: anywhere;
+  padding: 0.7mm 0.9mm;
+}
+
+/*
+  تخطيطٌ متناوب — سطرٌ رماديّ خفيف كلَّ صفّين.
+
+  وليس زينة: عينٌ تتتبّع صفّاً في جدولٍ من خمسة عشر عموداً تنزلق
+  إلى الصفّ المجاور عند منتصف الورقة. والتناوبُ يمنع ذلك — وهو
+  أقدمُ ما في تصميم الجداول المطبوعة.
+
+  و5% رمادٍ لا أكثر: الأغمقُ يستنزف الحبرَ ويُضعف تباينَ النصّ.
+*/
+.report-sheet .sheet-print-table tbody tr:nth-child(even) {
+  background: #f2f5f7;
+}
+
+.report-sheet-num {
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+}
+
+.report-sheet-truncated {
+  display: block;
+  font-size: 2.3mm;
+  color: #444;
+}
+
+/* ---------- رموز الصفوف ---------- */
+
+.report-sheet-code-col {
+  width: 22mm;
+  padding: 0.3mm !important;
+}
+
+.report-sheet-row-code {
+  display: block;
+  width: 100%;
+  height: 5mm;
+}
+
+.report-sheet-row-code > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}

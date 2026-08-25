@@ -1,4 +1,5 @@
 import "dotenv/config";
+import fs from "node:fs";
 import path from "node:path";
 import express, { Request, Response } from "express";
 import cors from "cors";
@@ -172,12 +173,38 @@ app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 // HEALTH CHECK
 // ======================================================
 
+/**
+ * ونسخةُ الخادم تُعلَن هنا.
+ *
+ * تقرؤها شاشةُ التحديث في التهيئة الأولى لتُصالح بين النافذة والخادم
+ * (§36): أكثرُ ما يُعطب تركيبةً نصفُها مكتبٌ ونصفُها خادم أن يُحدَّث
+ * أحدُهما ويبقى الآخر — فتُنادى مساراتٌ لا توجد. والفحصُ حقيقيٌّ نافع،
+ * بخلاف مُحدِّثٍ لا وجود له يُخترع لأجل شريط تقدّم.
+ *
+ * وتُقرأ من `package.json` مرّةً لا في كل طلب. والمسارُ يصحّ في
+ * الحالين: `dist/app.js` و`src/app.ts` كلاهما على بُعد مجلَّدٍ واحد
+ * من جذر الحزمة.
+ */
+const serverVersion = (() => {
+  try {
+    const manifest = fs.readFileSync(
+      path.join(__dirname, "..", "package.json"),
+      "utf8",
+    );
+
+    return (JSON.parse(manifest) as { version?: string }).version ?? "";
+  } catch {
+    return "";
+  }
+})();
+
 app.get(
   "/api/health",
   asyncHandler(async (_: Request, res: Response) => {
     return res.status(HTTPSTATUS.OK).json({
       success: true,
       message: "Server is running 🚀",
+      version: serverVersion,
     });
   }),
 );

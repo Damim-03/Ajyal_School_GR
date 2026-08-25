@@ -2062,6 +2062,25 @@ body {
  */
 @keyframes skk-sharpen { from { filter: blur(4px); } to { filter: blur(0px); } }
 
+/*
+ * دخولُ شاشة الإطفاء (`features/boot/PowerScreen`).
+ *
+ * **حركةُ CSS لا انتقالٌ يُطلقه `requestAnimationFrame`.** وكانت الأولى
+ * كذلك: تُركَّب الشاشةُ شفّافةً، ثمّ يرفع إطارٌ من JS عتامتَها. وذلك
+ * يعمل ما دام هناك إطار — وليس هناك دائماً: النافذةُ إن كانت في
+ * الخلفية جُمّدت `rAF`، فتبقى الشاشةُ عند صفرٍ حتى ينتهي المكوثُ
+ * ويُغلق البرنامج. أي أنّ الشاشةَ التي وُضعت لتُرى لا تُرى.
+ *
+ * وحركةُ CSS تبدأ من ورقة الأنماط عند أوّل رسمة، بلا وسيطٍ في JS —
+ * فتُرى وإن لم يُنفَّذ سطرُ سكربتٍ واحد. وقد كشف ذلك القياسُ لا الحدس:
+ * قُرئت العتامةُ من الشاشة الحيّة فكانت صفراً.
+ */
+@keyframes skk-power-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes skk-power-logo {
+  from { transform: scale(0.965); }
+  to   { transform: scale(1); }
+}
+
 /* ===== احترام تفضيل تقليل الحركة =====
    يُبقي التغذية الراجعة الوظيفية (تغيّر الحالة مرئي) ويلغي الحركة الزخرفية:
    الحركات المحيطة اللانهائية، التمدّد، الانجراف، والمسافات الكبيرة. */
@@ -2420,3 +2439,21 @@ body {
 .lg-size { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
 .lg-size input[type="range"] { flex: 1; max-width: 220px; accent-color: var(--set-deep); }
 .lg-size .sf-num i { min-width: 52px; }
+
+/* ============================================================
+   سكونُ الحركة باختيارِ المستخدم — لا بتفضيل النظام وحده.
+
+   القاعدةُ أعلاه تُطفئ حركاتِ CSS حين يطلب النظامُ ذلك (§50). وصار
+   للمستخدم طريقٌ ثانٍ إلى الشيء نفسِه: ملمحُ «توفير الطاقة» في شاشة
+   الأداء (§13). و`core/system/preferences.ts` يكتب `data-motion` على
+   الجذر عند الإقلاع وعند كل تبديل، فيسري الاختيارُ على كلّ ما يتحرّك
+   بـCSS في التطبيق — بلا أن يعرف مكوّنٌ واحدٌ بوجود الشاشة.
+   ============================================================ */
+:root[data-motion="still"] *,
+:root[data-motion="still"] *::before,
+:root[data-motion="still"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

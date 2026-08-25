@@ -78,6 +78,24 @@ export const ErrorCodeEnum = {
   RESOURCE_IN_USE: "RESOURCE_IN_USE",
 
   // --------------------------------------------------
+  // First Boot — التهيئة الأولى
+  //
+  // خمسةُ رموزٍ لا رمزٌ واحد: الواجهةُ تتصرّف بكلٍّ منها تصرّفاً
+  // مختلفاً — إعادةُ قراءةِ الحالة، أو عرضُ النقص، أو إخفاءُ الشاشة
+  // كلِّها لأنّ التهيئة قد تمّت في نافذةٍ أخرى.
+  // --------------------------------------------------
+  /// طُلبت خطوةُ تهيئةٍ بعد اكتمالها — لا تُعاد إلّا بإعادة تهيئة (§59)
+  SETUP_ALREADY_COMPLETED: "SETUP_ALREADY_COMPLETED",
+  /// قفزٌ إلى خطوةٍ لاحقة أو رجوعٌ إلى خطوةٍ لا تُرجَع (§44)
+  SETUP_STEP_OUT_OF_ORDER: "SETUP_STEP_OUT_OF_ORDER",
+  /// التحقّق النهائي لم يمرّ — والنقصُ مفصَّلٌ في الرد (§21)
+  SETUP_VERIFICATION_FAILED: "SETUP_VERIFICATION_FAILED",
+  /// جهازٌ مصنَّفٌ REQUIRED غيرُ متوفّر (§37)
+  SETUP_DEVICE_MISSING: "SETUP_DEVICE_MISSING",
+  /// عمليةٌ تحتاج نظاماً مهيَّأً طُلبت قبل اكتمال التهيئة (§62)
+  SETUP_INCOMPLETE: "SETUP_INCOMPLETE",
+
+  // --------------------------------------------------
   // System
   // --------------------------------------------------
   INTERNAL_SERVER_ERROR: "INTERNAL_SERVER_ERROR",

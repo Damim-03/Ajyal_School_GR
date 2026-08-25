@@ -13,6 +13,7 @@
 
 import { useEffect, useRef } from "react";
 
+import { prefersStillMotion } from "../../core/system/preferences";
 import { CinematicScene, detectQuality } from "./scene";
 import type { Quality } from "./types";
 
@@ -46,17 +47,24 @@ export function CinematicEnvironment({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    /*
+     * السكونُ له مصدران لا واحد: تفضيلُ النظام، وملمحُ «توفير الطاقة»
+     * في تهيئة التطبيق. و`prefersStillMotion` تجمعهما — فاختيارُ
+     * المستخدم في شاشة الأداء يهدّئ هذا المشهدَ فعلاً، لا في CSS فقط
+     * (الحركةُ هنا على لوحةٍ لا تبلغها أنماطُ الصفحة).
+     */
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     const scene = new CinematicScene(canvas, {
       quality: quality ?? detectQuality(),
-      reducedMotion: reduced.matches,
+      reducedMotion: prefersStillMotion(),
     });
 
     sceneRef.current = scene;
     scene.start();
 
-    const onMotionChange = () => scene.setOptions({ reducedMotion: reduced.matches });
+    const onMotionChange = () =>
+      scene.setOptions({ reducedMotion: prefersStillMotion() });
 
     /**
      * `ResizeObserver` على اللوحة نفسها لا حدثُ `resize` على النافذة.

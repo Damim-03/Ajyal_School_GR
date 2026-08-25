@@ -1,0 +1,913 @@
+/* ============================================================
+   التهيئةُ الأولى — لغةٌ بصريةٌ قائمةٌ بذاتها.
+
+   ولماذا ملفٌّ مستقلٌّ لا إضافةٌ إلى `index.css`؟ لأنّ هذه الشاشاتِ
+   ليست من التطبيق: لا ترويسةَ ولا شريطَ جانبيَّ ولا بطاقات. وأصنافُ
+   التطبيق مبنيّةٌ على سطحٍ فاتحٍ (‏`--skk-bg: #f1f5f9`)، وهذه على سوادٍ
+   عميق. فخلطُهما كان سيعني إبطالَ نصفِ ما يرثه كلُّ عنصر.
+
+   والملفُّ يُستورد من `FirstBoot.tsx` وحده — فلا يُحمَّل في جلسةٍ لا
+   تمرّ بالتهيئة.
+
+   والقاعدةُ التي تحكمه (§48): سوادٌ عميق، وإضاءةٌ خافتة، وطباعةٌ
+   كبيرة، ولونُ تمييزٍ واحدٌ مضبوط. لا تدرّجاتٍ ولا ظلالٍ ولا حدودٍ إلّا
+   لضرورة — «تجربةُ تشغيلِ نظامٍ» لا واجهةُ ألعاب.
+   ============================================================ */
+
+.nx-boot {
+  --nx-ink: #f4f7ff;
+  --nx-ink-2: rgba(244, 247, 255, 0.62);
+  --nx-ink-3: rgba(244, 247, 255, 0.38);
+  --nx-line: rgba(255, 255, 255, 0.09);
+  --nx-line-2: rgba(255, 255, 255, 0.16);
+  --nx-surface: rgba(255, 255, 255, 0.035);
+  --nx-surface-2: rgba(255, 255, 255, 0.07);
+
+  /*
+   * لونُ التمييز يُشتقّ من هوية المؤسسة (`school.brand_color`) ولا
+   * يُكتب هنا. فالمدرسةُ التي ضبطت لونَها من الإعدادات تجد شاشاتِ
+   * التهيئة به — والقيمةُ أدناه احتياطٌ لأوّل تشغيلٍ قبل أن يُضبط شيء.
+   */
+  --nx-accent: #7dd3fc;
+
+  --nx-radius: 14px;
+
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+  color: var(--nx-ink);
+  background: #04060c;
+  font-family: "Segoe UI", "Tahoma", "Arial", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ----------------------------------------------------------
+   الخلفية.
+
+   ولا شيءَ هنا: المشهدُ لوحةُ رسمٍ يركّبها `FirstBoot` — هو نفسُه
+   `CinematicEnvironment` الذي تحت شاشة الدخول واختيار المستخدم، فلا
+   يتبدّل العالمُ تحت المستخدم وهو ينتقل من التهيئة إلى الدخول.
+
+   وكانت هنا ثلاثُ طبقاتِ CSS (تدرّجٌ ساكنٌ وآخرُ يتنفّس وحبيبةٌ تكسر
+   التحزّم). حُذفت كلُّها — طبقةٌ لا تُرى تحت لوحةٍ معتمة تكلفةُ رسمٍ
+   بلا مقابل، والقاعُ الأسودُ في `.nx-boot` يكفي أساساً تحت اللوحة إلى
+   أن تُرسم أوّلَ إطار.
+   ---------------------------------------------------------- */
+
+/* ----------------------------------------------------------
+   التخطيط
+   ---------------------------------------------------------- */
+
+.nx-stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
+  /*
+   * `min()` لا `clamp()` على العرض: التهيئةُ تُعرض على 1280 وعلى 4K،
+   * وعمودُ نصٍّ يتمدّد إلى 3000 بكسل لا يُقرأ. و`68rem` تتبع مقياسَ
+   * الواجهة — فمن اختار «كبير» يجد العمودَ أوسعَ بالقدر نفسِه.
+   */
+  width: min(68rem, calc(100% - 2 * clamp(24px, 6vw, 96px)));
+  margin: 0 auto;
+  padding: clamp(20px, 3.5vh, 40px) 0 clamp(20px, 3.5vh, 40px);
+}
+
+.nx-stage__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 2.5rem;
+}
+
+.nx-stage__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.nx-stage__brand img {
+  height: 1.75rem;
+  width: auto;
+}
+
+.nx-stage__eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--nx-ink-3);
+}
+
+/*
+ * **شارةُ «أهلاً بعودتك» — في الترويسة لا فوق الأزرار.**
+ *
+ * كانت طبقةً مطلقةً عند أسفل الشاشة (`position:absolute; bottom:…`)،
+ * فتقع على زرّ «رجوع» وعلى سطر الإرشاد معاً — في كلّ شاشةٍ من الخمس
+ * عشرة. وهو أظهرُ تداخلٍ في اللقطات.
+ *
+ * ومحلُّها الصحيح الترويسة: هي معلومةٌ عن **أين أنت**، كعدّاد الخطوات
+ * بجانبها تماماً. وفي الترويسة فسحةٌ خالية، وفيها تدخل التدفّق فلا
+ * تعلو شيئاً.
+ */
+.nx-stage__resumed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.24rem 0.66rem;
+  border: 1px solid color-mix(in srgb, var(--nx-accent) 32%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--nx-accent) 9%, transparent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--nx-ink-2);
+  white-space: nowrap;
+}
+
+.nx-stage__count {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--nx-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* شريطُ التقدّم — رفيعٌ إلى حدّ ألّا يُقرأ زينةً */
+.nx-stage__rail {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 2px;
+  background: var(--nx-line);
+  overflow: hidden;
+}
+
+.nx-stage__rail i {
+  display: block;
+  height: 100%;
+  background: var(--nx-accent);
+  transform-origin: inline-start;
+  transition: width 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/*
+ * **جسمُ الشاشة — يتوسّط ما دام يسع، ويمرّر حين لا يسع.**
+ *
+ * كان `justify-content: center` وحده. وهو صحيحٌ ما دام المحتوى أقصرَ من
+ * الصفّ؛ فإذا طال — قائمةُ الأجهزة، أو مراجعةُ الخطوات الخمس عشرة —
+ * وقعت **علّةُ التوسيط المعروفة**: الفائضُ يخرج من **الطرفين معاً**،
+ * فيصعد أعلاه فوق الترويسة ويهبط أسفله تحت الأزرار. ولا يمكن تمريره
+ * لأنّ ما خرج من الأعلى لا تبلغه أشرطةُ التمرير.
+ *
+ * وهذا سببُ كلّ التداخل الذي في اللقطات: العنوانُ يعتلي «التهيئة
+ * الأولى»، وأوّلُ صفٍّ في المراجعة يختفي خلف الشريط.
+ *
+ * والعلاجُ **هوامشُ تلقائية لا توسيطٌ بالمحاذاة**: `margin-block: auto`
+ * على الطرفين يتوسّط حين تكون هناك فسحة، ويؤول إلى الصفر حين لا تكون
+ * — فيبدأ المحتوى من أعلاه ويُمرَّر إلى آخره.
+ */
+.nx-stage__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-block: clamp(16px, 3vh, 40px);
+  gap: clamp(18px, 2.6vh, 34px);
+  /* الحلقةُ تلتقط التركيز بلا إظهار حدٍّ — التمريرُ بالمفاتيح يعمل. */
+  scrollbar-width: none;
+}
+
+.nx-stage__body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.nx-stage__body > :first-child {
+  margin-block-start: auto;
+}
+
+.nx-stage__body > :last-child {
+  margin-block-end: auto;
+}
+
+/* ----------------------------------------------------------
+   الطباعة — أربعةُ مستوياتٍ لا عشرة (§51)
+   ---------------------------------------------------------- */
+
+.nx-title {
+  margin: 0;
+  font-size: clamp(2.1rem, 4.6vw, 3.6rem);
+  line-height: 1.08;
+  font-weight: 300;
+  letter-spacing: -0.015em;
+  color: var(--nx-ink);
+  outline: none;
+}
+
+/* العربيةُ لا تحتمل وزناً 300 في هذا الحجم — تصير خيوطاً */
+[dir="rtl"] .nx-title {
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.24;
+}
+
+.nx-lead {
+  margin: 0;
+  max-width: 46ch;
+  font-size: clamp(0.95rem, 1.15vw, 1.1rem);
+  line-height: 1.65;
+  color: var(--nx-ink-2);
+}
+
+.nx-hint {
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--nx-ink-3);
+}
+
+/* ----------------------------------------------------------
+   الخيارات — الصفُّ الكبير هو العنصرُ الأساسيّ في هذه التجربة
+   ---------------------------------------------------------- */
+
+.nx-choices {
+  display: grid;
+  gap: 10px;
+  max-width: 44rem;
+}
+
+.nx-choice {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: clamp(14px, 1.6vh, 20px) clamp(16px, 1.6vw, 22px);
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-radius);
+  background: var(--nx-surface);
+  color: var(--nx-ink);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nx-choice:hover {
+  background: var(--nx-surface-2);
+  border-color: var(--nx-line-2);
+}
+
+.nx-choice:active {
+  transform: scale(0.995);
+}
+
+.nx-choice[aria-checked="true"],
+.nx-choice[data-selected="true"] {
+  border-color: color-mix(in srgb, var(--nx-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--nx-accent) 10%, transparent);
+}
+
+/*
+ * **رمزُ الخيار — مربّعٌ هادئ، يشتدّ حين يُختار.**
+ *
+ * ولا لونَ ثابتاً له: يرث `currentColor` من الصفّ، فيتبع حالتَه بلا
+ * قاعدةٍ ثانية تُكتب — والمختارُ يكتسب لونَ التمييز من نفسه.
+ */
+.nx-choice__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--nx-line);
+  background: var(--nx-surface-2);
+  color: var(--nx-ink-3);
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.nx-choice[aria-checked="true"] .nx-choice__icon,
+.nx-choice[data-selected="true"] .nx-choice__icon {
+  color: var(--nx-accent);
+  border-color: color-mix(in srgb, var(--nx-accent) 42%, transparent);
+  background: color-mix(in srgb, var(--nx-accent) 12%, transparent);
+}
+
+/* رمزُ صفّ الحالة — أصغرُ وبلا إطار: الصفُّ نفسُه محاطٌ أصلاً. */
+.nx-row__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-inline-end: 0.7rem;
+  color: var(--nx-ink-3);
+}
+
+.nx-choice__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.nx-choice__label {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.nx-choice__hint {
+  font-size: 0.82rem;
+  color: var(--nx-ink-3);
+  line-height: 1.5;
+}
+
+/* علامةُ الاختيار — دائرةٌ تمتلئ، لا صحُّ أخضر */
+.nx-choice__mark {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--nx-line-2);
+  display: grid;
+  place-items: center;
+  transition: border-color 180ms ease;
+}
+
+.nx-choice[aria-checked="true"] .nx-choice__mark {
+  border-color: var(--nx-accent);
+}
+
+.nx-choice__mark::after {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: var(--nx-accent);
+  transform: scale(0);
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nx-choice[aria-checked="true"] .nx-choice__mark::after {
+  transform: scale(1);
+}
+
+/* ----------------------------------------------------------
+   الحقول
+   ---------------------------------------------------------- */
+
+.nx-fields {
+  display: grid;
+  gap: 14px;
+  max-width: 44rem;
+}
+
+.nx-fields--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nx-field > span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--nx-ink-3);
+}
+
+.nx-field input,
+.nx-field select {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--nx-line);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--nx-ink);
+  font-size: 0.98rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.nx-field select option {
+  /* القائمةُ المنسدلةُ تُرسم بألوان النظام — فتُكتب صراحةً */
+  background: #0b1020;
+  color: #f4f7ff;
+}
+
+.nx-field input:focus-visible,
+.nx-field select:focus-visible {
+  border-color: var(--nx-accent);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.nx-field[data-invalid="true"] input,
+.nx-field[data-invalid="true"] select {
+  border-color: #f87171;
+}
+
+.nx-field__error {
+  font-size: 0.76rem;
+  color: #fca5a5;
+}
+
+/* ----------------------------------------------------------
+   الأزرار — أساسيٌّ واحدٌ لا خمسة (§52)
+   ---------------------------------------------------------- */
+
+.nx-stage__foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: clamp(12px, 2vh, 22px);
+  border-top: 1px solid var(--nx-line);
+}
+
+.nx-stage__foot-note {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.78rem;
+  color: var(--nx-ink-3);
+}
+
+.nx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.72rem 1.6rem;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 170ms ease,
+    border-color 170ms ease,
+    opacity 170ms ease,
+    transform 170ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nx-btn:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.nx-btn:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+.nx-btn--primary {
+  background: var(--nx-accent);
+  color: #041018;
+}
+
+.nx-btn--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--nx-accent) 86%, white);
+}
+
+.nx-btn--ghost {
+  background: transparent;
+  border-color: var(--nx-line-2);
+  color: var(--nx-ink-2);
+}
+
+.nx-btn--ghost:hover:not(:disabled) {
+  color: var(--nx-ink);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/*
+ * المبدِّلاتُ الصغيرة — كثافةٌ ووضعُ نافذةٍ ومفتاحُ تشغيل.
+ *
+ * وصنفٌ مستقلٌّ لا `--primary` المُعاد استعماله. والسببُ ليس تجميلياً:
+ * «الفعلُ الأساسيُّ واحدٌ في كلّ شاشة» (§52)، ومبدِّلٌ يلبس لباسَ الفعل
+ * الأساسيّ يجعل في الشاشة أربعةَ أزرارٍ تبدو كلُّها هي المقصودة —
+ * وقد التبس ذلك في الفحص الآليّ حين أمسك «مضغوطة» ظنّاً أنّها «متابعة».
+ * وما التبس على أداةٍ يلتبس على عينٍ تمرّ مسرعة.
+ *
+ * والمختارُ يُميَّز بلونِ التمييز في الحدّ والنصّ لا بملئه — فيبقى
+ * الملءُ الصلبُ علامةَ الفعل الأساسيّ وحدَه.
+ */
+.nx-toggle {
+  background: var(--nx-surface);
+  border-color: var(--nx-line);
+  color: var(--nx-ink-2);
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+}
+
+.nx-toggle:hover:not(:disabled) {
+  background: var(--nx-surface-2);
+  border-color: var(--nx-line-2);
+  color: var(--nx-ink);
+}
+
+.nx-toggle[aria-pressed="true"],
+.nx-toggle[aria-checked="true"] {
+  border-color: color-mix(in srgb, var(--nx-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--nx-accent) 14%, transparent);
+  color: var(--nx-ink);
+}
+
+.nx-btn--quiet {
+  background: transparent;
+  color: var(--nx-ink-3);
+  padding-inline: 0.6rem;
+}
+
+.nx-btn--quiet:hover:not(:disabled) {
+  color: var(--nx-ink-2);
+}
+
+/* تركيزٌ مرئيٌّ على كلّ ما يُركَّز عليه (§45) */
+.nx-boot :focus-visible {
+  outline: 2px solid var(--nx-accent);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* ----------------------------------------------------------
+   قوائمُ الحالة — الأجهزةُ والفحوص
+   ---------------------------------------------------------- */
+
+.nx-list {
+  display: grid;
+  gap: 8px;
+  max-width: 44rem;
+}
+
+.nx-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.78rem 1rem;
+  border: 1px solid var(--nx-line);
+  border-radius: 12px;
+  background: var(--nx-surface);
+}
+
+.nx-row__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nx-row__label {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.nx-row__meta {
+  font-size: 0.78rem;
+  color: var(--nx-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nx-tag {
+  flex: none;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--nx-line-2);
+  color: var(--nx-ink-3);
+}
+
+.nx-tag--ok {
+  color: #86efac;
+  border-color: rgba(134, 239, 172, 0.3);
+  background: rgba(134, 239, 172, 0.08);
+}
+
+.nx-tag--bad {
+  color: #fca5a5;
+  border-color: rgba(252, 165, 165, 0.3);
+  background: rgba(252, 165, 165, 0.08);
+}
+
+.nx-tag--busy {
+  color: var(--nx-ink-3);
+}
+
+/* ذيلُ الصفّ حين يحمل أكثرَ من شيء — شارةٌ وزرُّ إعادةِ فحص */
+.nx-trail {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/*
+ * زرٌّ نصّيّ — لا يزاحم شارتَه.
+ *
+ * إعادةُ الفحص فعلٌ ثانويّ: يُعرض دائماً كي لا يُبحث عنه، ويبقى أخفتَ
+ * من الجواب الذي بجانبه. ولو أُعطي حدّاً وخلفيةً لصار ندّاً للشارة على
+ * صفٍّ غرضُه أن يُقرأ لا أن يُنقر.
+ */
+.nx-recheck {
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--nx-ink-3);
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+
+.nx-recheck:hover {
+  color: var(--nx-ink-1);
+}
+
+/* نبضةُ «جارٍ» — ولا دوّامةَ مركزية (§42) */
+.nx-pulse {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--nx-accent);
+  animation: nx-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes nx-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ----------------------------------------------------------
+   شريطُ الخطأ — لا نافذةَ حوارٍ تقطع التدفّق (§41)
+   ---------------------------------------------------------- */
+
+.nx-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(252, 165, 165, 0.28);
+  background: rgba(252, 165, 165, 0.08);
+  color: #fecaca;
+  font-size: 0.86rem;
+  max-width: 44rem;
+}
+
+/* ----------------------------------------------------------
+   معاينةُ العرض — تتأثّر بالاختيار فعلاً لا صورةً ثابتة (§12)
+   ---------------------------------------------------------- */
+
+.nx-preview {
+  border: 1px solid var(--nx-line);
+  border-radius: var(--nx-radius);
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+  max-width: 30rem;
+}
+
+.nx-preview__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--nx-line);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.nx-preview__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.82rem;
+  color: var(--nx-ink-2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nx-preview__row:last-child {
+  border-bottom: none;
+}
+
+/* ----------------------------------------------------------
+   الشعارُ والختام
+   ---------------------------------------------------------- */
+
+/*
+ * الشاشاتُ المتمركزة — الإقلاعُ والترحيبُ و«أنت جاهز».
+ *
+ * **و`align-content` لا `align-items` وحدها.** والفرقُ بينهما هو كلُّ
+ * ما ظهر في أوّل لقطةٍ حقيقية: `place-items: center` تُوسّط العنصرَ
+ * **داخل صفّه**، وصفوفُ الشبكة التلقائية تتمدّد لتملأ ارتفاع الحاوية
+ * (‏`align-content` الافتراضيّة تمدُّد). فخمسةُ عناصرَ صارت خمسةَ صفوفٍ
+ * يأخذ كلٌّ منها خُمسَ الشاشة، وكلٌّ يتوسّط خُمسَه — فتباعد الشعارُ عن
+ * عنوانه بمئتي بكسل، وبدت الشاشةُ مفكَّكةً لا مركَّزة.
+ *
+ * فالصفوفُ تُقاس بمحتواها (`min-content`) وتُجمَّع كتلةً واحدةً في وسط
+ * الشاشة — وهو ما تعنيه «تجربةُ تشغيلٍ أولى»: شيءٌ واحدٌ في المنتصف.
+ */
+.nx-center {
+  display: grid;
+  grid-auto-rows: min-content;
+  align-content: center;
+  justify-items: center;
+  height: 100%;
+  text-align: center;
+  gap: clamp(14px, 2.2vh, 24px);
+}
+
+.nx-center .nx-lead {
+  max-width: 40ch;
+  margin-inline: auto;
+}
+
+.nx-mark {
+  height: clamp(84px, 14vh, 148px);
+  width: auto;
+  user-select: none;
+}
+
+/* ----------------------------------------------------------
+   الانتقالُ بين الشاشات — منطقيُّ الاتجاه (§47).
+
+   لا `translateX(24px)` مكتوبةً: الأمامُ في العربية يسارٌ وفي
+   الإنجليزية يمين. و`--nx-dir` يكتبها `BootTransition` من اتجاه
+   المستند، فتنقلب الرحلةُ كلُّها بمتغيّرٍ واحد.
+   ---------------------------------------------------------- */
+
+@keyframes nx-enter {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--nx-dir, 1) * 26px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes nx-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nx-enter {
+  animation: nx-enter 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/*
+ * تدرّجُ الحركة (§7): العنوانُ أوّلاً، ثمّ الوصف، ثمّ المحتوى، ثمّ
+ * الفعل. أربعُ درجاتٍ لا أكثر — وزيادتُها تُبطئ المستخدمَ لا تُبهره.
+ */
+.nx-rise-1 {
+  animation: nx-rise 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.nx-rise-2 {
+  animation: nx-rise 480ms cubic-bezier(0.16, 1, 0.3, 1) 60ms both;
+}
+.nx-rise-3 {
+  animation: nx-rise 480ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+.nx-rise-4 {
+  animation: nx-rise 480ms cubic-bezier(0.16, 1, 0.3, 1) 180ms both;
+}
+
+/* ----------------------------------------------------------
+   الانسحاب إلى التطبيق (§54) — تُبقي الشاشةَ لحظةً فوق ما تحتها
+   ---------------------------------------------------------- */
+
+.nx-boot--leaving {
+  animation: nx-leave 520ms cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
+@keyframes nx-leave {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+
+/* ----------------------------------------------------------
+   تقليلُ الحركة (§50) — والسكونُ لا يعني الاختفاء.
+
+   تُلغى الإزاحاتُ والتنفّسُ والنبض، ويبقى التلاشي: انتقالٌ بلا أيّ
+   إشارةٍ بصرية يجعل الشاشتين تبدوان شاشةً واحدةً تبدّل نصُّها فجأةً.
+   ---------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-pulse {
+    animation: none;
+  }
+
+  .nx-enter,
+  .nx-rise-1,
+  .nx-rise-2,
+  .nx-rise-3,
+  .nx-rise-4 {
+    animation: nx-fade 200ms linear both;
+  }
+
+  .nx-boot--leaving {
+    animation: nx-fade-out 200ms linear both;
+  }
+}
+
+:root[data-motion="still"] .nx-pulse {
+  animation: none;
+}
+
+:root[data-motion="still"] .nx-enter,
+:root[data-motion="still"] .nx-rise-1,
+:root[data-motion="still"] .nx-rise-2,
+:root[data-motion="still"] .nx-rise-3,
+:root[data-motion="still"] .nx-rise-4 {
+  animation: nx-fade 200ms linear both;
+}
+
+@keyframes nx-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes nx-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ----------------------------------------------------------
+   الشاشاتُ الصغيرة والمنخفضة.
+
+   وليست هذه استجابةً للهاتف — التطبيقُ سطحُ مكتب. إنّما لحاسوبٍ
+   محمولٍ ارتفاعُه 768 بكسل مع تكبيرِ ويندوز 150٪: الارتفاعُ الفعّالُ
+   يصير 512، وعنوانٌ بحجم 3.6rem يأكله كلَّه (§32).
+   ---------------------------------------------------------- */
+
+@media (max-height: 780px) {
+  .nx-title {
+    font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+  }
+
+  .nx-stage__body {
+    gap: 14px;
+    padding-block: 12px;
+  }
+
+  .nx-choice {
+    padding-block: 0.7rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .nx-fields--two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
