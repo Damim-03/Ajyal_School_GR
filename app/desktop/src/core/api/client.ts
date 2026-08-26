@@ -5,7 +5,8 @@ import {
   reportRequestSuccess,
 } from "../system/connection";
 import { useAuthStore } from "../stores/auth.store";
-import { revealServerCause } from "./server-error";
+import { technicalCause } from "./server-error";
+import { humanizeApiError, humanizeIssue } from "../errors/humanize";
 
 // --------------------------------------------------
 // Axios Instance
@@ -90,13 +91,45 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     /*
-     * كشفُ السبب قبل أن يبلغ النافذة.
+     * تعريبُ الخطأ قبل أن يبلغ النافذة.
      *
-     * الخادمُ يُرفق السببَ الفعلي في `data.error` ويترك `data.message`
-     * غلافاً عامّاً، والنوافذُ تقرأ الثاني. فيُبدَّل هنا مرّةً واحدة —
-     * وقبل كلّ فرعٍ أدناه — ليصل التشخيصُ إلى الشاشة لا إلى السجلّ وحده.
+     * سبعةٌ وستون موضعاً في التطبيق تقرأ `data.message`، والخادمُ
+     * يكتبها بلغة من كتب الشيفرة: «Validation failed» و«First name
+     * must be at least 2 characters». فتُبنى هنا جملةٌ عربيّةٌ من
+     * الرمز ومن مخالفات الحقول (`core/errors/humanize`)، مرّةً واحدة
+     * لكلّ الطلبات — لا في كلّ نافذةٍ على حدة.
+     *
+     * والسببُ التقنيّ لا يُعرض ولا يُرمى: يُكتب في سجلّ المتصفّح
+     * ويبقى في `data.error` لمن يشخّص.
      */
-    revealServerCause(error.response?.data);
+    const body = error.response?.data;
+
+    if (body && typeof body === "object") {
+      const cause = technicalCause(body);
+
+      if (cause) console.warn("[api] سبب الخطأ:", cause);
+
+      (body as { message?: string }).message = humanizeApiError(
+        body,
+        error.response?.status,
+      );
+
+      /*
+       * والمصفوفةُ تُعرَّب أيضاً، لا `message` وحدها.
+       *
+       * أربعُ نوافذ تقرأ `errors[0].message` **قبل** `message`
+       * (StudentForm وResourceScreen وأختاهما) — فتعريبُ الجملة
+       * الجامعة وحدها كان يترك تلك الأربع تعرض النصّ الإنجليزيّ.
+       */
+      const issues = (body as { errors?: { field?: string; message?: string }[] })
+        .errors;
+
+      if (Array.isArray(issues)) {
+        for (const issue of issues) {
+          issue.message = humanizeIssue(issue);
+        }
+      }
+    }
 
     /*
      * **بلا ردٍّ** يعني أنّ الطلبَ لم يبلغ الخادم: انقطعت الشبكة أو

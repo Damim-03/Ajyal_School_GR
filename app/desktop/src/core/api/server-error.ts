@@ -1,38 +1,24 @@
 /**
- * **السببُ الحقيقي خلف «Internal Server Error».**
+ * **السببُ التقنيّ — إلى السجلّ لا إلى الشاشة.**
  *
- * معالجُ الأخطاء في الخادم (`core/middleware/error-handler`) يردّ على
- * الخطأ غير المتوقَّع بثلاثة حقول:
+ * معالجُ الأخطاء في الخادم يردّ على الخطأ غير المتوقَّع بثلاثة حقول:
  *
  *   { message: "Internal Server Error", errorCode: ..., error: "<السبب>" }
  *
- * و`message` غلافٌ ثابت، و`error` هو رسالةُ الاستثناء الفعلية. لكنّ
- * كلَّ نافذةٍ في التطبيق تقرأ `data.message` وحدها — سبعةٌ وستون
- * موضعاً — فيرى المستخدمُ الغلافَ ويُرمى الجواب.
+ * و`error` رسالةُ الاستثناء الفعلية — نصٌّ إنجليزيٌّ فيه أسماءُ
+ * جداولَ وأعمدة. وهو لا يُعرض للمستخدم (انظر [[humanize]]): مَن جاء
+ * يسجّل طالباً لا يُفيده اسمُ عمود.
  *
- * ولذلك يُعالَج هنا **مرّةً واحدة في معترض الاستجابة** لا في كلّ
- * نافذة: الإصلاحُ في سبعةٍ وستين موضعاً يترك مواضعَ تُنسى اليوم
- * ومواضعَ تُكتب غداً، والمعترضُ يمرّ به كلُّ ردٍّ بلا استثناء.
+ * لكنّه لا يُرمى أيضاً — يُكتب في سجلّ المتصفّح ويبقى في جسم الرد،
+ * فيجده المطوّر حين يشخّص بلا أن يراه الموظّف.
  */
 
 export interface ApiErrorBody {
   message?: string;
   errorCode?: string;
   error?: string;
-  errors?: { message?: string }[];
+  errors?: { field?: string; message?: string }[];
 }
-
-/**
- * الرسائلُ التي لا تقول شيئاً — وهي وحدها ما يُستبدل.
- *
- * أمّا رسالةُ 4xx فمكتوبةٌ لتُقرأ («المستوى غير موجود»، «حجم الملف
- * يتجاوز 3 ميغابايت»)، وإبدالُها بنصٍّ تقنيٍّ خسارةٌ لا ربح.
- */
-const GENERIC = new Set([
-  "internal server error",
-  "unknown error occurred",
-  "",
-]);
 
 const MAX = 300;
 const HEAD = 120;
@@ -55,35 +41,12 @@ const condense = (raw: string): string => {
 };
 
 /**
- * الرسالةُ التي ينبغي عرضُها — أو `undefined` إن لم يكن ثمّة ما يُضاف.
- *
- * تُعيد `undefined` عمداً بدل النصّ الأصلي: المتّصلُ بها يستبدل عندئذٍ
- * أو يترك، فلا تُكتب قيمةٌ فوق قيمةٍ مطابقة.
+ * السببُ التقنيّ مطويّاً في سطر — أو `undefined` إن لم يُرفق.
  */
-export const resolveErrorMessage = (
+export const technicalCause = (
   body: ApiErrorBody | undefined,
 ): string | undefined => {
   const cause = typeof body?.error === "string" ? body.error.trim() : "";
 
-  if (!cause) return undefined;
-
-  const shown = (body?.message ?? "").trim().toLowerCase();
-
-  if (!GENERIC.has(shown)) return undefined;
-
-  return condense(cause);
-};
-
-/**
- * يكتب السببَ في مكان الغلاف داخل جسم الرد.
- *
- * تعديلٌ في الموضع (mutation) عن قصد: النوافذ تمسك بـ`error.response`
- * الذي رماه axios، ونسخةٌ جديدة لا تبلغها.
- */
-export const revealServerCause = (body: unknown): void => {
-  if (!body || typeof body !== "object") return;
-
-  const resolved = resolveErrorMessage(body as ApiErrorBody);
-
-  if (resolved) (body as ApiErrorBody).message = resolved;
+  return cause ? condense(cause) : undefined;
 };
