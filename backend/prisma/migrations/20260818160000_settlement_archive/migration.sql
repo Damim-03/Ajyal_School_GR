@@ -56,13 +56,28 @@ ALTER TABLE `SettlementSnapshot`
 --
 -- `hasPermission` في الواجهة مطابقةٌ نصّية تامّة بلا wildcard حتى
 -- لـADMIN، فالزرّ يختفي بصمت إن لم يُنشأ اسمُه هنا.
+--
+-- و`MAINTENANCE` مذكورةٌ هنا وإن كانت الهجرةُ التي أدخلتها لاحقةً
+-- (‏20260822090000). والسبب أنّ `MODIFY ... ENUM` **يقصّ** كلَّ صفٍّ
+-- يحمل قيمةً خارج القائمة: يُفرغه إلى '' في الوضع المتساهل، ويسقط
+-- بالخطأ 1265 في `STRICT_TRANS_TABLES` — وهو الافتراضيُّ على أكثر
+-- الاستضافات.
+--
+-- وليس هذا احتمالاً نظرياً: `provisionRbac` يُنشئ صلاحيّات
+-- `maintenance.*` عند التهيئة الأولى، فإن سبقت التهيئةُ الهجراتِ
+-- — وهو ما يقع كلّما أقلع التطبيقُ قبل اكتمالها — وجدت هذه العبارةُ
+-- صفوفاً بموديولٍ لا تعرفه فسقطت، وسقط معها كلُّ ما بعدها.
+--
+-- فذكرُها هنا يجعل العبارةَ توسيعاً دائماً لا تضييقاً، والهجرةُ
+-- 20260822090000 تُعيد القائمةَ نفسَها بلا أثر.
 -- ------------------------------------------------------
 
 ALTER TABLE `Permission` MODIFY `module` ENUM(
   'STUDENT','TEACHER','TEACHING_ASSIGNMENT','ENROLLMENT','SUBJECT','STUDY_GROUP',
   'LEVEL','EDUCATION_STAGE','ACADEMIC_YEAR','SCHEDULE','SESSION','ATTENDANCE',
   'INVOICE','PAYMENT','RECEIPT','REPORT','USER','ROLE','SETTINGS','CLASSROOM',
-  'LESSON_SLOT','TUITION_FEE','SETTLEMENT_POLICY','SETTLEMENT','TEACHER_PAYMENT'
+  'LESSON_SLOT','TUITION_FEE','SETTLEMENT_POLICY','SETTLEMENT','TEACHER_PAYMENT',
+  'MAINTENANCE'
 ) NOT NULL;
 
 INSERT INTO `Permission` (`id`, `name`, `module`, `description`, `createdAt`, `updatedAt`)
