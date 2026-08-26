@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.imageUpload = void 0;
 const express_1 = require("express");
 const multer_1 = __importDefault(require("multer"));
 const node_path_1 = __importDefault(require("node:path"));
@@ -40,7 +41,15 @@ const storage = multer_1.default.diskStorage({
         cb(null, `${Date.now()}-${unique}${safeExt}`);
     },
 });
-const upload = (0, multer_1.default)({
+/**
+ * ويُصدَّر ليُعاد استعمالُه في التهيئة الأولى.
+ *
+ * فشاشةُ «مؤسستك» ترفع شعاراً قبل أن يوجد مستخدمٌ في القاعدة — أي
+ * قبل أن يكون ثمّة توكن، وهذا الراوترُ كلُّه خلف `authMiddleware`.
+ * ومسارُ التهيئة يستعمل **هذا** المُهيّأ نفسَه (نفسَ المجلَّد والحدِّ
+ * والامتدادات المسموحة)، فلا يُفتح بابٌ ثانٍ بقواعدَ أرخى.
+ */
+exports.imageUpload = (0, multer_1.default)({
     storage,
     limits: { fileSize: 3 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
@@ -56,7 +65,7 @@ const upload = (0, multer_1.default)({
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authMiddleware);
 // POST /api/uploads — multipart، الحقل: file
-router.post("/", upload.single("file"), (0, async_handler_middleware_1.asyncHandler)(async (req, res) => {
+router.post("/", exports.imageUpload.single("file"), (0, async_handler_middleware_1.asyncHandler)(async (req, res) => {
     if (!req.file) {
         throw new app_errors_1.BadRequestException("لم يُرفَق أي ملف", error_code_enum_1.ErrorCodeEnum.VALIDATION_ERROR);
     }

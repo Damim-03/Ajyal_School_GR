@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
+const node_fs_1 = __importDefault(require("node:fs"));
 const node_path_1 = __importDefault(require("node:path"));
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
@@ -144,10 +145,32 @@ app.use("/uploads", express_1.default.static(node_path_1.default.join(__dirname,
 // ======================================================
 // HEALTH CHECK
 // ======================================================
+/**
+ * ونسخةُ الخادم تُعلَن هنا.
+ *
+ * تقرؤها شاشةُ التحديث في التهيئة الأولى لتُصالح بين النافذة والخادم
+ * (§36): أكثرُ ما يُعطب تركيبةً نصفُها مكتبٌ ونصفُها خادم أن يُحدَّث
+ * أحدُهما ويبقى الآخر — فتُنادى مساراتٌ لا توجد. والفحصُ حقيقيٌّ نافع،
+ * بخلاف مُحدِّثٍ لا وجود له يُخترع لأجل شريط تقدّم.
+ *
+ * وتُقرأ من `package.json` مرّةً لا في كل طلب. والمسارُ يصحّ في
+ * الحالين: `dist/app.js` و`src/app.ts` كلاهما على بُعد مجلَّدٍ واحد
+ * من جذر الحزمة.
+ */
+const serverVersion = (() => {
+    try {
+        const manifest = node_fs_1.default.readFileSync(node_path_1.default.join(__dirname, "..", "package.json"), "utf8");
+        return JSON.parse(manifest).version ?? "";
+    }
+    catch {
+        return "";
+    }
+})();
 app.get("/api/health", (0, async_handler_middleware_1.asyncHandler)(async (_, res) => {
     return res.status(http_config_1.HTTPSTATUS.OK).json({
         success: true,
         message: "Server is running 🚀",
+        version: serverVersion,
     });
 }));
 // ======================================================

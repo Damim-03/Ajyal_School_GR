@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTeacherStatementController = exports.deleteTeacherController = exports.updateTeacherController = exports.createTeacherController = exports.getTeacherController = exports.listTeachersController = void 0;
+exports.deleteTeacherDocumentController = exports.putTeacherDocumentController = exports.getTeacherDocumentsController = exports.getTeacherStatementController = exports.deleteTeacherController = exports.updateTeacherController = exports.createTeacherController = exports.getTeacherController = exports.listTeachersController = void 0;
 const api_response_1 = require("../../core/config/api-response");
 const teacher_service_1 = require("./teacher.service");
 const teacher_statement_service_1 = require("./teacher-statement.service");
+const document_service_1 = require("./document.service");
 const listTeachersController = async (req, res) => {
     const query = req.query;
     const { teachers, pagination } = await (0, teacher_service_1.listTeachersService)(query);
@@ -36,4 +37,25 @@ const getTeacherStatementController = async (req, res) => {
     return api_response_1.ApiResponse.success(res, statement, "Statement retrieved");
 };
 exports.getTeacherStatementController = getTeacherStatementController;
+// --------------------------------------------------
+// وثائق ملفّ الأستاذ
+// --------------------------------------------------
+// GET /api/teachers/:id/documents
+const getTeacherDocumentsController = async (req, res) => {
+    const file = await (0, document_service_1.getTeacherDocumentsService)(req.params.id);
+    return api_response_1.ApiResponse.success(res, file, "Documents retrieved");
+};
+exports.getTeacherDocumentsController = getTeacherDocumentsController;
+// PUT /api/teachers/:id/documents/:type
+const putTeacherDocumentController = async (req, res) => {
+    const file = await (0, document_service_1.putTeacherDocumentService)(req.params.id, req.params.type, req.body, req.user?.userId);
+    return api_response_1.ApiResponse.success(res, file, "Document attached");
+};
+exports.putTeacherDocumentController = putTeacherDocumentController;
+// DELETE /api/teachers/:id/documents/:type
+const deleteTeacherDocumentController = async (req, res) => {
+    const file = await (0, document_service_1.deleteTeacherDocumentService)(req.params.id, req.params.type);
+    return api_response_1.ApiResponse.success(res, file, "Document removed");
+};
+exports.deleteTeacherDocumentController = deleteTeacherDocumentController;
 //# sourceMappingURL=teacher.controller.js.map

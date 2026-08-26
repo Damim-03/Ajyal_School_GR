@@ -1,0 +1,46 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.refreshCookieOptions = void 0;
+// --------------------------------------------------
+// Cookie options — refreshToken
+// --------------------------------------------------
+/*
+ * SameSite عبر HTTPS `none` لا `strict`.
+ *
+ * حين يكون الخادم والواجهة على localhost فالسياق موقعٌ واحد و`strict`
+ * أمتنُ ما يمكن. أمّا في التركيب الحقيقي فأصل النافذة
+ * `tauri://localhost` (أو `http://tauri.localhost` على ويندوز)
+ * والخادمُ على نطاقٍ آخر — سياقٌ عابر للمواقع، و`strict` يعني أنّ
+ * المتصفّح لا يخزّن الكوكي أصلاً ولا يرسله.
+ *
+ * والعرَض مضلِّل: الدخول ينجح لأنّ accessToken يعود في جسم
+ * الاستجابة، ثمّ بعد انقضائه تفشل /auth/refresh فيَطرد المعترضُ
+ * المستخدمَ — خروجٌ مفاجئ بعد ربع ساعةٍ من عملٍ سليم ظاهرياً.
+ *
+ * و`none` يوجب `Secure` أي HTTPS، فالشرطان مقترنان عمداً.
+ *
+ * **والقرارُ من الطلب نفسِه لا من `NODE_ENV`.**
+ *
+ * كان معلَّقاً على المتغيّر، ونسيانُه في لوحة الاستضافة عطبٌ صامت:
+ * الخادمُ يعمل، والدخولُ ينجح، ثمّ يُطرد كلُّ مستخدمٍ على كلّ جهازٍ
+ * بعد ربع ساعة — بلا خطأٍ في سجلٍّ ولا رسالةٍ على شاشة. و`req.secure`
+ * يقول الحقيقةَ التي تَعني: أهذا الردُّ يمضي على HTTPS أم لا. وهو
+ * موثوقٌ خلف وسيط الاستضافة لأنّ `trust proxy` مضبوطٌ في `app.ts`.
+ *
+ * وهي وحدةٌ على حدة لا سطرٌ في المتحكّم: المتحكّم يستورد الخدمةَ
+ * فتستورد Prisma، فاختبارُ سمّةِ كعكةٍ كان يوجب قاعدةَ بيانات.
+ */
+const REFRESH_COOKIE_PATH = "/api/auth/refresh";
+/** سمات الكوكي لهذا الطلب — تُشتقّ من بروتوكوله لا من بيئة العملية */
+const refreshCookieOptions = (req) => {
+    const overHttps = req.secure;
+    return {
+        httpOnly: true, // لا يمكن الوصول إليه من JavaScript
+        secure: overHttps,
+        sameSite: overHttps ? "none" : "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام بالـ ms
+        path: REFRESH_COOKIE_PATH, // Cookie متاح فقط لهذا المسار
+    };
+};
+exports.refreshCookieOptions = refreshCookieOptions;
+//# sourceMappingURL=auth.cookie.js.map

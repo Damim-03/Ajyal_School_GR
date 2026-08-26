@@ -5,6 +5,7 @@ import {
   reportRequestSuccess,
 } from "../system/connection";
 import { useAuthStore } from "../stores/auth.store";
+import { revealServerCause } from "./server-error";
 
 // --------------------------------------------------
 // Axios Instance
@@ -87,6 +88,15 @@ apiClient.interceptors.response.use(
 
   async (error) => {
     const originalRequest = error.config;
+
+    /*
+     * كشفُ السبب قبل أن يبلغ النافذة.
+     *
+     * الخادمُ يُرفق السببَ الفعلي في `data.error` ويترك `data.message`
+     * غلافاً عامّاً، والنوافذُ تقرأ الثاني. فيُبدَّل هنا مرّةً واحدة —
+     * وقبل كلّ فرعٍ أدناه — ليصل التشخيصُ إلى الشاشة لا إلى السجلّ وحده.
+     */
+    revealServerCause(error.response?.data);
 
     /*
      * **بلا ردٍّ** يعني أنّ الطلبَ لم يبلغ الخادم: انقطعت الشبكة أو

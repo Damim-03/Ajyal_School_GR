@@ -9,36 +9,7 @@ import { HTTPSTATUS } from "../../core/config/http.config";
 import { UnauthorizedException } from "../../core/errors/app.errors";
 import { ErrorCodeEnum } from "../../core/enums/error-code.enum";
 import { LoginInput } from "./auth.schema";
-
-// --------------------------------------------------
-// Cookie options — refreshToken
-// --------------------------------------------------
-
-/*
- * SameSite في الإنتاج `none` لا `strict`.
- *
- * في التطوير يكون الخادم والواجهة على localhost فالسياق موقعٌ واحد
- * و`strict` أمتنُ ما يمكن. أمّا في الإنتاج فأصل النافذة
- * `tauri://localhost` (أو `http://tauri.localhost` على ويندوز)
- * والخادمُ على نطاقٍ آخر — سياقٌ عابر للمواقع، و`strict` يعني أنّ
- * المتصفّح لا يخزّن الكوكي أصلاً ولا يرسله.
- *
- * والعرَض مضلِّل: الدخول ينجح لأنّ accessToken يعود في جسم
- * الاستجابة، ثمّ بعد انقضائه تفشل /auth/refresh فيَطرد المعترضُ
- * المستخدمَ — خروجٌ مفاجئ بعد ربع ساعةٍ من عملٍ سليم ظاهرياً.
- *
- * و`none` يوجب `Secure` أي HTTPS، وهو مضمونٌ في الإنتاج وحده،
- * فالشرطان مقترنان بنفس الرايةِ عمداً.
- */
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
-
-const REFRESH_COOKIE_OPTIONS = {
-  httpOnly: true, // لا يمكن الوصول إليه من JavaScript
-  secure: IS_PRODUCTION,
-  sameSite: IS_PRODUCTION ? ("none" as const) : ("strict" as const),
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام بالـ ms
-  path: "/api/auth/refresh", // Cookie متاح فقط لهذا المسار
-};
+import { refreshCookieOptions } from "./auth.cookie";
 
 // --------------------------------------------------
 // Login
@@ -51,7 +22,7 @@ export const loginController = async (req: Request, res: Response) => {
   const { user, accessToken, refreshToken } = await loginService(body);
 
   // refreshToken في Cookie آمن
-  res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTIONS);
+  res.cookie("refreshToken", refreshToken, refreshCookieOptions(req));
 
   return res.status(HTTPSTATUS.OK).json({
     success: true,
@@ -92,7 +63,7 @@ export const refreshTokenController = async (req: Request, res: Response) => {
 // POST /api/auth/logout
 // --------------------------------------------------
 
-export const logoutController = async (_req: Request, res: Response) => {
+export const logoutController = async (req: Request, res: Response) => {
   /*
    * المسحُ يجب أن يحمل نفس السمات التي كُتب بها.
    *
@@ -100,7 +71,7 @@ export const logoutController = async (_req: Request, res: Response) => {
    * كوكي `SameSite=None` بلا `Secure` — فمسحٌ بالمسار وحده كان
    * يُهمَل صامتاً في الإنتاج ويبقى refreshToken حيّاً بعد الخروج.
    */
-  const { maxAge: _maxAge, ...clearOptions } = REFRESH_COOKIE_OPTIONS;
+  const { maxAge: _maxAge, ...clearOptions } = refreshCookieOptions(req);
 
   res.clearCookie("refreshToken", clearOptions);
 

@@ -60,11 +60,31 @@ const report_route_1 = __importDefault(require("../modules/report/report.route")
 const reports_route_1 = __importDefault(require("../modules/reports/reports.route"));
 const upload_route_1 = __importDefault(require("../modules/upload/upload.route"));
 const maintenance_route_1 = __importDefault(require("../modules/maintenance/maintenance.route"));
+const first_boot_route_1 = __importDefault(require("../modules/system/first-boot.route"));
+const initialized_middleware_1 = require("../core/middleware/initialized.middleware");
 const mainRoute = (0, express_1.Router)();
+// --------------------------------------------------
+// System — التهيئة الأولى
+//
+// **قبل الحارس** لأنّها هي التي تُنهيه: مسارٌ يُركَّب بعده لا يُنادى
+// إلّا في نظامٍ مهيَّأ، والتهيئةُ لا تقوم في نظامٍ مهيَّأ.
+// --------------------------------------------------
+mainRoute.use("/system", first_boot_route_1.default);
 // --------------------------------------------------
 // Auth
 // --------------------------------------------------
 mainRoute.use("/auth", auth_route_1.default);
+// --------------------------------------------------
+// حارسُ التهيئة (§62)
+//
+// كلُّ ما بعده يحتاج نظاماً مهيَّأً. وموضعُه هنا — لا في كلّ راوترٍ
+// على حدة — هو ما يجعل الحمايةَ شاملةً بلا سطرٍ يُنسى: وحدةٌ تُضاف
+// غداً تحته تُحرَس بلا أن يتذكّر كاتبُها شيئاً.
+//
+// و`/settings/school` قراءةً مستثناةٌ داخله: شاشاتُ التهيئة تعرض
+// اسمَ المؤسسة وشعارَها.
+// --------------------------------------------------
+mainRoute.use(initialized_middleware_1.requireInitialized);
 // --------------------------------------------------
 // Settings — subjects, levels, classrooms ...
 // --------------------------------------------------

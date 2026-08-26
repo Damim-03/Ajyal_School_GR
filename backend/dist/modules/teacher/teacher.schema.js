@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.teacherQuerySchema = exports.teacherStatementQuerySchema = exports.teacherIdSchema = exports.updateTeacherSchema = exports.createTeacherSchema = void 0;
+exports.putTeacherDocumentSchema = exports.teacherDocumentParamSchema = exports.teacherQuerySchema = exports.teacherStatementQuerySchema = exports.teacherIdSchema = exports.updateTeacherSchema = exports.createTeacherSchema = void 0;
 const zod_1 = require("zod");
 const prisma_1 = require("../../../generated/prisma");
 // --------------------------------------------------
@@ -32,6 +32,8 @@ exports.createTeacherSchema = zod_1.z.object({
     email: zod_1.z.email({ error: "Invalid email address" }).trim().nullish(),
     phone: phoneField.nullish(),
     gender: zod_1.z.enum(prisma_1.Gender, { error: "Gender must be MALE or FEMALE" }),
+    /* مسارُ الرفع لا رابطٌ خارجي — كصورة الطالب */
+    avatar: zod_1.z.string().trim().max(255).nullish(),
     birthDate: pastDate("Birth date").nullish(),
     hireDate: pastDate("Hire date"),
     address: zod_1.z.string().trim().max(200).nullish(),
@@ -72,5 +74,23 @@ exports.teacherQuerySchema = zod_1.z.object({
         .enum(["true", "false"])
         .transform((value) => value === "true")
         .optional(),
+});
+// --------------------------------------------------
+// وثائق ملفّ الأستاذ
+// --------------------------------------------------
+exports.teacherDocumentParamSchema = zod_1.z.object({
+    id: zod_1.z.string().trim().min(1, "Teacher id is required"),
+    type: zod_1.z.string().trim().min(1, "Document type is required"),
+});
+exports.putTeacherDocumentSchema = zod_1.z.object({
+    filePath: zod_1.z
+        .string({ error: "مسار الملف مطلوب" })
+        .trim()
+        .startsWith("/uploads/", "مسار الملف غير صالح")
+        .max(255),
+    fileName: zod_1.z.string().trim().max(255).nullish(),
+    /* تسميةُ النوع المضاف — تُقرأ لمفاتيح `custom_` وحدها */
+    label: zod_1.z.string().trim().min(2, "التسمية قصيرة").max(80).nullish(),
+    note: zod_1.z.string().trim().max(300).nullish(),
 });
 //# sourceMappingURL=teacher.schema.js.map

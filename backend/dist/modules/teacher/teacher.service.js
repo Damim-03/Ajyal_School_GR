@@ -19,6 +19,8 @@ const teacherListSelect = {
     email: true,
     phone: true,
     gender: true,
+    /* الصورة في القائمة أيضاً — الصفُّ يُعرف بوجهه قبل سطره */
+    avatar: true,
     birthDate: true,
     hireDate: true,
     specialization: true,
@@ -142,6 +144,7 @@ const createTeacherService = async (body) => {
             email: body.email ?? null,
             phone: body.phone ?? null,
             gender: body.gender,
+            avatar: body.avatar ?? null,
             birthDate: body.birthDate ?? null,
             hireDate: body.hireDate,
             address: body.address ?? null,
@@ -173,6 +176,7 @@ const updateTeacherService = async (id, body) => {
             ...(body.email !== undefined && { email: body.email }),
             ...(body.phone !== undefined && { phone: body.phone }),
             ...(body.gender !== undefined && { gender: body.gender }),
+            ...(body.avatar !== undefined && { avatar: body.avatar }),
             ...(body.birthDate !== undefined && { birthDate: body.birthDate }),
             ...(body.hireDate !== undefined && { hireDate: body.hireDate }),
             ...(body.address !== undefined && { address: body.address }),
@@ -204,7 +208,17 @@ const deleteTeacherService = async (id) => {
         throw new app_errors_1.ConflictException(`Cannot delete: teacher has ${assignments} teaching assignment(s). ` +
             `Deactivate the teacher instead.`, error_code_enum_1.ErrorCodeEnum.RESOURCE_ALREADY_EXISTS);
     }
-    await client_1.prisma.teacher.delete({ where: { id } });
+    /*
+     * الوثائق تُحذف معه لا قبله بيدِ المستخدم.
+     *
+     * صفوفُها تشير إليه بمفتاحٍ أجنبي، فحذفُه دونها يفشل برسالةِ قاعدةِ
+     * بيانات لا يفهمها من يقرؤها. ولا معنى لوثيقةِ توظيفٍ لأستاذٍ مُحيت
+     * سطورُه — أمّا صورُها على القرص فتبقى، وتنظيفُها شأنُ الصيانة.
+     */
+    await client_1.prisma.$transaction([
+        client_1.prisma.teacherDocument.deleteMany({ where: { teacherId: id } }),
+        client_1.prisma.teacher.delete({ where: { id } }),
+    ]);
 };
 exports.deleteTeacherService = deleteTeacherService;
 //# sourceMappingURL=teacher.service.js.map
