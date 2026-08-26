@@ -44,8 +44,27 @@ exports.currentYearPrefix = currentYearPrefix;
  * وتُعاد المحاولة في `student.service`. القراءةُ وحدها لا تكفي.
  */
 const nextStudentNumber = async (tx, prefix) => {
+    /*
+     * مجالٌ لا `startsWith` — والفرق ليس تفضيلاً في الأسلوب.
+     *
+     * `startsWith` تترجمها Prisma إلى `LIKE CONCAT(?, '%')`، فيلتقي
+     * في `CONCAT` معاملٌ يرسله السائق ونصٌّ حرفيّ. وإن اختلف ترتيبُ
+     * الاثنين رفض الخادمُ المقارنة:
+     *
+     *     Illegal mix of collations
+     *     (utf8mb4_unicode_ci,IMPLICIT) and (utf8mb4_bin,NONE)
+     *
+     * وقع ذلك على MariaDB 11.8 ولم يقع على 10.4، فسقط **تسجيلُ كلّ
+     * طالب** بينما جهازُ التطوير لا يُظهر شيئاً.
+     *
+     * والمجالُ يُكافئ `startsWith` تماماً لا تقريباً: كلُّ نصٍّ يبدأ
+     * بـ`prefix` يقع في `[prefix, prefix+1)`، وكلُّ ما وقع في المجال
+     * يبدأ به — لأنّ أوّل اختلافٍ لا يكون إلّا بعد طول السابقة.
+     * ومعه يصير الاستعلامُ مسحَ مجالٍ على الفهرس بدل `LIKE`.
+     */
+    const upperBound = String(Number(prefix) + 1);
     const last = await tx.student.findFirst({
-        where: { studentNumber: { startsWith: prefix } },
+        where: { studentNumber: { gte: prefix, lt: upperBound } },
         orderBy: { studentNumber: "desc" },
         select: { studentNumber: true },
     });
