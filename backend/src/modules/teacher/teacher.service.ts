@@ -6,6 +6,7 @@ import {
 } from "../../core/errors/app.errors";
 import { ErrorCodeEnum } from "../../core/enums/error-code.enum";
 import { getPagination, buildPagination } from "../../core/config/api-response";
+import { containsOn, matchTextIds } from "../../core/search/text-match";
 import {
   CreateTeacherInput,
   UpdateTeacherInput,
@@ -94,20 +95,34 @@ const ensureUniqueEmail = async (email: string, excludeId?: string) => {
 export const listTeachersService = async (query: TeacherQueryInput) => {
   const { skip, take, page, limit } = getPagination(query.page, query.limit);
 
+  /*
+   * مطابقةُ النصّ تُحلّ إلى معرّفات — بترتيبٍ صريح لا يقع معه تضارب.
+   * انظر `core/search/text-match` وشرحَه الكامل هناك.
+   */
+  const searchIds = query.search
+    ? await matchTextIds(
+        "Teacher",
+        containsOn(["firstName", "lastName", "email", "phone"], query.search),
+      )
+    : null;
+
+  const specialtyIds = query.specialization
+    ? await matchTextIds(
+        "Teacher",
+        containsOn(["specialization"], query.specialization),
+      )
+    : null;
+
+  /* مرشِّحان مستقلّان على المعرّف — يُجمعان بـAND لا يتزاحمان */
+  const byId: Prisma.TeacherWhereInput[] = [];
+
+  if (specialtyIds) byId.push({ id: { in: specialtyIds } });
+  if (searchIds) byId.push({ id: { in: searchIds } });
+
   const where: Prisma.TeacherWhereInput = {
     ...(query.isActive !== undefined && { isActive: query.isActive }),
     ...(query.gender && { gender: query.gender }),
-    ...(query.specialization && {
-      specialization: { contains: query.specialization },
-    }),
-    ...(query.search && {
-      OR: [
-        { firstName: { contains: query.search } },
-        { lastName: { contains: query.search } },
-        { email: { contains: query.search } },
-        { phone: { contains: query.search } },
-      ],
-    }),
+    ...(byId.length > 0 && { AND: byId }),
   };
 
   const [teachers, total] = await Promise.all([

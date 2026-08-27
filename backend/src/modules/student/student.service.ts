@@ -17,6 +17,12 @@ import {
   StudentEnrollmentQueryInput,
 } from "./student.schema";
 import { REQUIRED_KEYS, completenessOf } from "./document.types";
+import {
+  containsOn,
+  escapeLike,
+  matchTextIds,
+  type TextCondition,
+} from "../../core/search/text-match";
 
 const studentSelect = {
   id: true,
@@ -135,7 +141,7 @@ const ensureLevelExists = async (levelId: string) => {
  */
 const LOOSE = /[\u0627\u0623\u0625\u0622\u0671\u0629\u0647\u0649\u064A\u0626]/g;
 
-const looseName = (search: string): Prisma.StudentWhereInput[] => {
+const looseName = (search: string): TextCondition[] => {
   const term = search.trim();
 
   if (term.length < 2) return [];
@@ -152,7 +158,13 @@ const looseName = (search: string): Prisma.StudentWhereInput[] => {
 
   if (literal === 0) return [];
 
-  return [{ firstName: { contains: loose } }, { lastName: { contains: loose } }];
+  /* `_` يبقى إبهاماً هنا — وهو مقصودُ هذه الدالّة كلِّها */
+  const pattern = `%${escapeLike(loose, true)}%`;
+
+  return [
+    { column: "firstName", pattern },
+    { column: "lastName", pattern },
+  ];
 };
 
 export const listStudentsService = async (query: StudentQueryInput) => {
@@ -197,12 +209,29 @@ export const listStudentsService = async (query: StudentQueryInput) => {
       }
     : undefined;
 
+  /*
+   * مطابقةُ النصّ تُحلّ إلى معرّفات قبل الاستعلام — انظر
+   * `core/search/text-match`. والسببُ ترتيبٌ صريح لا يقع معه تضارب،
+   * وما عدا ذلك يبقى كما كان: المرشِّحاتُ والترقيمُ والأعمدة.
+   */
+  const searchIds = query.search
+    ? await matchTextIds("Student", [
+        ...containsOn(
+          ["firstName", "lastName", "phone", "parentPhone"],
+          query.search,
+        ),
+        ...looseName(query.search),
+      ])
+    : null;
+
+  const numberIds = query.studentNumber
+    ? await matchTextIds("Student", containsOn(["studentNumber"], query.studentNumber))
+    : null;
+
   const where: Prisma.StudentWhereInput = {
     ...(query.isActive !== undefined && { isActive: query.isActive }),
     ...(query.gender && { gender: query.gender }),
-    ...(query.studentNumber && {
-      studentNumber: { contains: query.studentNumber },
-    }),
+    ...(numberIds && { id: { in: numberIds } }),
     ...(query.search && {
       OR: [
         /*
@@ -210,13 +239,11 @@ export const listStudentsService = async (query: StudentQueryInput) => {
          * البطاقة في حقل البحث ويضغط Enter، فيُفتح الطالب بمسحةٍ بدل
          * كتابة اسمه. والمطابقة تامّةٌ لا `contains` — «2026000014»
          * جزءٌ من لا شيء، و`contains` كانت ستُعيد معه كلَّ رقمٍ يحويه.
+         *
+         * وهي مطابقةٌ تامّة فلا `LIKE` فيها، فتبقى في Prisma.
          */
         { studentNumber: query.search },
-        { firstName: { contains: query.search } },
-        { lastName: { contains: query.search } },
-        { phone: { contains: query.search } },
-        { parentPhone: { contains: query.search } },
-        ...looseName(query.search),
+        { id: { in: searchIds ?? [] } },
       ],
     }),
     /*

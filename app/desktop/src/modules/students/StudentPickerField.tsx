@@ -51,6 +51,7 @@ export function StudentPickerField({
   const [rows, setRows] = useState<Student[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const [active, setActive] = useState(0);
 
   const boxRef = useRef<HTMLDivElement>(null);
@@ -81,6 +82,7 @@ export function StudentPickerField({
   useEffect(() => {
     if (!query) {
       setRows([]);
+      setFailed(null);
       return;
     }
 
@@ -97,8 +99,26 @@ export function StudentPickerField({
         if (!alive) return;
         setRows(res.students);
         setActive(0);
+        setFailed(null);
       })
-      .catch(() => alive && setRows([]))
+      /*
+       * **الفشلُ لا يُعرض فراغاً.**
+       *
+       * كان `catch` يُفرغ القائمة، فيقرأ الموظّفُ «لا طالبَ بهذا
+       * الاسم» بينما الطالبُ مسجَّلٌ والبحثُ هو الذي سقط. فيبحث عن
+       * خطأٍ في اسمٍ كتبه صحيحاً، ويُعيد تسجيلَ طالبٍ موجود.
+       *
+       * وهو نفسُ صنف العطب الذي أخفى فشلَ الهجرات في سطر النشر:
+       * إخفاقٌ يُقدَّم نتيجةً طبيعية.
+       */
+      .catch((error: unknown) => {
+        if (!alive) return;
+        setRows([]);
+        setFailed(
+          (error as { response?: { data?: { message?: string } } }).response?.data
+            ?.message ?? "تعذّر الاتصال بالخادم",
+        );
+      })
       .finally(() => alive && setBusy(false));
 
     return () => {
@@ -187,7 +207,11 @@ export function StudentPickerField({
        */
       className="overflow-y-auto rounded-xl border border-white/12 bg-[#0b111c] py-1 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
     >
-      {rows.length === 0 ? (
+      {failed ? (
+        <li className="px-4 py-3 text-center text-xs text-rose-300">
+          تعذّر البحث — {failed}
+        </li>
+      ) : rows.length === 0 ? (
         <li className="px-4 py-3 text-center text-xs text-white/35">
           {busy ? "يُبحث…" : "لا طالبَ بهذا الاسم أو الرقم"}
         </li>

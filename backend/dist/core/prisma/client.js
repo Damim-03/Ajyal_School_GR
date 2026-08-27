@@ -60,6 +60,18 @@ const adapter = new adapter_mariadb_1.PrismaMariaDb({
      * فمع `charset` خرج الاتصالُ `utf8mb4_general_ci` لا المطلوب.
      */
     collation: "utf8mb4_unicode_ci",
+    /*
+     * و`SET NAMES` فوق ذلك — لأنّ الخيار وحده لم يكفِ.
+     *
+     * خيارُ `collation` يضبط ترتيبَ الاتصال، و`SET NAMES` يُخبر
+     * الخادمَ بترميز **الوارد** أيضاً (`character_set_client`) —
+     * أي بأيّ ترميزٍ يفسّر المعاملاتِ التي تصله. وهناك نشأ التضارب:
+     * معاملٌ يُفسَّر بترميزٍ ودمجُه مع نصٍّ حرفيٍّ بترتيبٍ آخر يُنتج
+     * `utf8mb4_bin` بدرجة `NONE`.
+     *
+     * ويُنفَّذ على كلّ اتصالٍ جديد في التجمّع، فلا يبقى اتصالٌ شاذّ.
+     */
+    initSql: "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
 }, {
     // اسم قاعدة البيانات المستعمل في الاستعلامات المولَّدة
     database: databaseName,

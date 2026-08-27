@@ -6,6 +6,7 @@ const client_1 = require("../../core/prisma/client");
 const app_errors_1 = require("../../core/errors/app.errors");
 const error_code_enum_1 = require("../../core/enums/error-code.enum");
 const api_response_1 = require("../../core/config/api-response");
+const text_match_1 = require("../../core/search/text-match");
 // --------------------------------------------------
 // Selects
 //
@@ -68,20 +69,26 @@ const ensureUniqueEmail = async (email, excludeId) => {
 // --------------------------------------------------
 const listTeachersService = async (query) => {
     const { skip, take, page, limit } = (0, api_response_1.getPagination)(query.page, query.limit);
+    /*
+     * مطابقةُ النصّ تُحلّ إلى معرّفات — بترتيبٍ صريح لا يقع معه تضارب.
+     * انظر `core/search/text-match` وشرحَه الكامل هناك.
+     */
+    const searchIds = query.search
+        ? await (0, text_match_1.matchTextIds)("Teacher", (0, text_match_1.containsOn)(["firstName", "lastName", "email", "phone"], query.search))
+        : null;
+    const specialtyIds = query.specialization
+        ? await (0, text_match_1.matchTextIds)("Teacher", (0, text_match_1.containsOn)(["specialization"], query.specialization))
+        : null;
+    /* مرشِّحان مستقلّان على المعرّف — يُجمعان بـAND لا يتزاحمان */
+    const byId = [];
+    if (specialtyIds)
+        byId.push({ id: { in: specialtyIds } });
+    if (searchIds)
+        byId.push({ id: { in: searchIds } });
     const where = {
         ...(query.isActive !== undefined && { isActive: query.isActive }),
         ...(query.gender && { gender: query.gender }),
-        ...(query.specialization && {
-            specialization: { contains: query.specialization },
-        }),
-        ...(query.search && {
-            OR: [
-                { firstName: { contains: query.search } },
-                { lastName: { contains: query.search } },
-                { email: { contains: query.search } },
-                { phone: { contains: query.search } },
-            ],
-        }),
+        ...(byId.length > 0 && { AND: byId }),
     };
     const [teachers, total] = await Promise.all([
         client_1.prisma.teacher.findMany({

@@ -73,7 +73,7 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
    * وباقترانها باستعلامها يُشتقّ الأمران أدناه بمقارنةٍ واحدة: ما لا
    * يطابق الحقلَ الجاري لا يُعرض، وعدمُ المطابقة **هو** معنى «يبحث».
    */
-  const [result, setResult] = useState<{ term: string; hits: Hit[] }>({
+  const [result, setResult] = useState<{ term: string; hits: Hit[]; failed?: boolean }>({
     term: "",
     hits: [],
   });
@@ -144,6 +144,13 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
 
       setResult({
         term,
+        /*
+         * سقوطُ الطرفين معاً ليس «لا نتيجة».
+         *
+         * كان الفشلُ يُقرأ فراغاً، فيظنّ الموظّفُ أنّ الطالبَ غيرُ
+         * مسجَّل وهو مسجَّل. والشاشاتُ تُخبر بما جرى لا بما يشبهه.
+         */
+        failed: students === null && teachers === null,
         hits: [
           ...(students?.students ?? []).map((s) => ({
             kind: "student" as const,
@@ -362,7 +369,11 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
               كلُّ شاشات النظام وطلبتُه وأساتذتُه — اكتب حرفين فأكثر.
             </p>
           ) : hits.length === 0 && !seeking ? (
-            <p className="px-2 py-6 text-center text-xs text-white/35">لا نتيجة لهذا البحث.</p>
+            <p className="px-2 py-6 text-center text-xs text-white/35">
+              {settled && result.failed
+                ? "تعذّر البحث — الخادم لم يستجب لهذا الطلب."
+                : "لا نتيجة لهذا البحث."}
+            </p>
           ) : (
             <ul className="flex flex-col gap-0.5">
               {hits.map((hit, i) => (

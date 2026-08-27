@@ -8,6 +8,7 @@ const error_code_enum_1 = require("../../core/enums/error-code.enum");
 const api_response_1 = require("../../core/config/api-response");
 const student_number_1 = require("../../core/utils/student-number");
 const document_types_1 = require("./document.types");
+const text_match_1 = require("../../core/search/text-match");
 const studentSelect = {
     id: true,
     studentNumber: true,
@@ -120,7 +121,12 @@ const looseName = (search) => {
     const literal = loose.length - (loose.match(/_/g)?.length ?? 0);
     if (literal === 0)
         return [];
-    return [{ firstName: { contains: loose } }, { lastName: { contains: loose } }];
+    /* `_` يبقى إبهاماً هنا — وهو مقصودُ هذه الدالّة كلِّها */
+    const pattern = `%${(0, text_match_1.escapeLike)(loose, true)}%`;
+    return [
+        { column: "firstName", pattern },
+        { column: "lastName", pattern },
+    ];
 };
 const listStudentsService = async (query) => {
     const { skip, take, page, limit } = (0, api_response_1.getPagination)(query.page, query.limit);
@@ -160,12 +166,24 @@ const listStudentsService = async (query) => {
             ],
         }
         : undefined;
+    /*
+     * مطابقةُ النصّ تُحلّ إلى معرّفات قبل الاستعلام — انظر
+     * `core/search/text-match`. والسببُ ترتيبٌ صريح لا يقع معه تضارب،
+     * وما عدا ذلك يبقى كما كان: المرشِّحاتُ والترقيمُ والأعمدة.
+     */
+    const searchIds = query.search
+        ? await (0, text_match_1.matchTextIds)("Student", [
+            ...(0, text_match_1.containsOn)(["firstName", "lastName", "phone", "parentPhone"], query.search),
+            ...looseName(query.search),
+        ])
+        : null;
+    const numberIds = query.studentNumber
+        ? await (0, text_match_1.matchTextIds)("Student", (0, text_match_1.containsOn)(["studentNumber"], query.studentNumber))
+        : null;
     const where = {
         ...(query.isActive !== undefined && { isActive: query.isActive }),
         ...(query.gender && { gender: query.gender }),
-        ...(query.studentNumber && {
-            studentNumber: { contains: query.studentNumber },
-        }),
+        ...(numberIds && { id: { in: numberIds } }),
         ...(query.search && {
             OR: [
                 /*
@@ -173,13 +191,11 @@ const listStudentsService = async (query) => {
                  * البطاقة في حقل البحث ويضغط Enter، فيُفتح الطالب بمسحةٍ بدل
                  * كتابة اسمه. والمطابقة تامّةٌ لا `contains` — «2026000014»
                  * جزءٌ من لا شيء، و`contains` كانت ستُعيد معه كلَّ رقمٍ يحويه.
+                 *
+                 * وهي مطابقةٌ تامّة فلا `LIKE` فيها، فتبقى في Prisma.
                  */
                 { studentNumber: query.search },
-                { firstName: { contains: query.search } },
-                { lastName: { contains: query.search } },
-                { phone: { contains: query.search } },
-                { parentPhone: { contains: query.search } },
-                ...looseName(query.search),
+                { id: { in: searchIds ?? [] } },
             ],
         }),
         /*
