@@ -24,6 +24,8 @@ import StudentsHubPage from "../modules/students/StudentsHubPage";
 import StudentsPage from "../modules/students/StudentsPage";
 import StudentFilesPage from "../modules/students/StudentFilesPage";
 import StudentWizardPage from "../modules/students/StudentWizardPage";
+import StudentImportPage from "../modules/students/StudentImportPage";
+import TeacherImportPage from "../modules/teachers/TeacherImportPage";
 import StudentDetailPage from "../modules/students/StudentDetailPage";
 import FinanceHubPage from "../modules/finance/FinanceHubPage";
 import InvoicesPage from "../modules/finance/InvoicesPage";
@@ -89,6 +91,7 @@ export function AppRouter() {
         <Route path={PATHS.studentsList} element={guarded(<StudentsPage />)} />
         <Route path={PATHS.studentsFiles} element={guarded(<StudentFilesPage />)} />
         <Route path={PATHS.studentNew} element={guarded(<StudentWizardPage />)} />
+        <Route path={PATHS.studentsImport} element={guarded(<StudentImportPage />)} />
         <Route path={PATHS.students} element={guarded(<StudentsHubPage />)} />
         {/* بعد المسارات الثابتة: /students/:id يلتقط ما تبقّى */}
         <Route
@@ -98,6 +101,7 @@ export function AppRouter() {
 
         {/* الأساتذة: الثابت قبل :id، والمحور آخراً */}
         <Route path={PATHS.teachersList} element={guarded(<TeachersPage />)} />
+        <Route path={PATHS.teachersImport} element={guarded(<TeacherImportPage />)} />
         <Route path={PATHS.assignments} element={guarded(<AssignmentsPage />)} />
         <Route path={PATHS.teachers} element={guarded(<TeachersHubPage />)} />
         <Route

@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
-import { ArrowRight, BookMarked, Info, Users, type LucideIcon } from "lucide-react";
+import {
+  ArrowRight,
+  BookMarked,
+  FileSpreadsheet,
+  Info,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
 import { AppHeader } from "../../components/AppHeader";
 import { MOTION } from "../../motion/system";
@@ -15,10 +22,12 @@ const ACCENT = "#5eead4";
 /**
  * محور الأساتذة.
  *
- * بطاقتان لا ثلاث: الأستاذ كيانٌ، والإسناد علاقةٌ بينه وبين المادة
- * والفوج والسنة. وفصلُ العلاقة عن الكيان ليس ترتيباً للقوائم —
- * الإسناد يُدار أفقياً («من يدرّس الرياضيات للفوج الأول؟») لا من داخل
- * ملف أستاذٍ بعينه.
+ * الأستاذ كيانٌ، والإسناد علاقةٌ بينه وبين المادة والفوج والسنة.
+ * وفصلُ العلاقة عن الكيان ليس ترتيباً للقوائم — الإسناد يُدار أفقياً
+ * («من يدرّس الرياضيات للفوج الأول؟») لا من داخل ملف أستاذٍ بعينه.
+ *
+ * والاستيرادُ ثالثُها: فعلٌ لا مجموعةُ سجلّات، فلا عددَ تحته. ومحلُّه
+ * هنا لا في شاشةٍ جامعة — الطلبةُ يُستوردون من محورهم، ولكلّ ملفِّه.
  */
 
 interface Card {
@@ -80,6 +89,17 @@ export default function TeachersHubPage() {
       tone: "#a5f3fc",
       count: assignments,
       unit: "إسناداً نشطاً",
+    },
+    {
+      key: "import",
+      label: "استيراد الأساتذة من Excel",
+      desc: "إدخالُ قائمةِ أساتذةٍ دفعةً واحدة من ملفّ. يُفحص الملفُّ كاملاً أوّلاً، ولا يُكتب شيء حتى تقرّر.",
+      icon: FileSpreadsheet,
+      to: PATHS.teachersImport,
+      tone: "#6ee7b7",
+      /* لا عددَ يُعرض: الاستيرادُ فعلٌ لا مجموعةُ سجلّات */
+      count: null,
+      unit: "",
     },
   ];
 

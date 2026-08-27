@@ -7,6 +7,7 @@ import {
   UserPlus,
   Users,
   type LucideIcon,
+  FileSpreadsheet,
 } from "lucide-react";
 
 import { AppHeader } from "../../components/AppHeader";
@@ -61,6 +62,14 @@ const CARDS: Card[] = [
     icon: FolderCheck,
     to: PATHS.studentsFiles,
     tone: "#fcd34d",
+  },
+  {
+    key: "import",
+    label: "استيراد الطلبة من Excel",
+    desc: "إدخالُ قائمةِ طلبةٍ دفعةً واحدة من ملفّ. يُفحص الملفُّ كاملاً أوّلاً، ولا يُكتب شيء حتى تقرّر.",
+    icon: FileSpreadsheet,
+    to: PATHS.studentsImport,
+    tone: "#6ee7b7",
   },
 ];
 

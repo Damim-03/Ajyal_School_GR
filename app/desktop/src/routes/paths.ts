@@ -23,6 +23,8 @@ export const PATHS = {
   studentsList: "/students/list",
   studentsFiles: "/students/files",
   studentNew: "/students/new",
+  /** استيراد الطلبة من Excel — تحت جذر الطلبة فتبقى البيئة بلونهم */
+  studentsImport: "/students/import",
   studentDetailPattern: "/students/:id",
   studentDetail: (id: string) => `/students/${id}`,
 
@@ -30,6 +32,8 @@ export const PATHS = {
   teachers: "/teachers",
   teachersList: "/teachers/list",
   teacherDetailPattern: "/teachers/:id",
+  /** استيراد الأساتذة من Excel — لكلّ محورٍ ملفُّه وشاشتُه */
+  teachersImport: "/teachers/import",
   teacherDetail: (id: string) => `/teachers/${id}`,
 
   /* محور إسناد الطلبة — ثلاث شاشات تحت جذرٍ واحد */
