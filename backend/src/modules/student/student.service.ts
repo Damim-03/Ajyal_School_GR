@@ -21,6 +21,7 @@ import {
   containsOn,
   escapeLike,
   matchTextIds,
+  words,
   type TextCondition,
 } from "../../core/search/text-match";
 
@@ -167,6 +168,38 @@ const looseName = (search: string): TextCondition[] => {
   ];
 };
 
+/**
+ * مجموعاتُ مطابقة الاسم — كلمةً كلمة حين يُكتب الاسمُ كاملاً.
+ *
+ * الاسمُ في حقلين (`firstName` و`lastName`)، والموظّف يكتبه كاملاً
+ * وبأيّ ترتيب: «سعد الله تسنيم» أو «تسنيم سعد الله». وأيُّهما لا
+ * يوجد في حقلٍ بمفرده — فتصير كلُّ كلمةٍ شرطاً يُطابق أيَّ حقل،
+ * وتُطلب الكلماتُ كلُّها.
+ *
+ * والكلمةُ الواحدة تبقى على سعتها الأولى: تُطابق الهواتفَ أيضاً،
+ * لأنّ من يكتب رقماً يكتبه كلمةً واحدة.
+ */
+const nameGroups = (search: string): TextCondition[][] => {
+  const tokens = words(search);
+
+  if (tokens.length <= 1) {
+    return [
+      [
+        ...containsOn(
+          ["firstName", "lastName", "phone", "parentPhone"],
+          search.trim(),
+        ),
+        ...looseName(search),
+      ],
+    ];
+  }
+
+  return tokens.map((token) => [
+    ...containsOn(["firstName", "lastName"], token),
+    ...looseName(token),
+  ]);
+};
+
 export const listStudentsService = async (query: StudentQueryInput) => {
   const { skip, take, page, limit } = getPagination(query.page, query.limit);
 
@@ -215,17 +248,13 @@ export const listStudentsService = async (query: StudentQueryInput) => {
    * وما عدا ذلك يبقى كما كان: المرشِّحاتُ والترقيمُ والأعمدة.
    */
   const searchIds = query.search
-    ? await matchTextIds("Student", [
-        ...containsOn(
-          ["firstName", "lastName", "phone", "parentPhone"],
-          query.search,
-        ),
-        ...looseName(query.search),
-      ])
+    ? await matchTextIds("Student", nameGroups(query.search))
     : null;
 
   const numberIds = query.studentNumber
-    ? await matchTextIds("Student", containsOn(["studentNumber"], query.studentNumber))
+    ? await matchTextIds("Student", [
+        containsOn(["studentNumber"], query.studentNumber),
+      ])
     : null;
 
   const where: Prisma.StudentWhereInput = {

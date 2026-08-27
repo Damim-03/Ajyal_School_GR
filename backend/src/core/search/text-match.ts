@@ -63,39 +63,60 @@ export interface TextCondition {
 const SAFE_NAME = /^[A-Za-z][A-Za-z0-9_]*$/;
 
 /**
- * معرّفاتُ الصفوف التي يطابق أحدُ أعمدتها نمطَه (‏OR بين الشروط).
+ * معرّفاتُ الصفوف المطابقة — **OR داخل المجموعة، وAND بينها**.
  *
- * وتُمرَّر إلى `where: { id: { in: … } }` في استعلام Prisma الأصلي —
- * فتبقى المرشِّحاتُ والترقيمُ والأعمدةُ المختارة كما هي، ولا يُستبدل
- * منها إلّا مطابقةُ النصّ.
+ * والمجموعاتُ ليست ترفاً: الاسمُ مخزَّنٌ في حقلين، والموظّف يكتبه
+ * كاملاً. فـ«سعد الله تسنيم» ليس محتوًى في `lastName` وحده ولا في
+ * `firstName` وحده — وكلُّ كلمةٍ منه في أحدهما. فتصير كلُّ كلمةٍ
+ * مجموعةً تُطابق أيَّ حقل، ويجب أن تُطابق الكلماتُ كلُّها.
+ *
+ * وهو ما تفعله `lib/search.ts` في الواجهة منذ زمن — والخادم لم يكن
+ * يفعله، فكان البحث بالاسم الكامل يُرجع لا شيء.
+ *
+ * وتُمرَّر النتيجةُ إلى `where: { id: { in: … } }` في استعلام Prisma
+ * الأصلي، فتبقى المرشِّحاتُ والترقيمُ والأعمدةُ كما هي.
  */
 export const matchTextIds = async (
   table: string,
-  conditions: readonly TextCondition[],
+  groups: readonly (readonly TextCondition[])[],
 ): Promise<string[]> => {
   if (!SAFE_NAME.test(table)) throw new Error(`اسم جدولٍ غير صالح: ${table}`);
-  if (conditions.length === 0) return [];
 
-  for (const { column } of conditions) {
-    if (!SAFE_NAME.test(column)) {
-      throw new Error(`اسم عمودٍ غير صالح: ${column}`);
+  const active = groups.filter((group) => group.length > 0);
+
+  if (active.length === 0) return [];
+
+  for (const group of active) {
+    for (const { column } of group) {
+      if (!SAFE_NAME.test(column)) {
+        throw new Error(`اسم عمودٍ غير صالح: ${column}`);
+      }
     }
   }
 
-  const where = conditions
+  const where = active
     .map(
-      ({ column }) =>
-        `\`${column}\` LIKE CONVERT(? USING utf8mb4) COLLATE ${COLLATION}`,
+      (group) =>
+        `(${group
+          .map(
+            ({ column }) =>
+              `\`${column}\` LIKE CONVERT(? USING utf8mb4) COLLATE ${COLLATION}`,
+          )
+          .join(" OR ")})`,
     )
-    .join(" OR ");
+    .join(" AND ");
 
   const rows = await prisma.$queryRawUnsafe<{ id: string }[]>(
     `SELECT \`id\` FROM \`${table}\` WHERE ${where} LIMIT ${MAX_IDS}`,
-    ...conditions.map((c) => c.pattern),
+    ...active.flatMap((group) => group.map((c) => c.pattern)),
   );
 
   return rows.map((row) => row.id);
 };
+
+/** كلماتُ الاستعلام — الفراغُ المتكرّر لا يُنتج كلمةً فارغة */
+export const words = (term: string): string[] =>
+  term.trim().split(/\s+/).filter(Boolean);
 
 /** شروطُ «يحتوي» على عدّة أعمدة من نصٍّ واحد */
 export const containsOn = (

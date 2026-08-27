@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.containsOn = exports.matchTextIds = exports.escapeLike = void 0;
+exports.containsOn = exports.words = exports.matchTextIds = exports.escapeLike = void 0;
 const client_1 = require("../prisma/client");
 /**
  * **مطابقةُ النصّ بترتيبٍ صريح — لا يقع معها تضاربُ ترتيب.**
@@ -53,29 +53,44 @@ exports.escapeLike = escapeLike;
 /* أسماءُ الجداول والأعمدة من شيفرتنا لا من المستخدم — والفحصُ تأمينٌ رخيص */
 const SAFE_NAME = /^[A-Za-z][A-Za-z0-9_]*$/;
 /**
- * معرّفاتُ الصفوف التي يطابق أحدُ أعمدتها نمطَه (‏OR بين الشروط).
+ * معرّفاتُ الصفوف المطابقة — **OR داخل المجموعة، وAND بينها**.
  *
- * وتُمرَّر إلى `where: { id: { in: … } }` في استعلام Prisma الأصلي —
- * فتبقى المرشِّحاتُ والترقيمُ والأعمدةُ المختارة كما هي، ولا يُستبدل
- * منها إلّا مطابقةُ النصّ.
+ * والمجموعاتُ ليست ترفاً: الاسمُ مخزَّنٌ في حقلين، والموظّف يكتبه
+ * كاملاً. فـ«سعد الله تسنيم» ليس محتوًى في `lastName` وحده ولا في
+ * `firstName` وحده — وكلُّ كلمةٍ منه في أحدهما. فتصير كلُّ كلمةٍ
+ * مجموعةً تُطابق أيَّ حقل، ويجب أن تُطابق الكلماتُ كلُّها.
+ *
+ * وهو ما تفعله `lib/search.ts` في الواجهة منذ زمن — والخادم لم يكن
+ * يفعله، فكان البحث بالاسم الكامل يُرجع لا شيء.
+ *
+ * وتُمرَّر النتيجةُ إلى `where: { id: { in: … } }` في استعلام Prisma
+ * الأصلي، فتبقى المرشِّحاتُ والترقيمُ والأعمدةُ كما هي.
  */
-const matchTextIds = async (table, conditions) => {
+const matchTextIds = async (table, groups) => {
     if (!SAFE_NAME.test(table))
         throw new Error(`اسم جدولٍ غير صالح: ${table}`);
-    if (conditions.length === 0)
+    const active = groups.filter((group) => group.length > 0);
+    if (active.length === 0)
         return [];
-    for (const { column } of conditions) {
-        if (!SAFE_NAME.test(column)) {
-            throw new Error(`اسم عمودٍ غير صالح: ${column}`);
+    for (const group of active) {
+        for (const { column } of group) {
+            if (!SAFE_NAME.test(column)) {
+                throw new Error(`اسم عمودٍ غير صالح: ${column}`);
+            }
         }
     }
-    const where = conditions
+    const where = active
+        .map((group) => `(${group
         .map(({ column }) => `\`${column}\` LIKE CONVERT(? USING utf8mb4) COLLATE ${COLLATION}`)
-        .join(" OR ");
-    const rows = await client_1.prisma.$queryRawUnsafe(`SELECT \`id\` FROM \`${table}\` WHERE ${where} LIMIT ${MAX_IDS}`, ...conditions.map((c) => c.pattern));
+        .join(" OR ")})`)
+        .join(" AND ");
+    const rows = await client_1.prisma.$queryRawUnsafe(`SELECT \`id\` FROM \`${table}\` WHERE ${where} LIMIT ${MAX_IDS}`, ...active.flatMap((group) => group.map((c) => c.pattern)));
     return rows.map((row) => row.id);
 };
 exports.matchTextIds = matchTextIds;
+/** كلماتُ الاستعلام — الفراغُ المتكرّر لا يُنتج كلمةً فارغة */
+const words = (term) => term.trim().split(/\s+/).filter(Boolean);
+exports.words = words;
 /** شروطُ «يحتوي» على عدّة أعمدة من نصٍّ واحد */
 const containsOn = (columns, term) => {
     const pattern = `%${(0, exports.escapeLike)(term)}%`;

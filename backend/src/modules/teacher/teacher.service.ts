@@ -6,7 +6,7 @@ import {
 } from "../../core/errors/app.errors";
 import { ErrorCodeEnum } from "../../core/enums/error-code.enum";
 import { getPagination, buildPagination } from "../../core/config/api-response";
-import { containsOn, matchTextIds } from "../../core/search/text-match";
+import { containsOn, matchTextIds, words } from "../../core/search/text-match";
 import {
   CreateTeacherInput,
   UpdateTeacherInput,
@@ -99,18 +99,25 @@ export const listTeachersService = async (query: TeacherQueryInput) => {
    * مطابقةُ النصّ تُحلّ إلى معرّفات — بترتيبٍ صريح لا يقع معه تضارب.
    * انظر `core/search/text-match` وشرحَه الكامل هناك.
    */
+  /*
+   * كلمةً كلمة حين يُكتب الاسم كاملاً — الاسمُ في حقلين، انظر
+   * الشرح في `nameGroups` بخدمة الطلبة.
+   */
+  const tokens = query.search ? words(query.search) : [];
+
   const searchIds = query.search
     ? await matchTextIds(
         "Teacher",
-        containsOn(["firstName", "lastName", "email", "phone"], query.search),
+        tokens.length > 1
+          ? tokens.map((token) => containsOn(["firstName", "lastName"], token))
+          : [containsOn(["firstName", "lastName", "email", "phone"], query.search)],
       )
     : null;
 
   const specialtyIds = query.specialization
-    ? await matchTextIds(
-        "Teacher",
+    ? await matchTextIds("Teacher", [
         containsOn(["specialization"], query.specialization),
-      )
+      ])
     : null;
 
   /* مرشِّحان مستقلّان على المعرّف — يُجمعان بـAND لا يتزاحمان */

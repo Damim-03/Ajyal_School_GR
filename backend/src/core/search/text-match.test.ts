@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { escapeLike, containsOn } from "./text-match";
+import { escapeLike, containsOn, words } from "./text-match";
 
 /**
  * **يُختبر لأنّ إغفالَ التهريب يجعل خانةَ البحث تُعيد كلَّ شيء.**
@@ -46,5 +46,27 @@ describe("containsOn", () => {
 
   it("يُرجع فارغاً بلا أعمدة", () => {
     expect(containsOn([], "x")).toEqual([]);
+  });
+});
+
+/**
+ * تقسيمُ الاستعلام كلماتٍ — وعليه يقوم البحثُ بالاسم الكامل.
+ *
+ * الاسمُ في حقلين، فـ«سعد الله تسنيم» لا يوجد في حقلٍ بمفرده. وكلمةٌ
+ * فارغةٌ تتسلّل من مسافةٍ مكرّرة تصير شرطاً يُطابق كلَّ شيء.
+ */
+describe("words", () => {
+  it("يقسّم على المسافات ويُسقط الفارغ", () => {
+    expect(words("سعد الله تسنيم")).toEqual(["سعد", "الله", "تسنيم"]);
+    expect(words("  برير   ماجد  ")).toEqual(["برير", "ماجد"]);
+  });
+
+  it("يُرجع فارغاً لنصٍّ فارغ", () => {
+    expect(words("")).toEqual([]);
+    expect(words("   ")).toEqual([]);
+  });
+
+  it("الكلمةُ الواحدة تبقى واحدة", () => {
+    expect(words("برير")).toEqual(["برير"]);
   });
 });

@@ -128,6 +128,32 @@ const looseName = (search) => {
         { column: "lastName", pattern },
     ];
 };
+/**
+ * مجموعاتُ مطابقة الاسم — كلمةً كلمة حين يُكتب الاسمُ كاملاً.
+ *
+ * الاسمُ في حقلين (`firstName` و`lastName`)، والموظّف يكتبه كاملاً
+ * وبأيّ ترتيب: «سعد الله تسنيم» أو «تسنيم سعد الله». وأيُّهما لا
+ * يوجد في حقلٍ بمفرده — فتصير كلُّ كلمةٍ شرطاً يُطابق أيَّ حقل،
+ * وتُطلب الكلماتُ كلُّها.
+ *
+ * والكلمةُ الواحدة تبقى على سعتها الأولى: تُطابق الهواتفَ أيضاً،
+ * لأنّ من يكتب رقماً يكتبه كلمةً واحدة.
+ */
+const nameGroups = (search) => {
+    const tokens = (0, text_match_1.words)(search);
+    if (tokens.length <= 1) {
+        return [
+            [
+                ...(0, text_match_1.containsOn)(["firstName", "lastName", "phone", "parentPhone"], search.trim()),
+                ...looseName(search),
+            ],
+        ];
+    }
+    return tokens.map((token) => [
+        ...(0, text_match_1.containsOn)(["firstName", "lastName"], token),
+        ...looseName(token),
+    ]);
+};
 const listStudentsService = async (query) => {
     const { skip, take, page, limit } = (0, api_response_1.getPagination)(query.page, query.limit);
     /* شروط الإسناد التدريسي المرتبط بتسجيلات الطالب */
@@ -172,13 +198,12 @@ const listStudentsService = async (query) => {
      * وما عدا ذلك يبقى كما كان: المرشِّحاتُ والترقيمُ والأعمدة.
      */
     const searchIds = query.search
-        ? await (0, text_match_1.matchTextIds)("Student", [
-            ...(0, text_match_1.containsOn)(["firstName", "lastName", "phone", "parentPhone"], query.search),
-            ...looseName(query.search),
-        ])
+        ? await (0, text_match_1.matchTextIds)("Student", nameGroups(query.search))
         : null;
     const numberIds = query.studentNumber
-        ? await (0, text_match_1.matchTextIds)("Student", (0, text_match_1.containsOn)(["studentNumber"], query.studentNumber))
+        ? await (0, text_match_1.matchTextIds)("Student", [
+            (0, text_match_1.containsOn)(["studentNumber"], query.studentNumber),
+        ])
         : null;
     const where = {
         ...(query.isActive !== undefined && { isActive: query.isActive }),

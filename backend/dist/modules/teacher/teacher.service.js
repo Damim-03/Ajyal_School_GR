@@ -73,11 +73,20 @@ const listTeachersService = async (query) => {
      * مطابقةُ النصّ تُحلّ إلى معرّفات — بترتيبٍ صريح لا يقع معه تضارب.
      * انظر `core/search/text-match` وشرحَه الكامل هناك.
      */
+    /*
+     * كلمةً كلمة حين يُكتب الاسم كاملاً — الاسمُ في حقلين، انظر
+     * الشرح في `nameGroups` بخدمة الطلبة.
+     */
+    const tokens = query.search ? (0, text_match_1.words)(query.search) : [];
     const searchIds = query.search
-        ? await (0, text_match_1.matchTextIds)("Teacher", (0, text_match_1.containsOn)(["firstName", "lastName", "email", "phone"], query.search))
+        ? await (0, text_match_1.matchTextIds)("Teacher", tokens.length > 1
+            ? tokens.map((token) => (0, text_match_1.containsOn)(["firstName", "lastName"], token))
+            : [(0, text_match_1.containsOn)(["firstName", "lastName", "email", "phone"], query.search)])
         : null;
     const specialtyIds = query.specialization
-        ? await (0, text_match_1.matchTextIds)("Teacher", (0, text_match_1.containsOn)(["specialization"], query.specialization))
+        ? await (0, text_match_1.matchTextIds)("Teacher", [
+            (0, text_match_1.containsOn)(["specialization"], query.specialization),
+        ])
         : null;
     /* مرشِّحان مستقلّان على المعرّف — يُجمعان بـAND لا يتزاحمان */
     const byId = [];
