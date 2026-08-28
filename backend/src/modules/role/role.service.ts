@@ -14,6 +14,7 @@ import {
   RoleQueryInput,
   PermissionQueryInput,
 } from "./role.schema";
+import { containsOn, matchTextIds } from "../../core/search/text-match";
 
 const roleSelect = {
   id: true,
@@ -83,10 +84,15 @@ const ensurePermissionsExist = async (permissionIds: string[]) => {
 // --------------------------------------------------
 
 export const listPermissionsService = async (query: PermissionQueryInput) => {
+  /* مطابقةٌ بترتيبٍ صريح — انظر `core/search/text-match` */
+  const searchIds = query.search
+    ? await matchTextIds("Permission", [containsOn(["name"], query.search)])
+    : null;
+
   const permissions = await prisma.permission.findMany({
     where: {
       ...(query.module && { module: query.module }),
-      ...(query.search && { name: { contains: query.search } }),
+      ...(searchIds && { id: { in: searchIds } }),
     },
     select: { id: true, name: true, module: true, description: true },
     orderBy: [{ module: "asc" }, { name: "asc" }],
@@ -111,8 +117,12 @@ export const listPermissionsService = async (query: PermissionQueryInput) => {
 export const listRolesService = async (query: RoleQueryInput) => {
   const { skip, take, page, limit } = getPagination(query.page, query.limit);
 
+  const roleIds = query.search
+    ? await matchTextIds("Role", [containsOn(["name"], query.search)])
+    : null;
+
   const where: Prisma.RoleWhereInput = {
-    ...(query.search && { name: { contains: query.search } }),
+    ...(roleIds && { id: { in: roleIds } }),
   };
 
   const [roles, total] = await Promise.all([

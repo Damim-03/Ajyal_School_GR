@@ -569,8 +569,25 @@ const buildSettlementNumber = (year: number, sequence: number) =>
   `STL-${year}-${String(sequence).padStart(4, "0")}`;
 
 const lastSequence = async (year: number) => {
+  const prefix = `STL-${year}-`;
+
+  /*
+   * مجالٌ لا `startsWith` — للسبب نفسِه في `nextStudentNumber`.
+   *
+   * `startsWith` تُترجَم إلى `LIKE CONCAT(?, '%')`، فيلتقي معاملٌ ونصٌّ
+   * حرفيّ وقد يختلف ترتيبُهما فيسقط الاستعلام على MariaDB 11.8. ولا
+   * مطابقةَ نصّيةً هنا أصلاً: الأرقامُ ذاتُ سابقةٍ ثابتة.
+   *
+   * والمجالُ مكافئٌ تماماً: كلُّ نصٍّ يبدأ بالسابقة يقع في
+   * `[prefix, prefix')` حيث `'` هو آخرُ محرفٍ فيها مزاداً واحداً —
+   * وكلُّ ما وقع في المجال يبدأ بها.
+   */
+  const upper =
+    prefix.slice(0, -1) +
+    String.fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1);
+
   const last = await prisma.settlement.findFirst({
-    where: { settlementNumber: { startsWith: `STL-${year}-` } },
+    where: { settlementNumber: { gte: prefix, lt: upper } },
     orderBy: { settlementNumber: "desc" },
     select: { settlementNumber: true },
   });

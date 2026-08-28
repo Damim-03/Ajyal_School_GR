@@ -6,6 +6,7 @@ const app_errors_1 = require("../../core/errors/app.errors");
 const error_code_enum_1 = require("../../core/enums/error-code.enum");
 const api_response_1 = require("../../core/config/api-response");
 const time_1 = require("../../core/utils/time");
+const text_match_1 = require("../../core/search/text-match");
 const receiptSelect = {
     id: true,
     receiptNumber: true,
@@ -90,11 +91,15 @@ const findOrThrow = async (id) => {
 // --------------------------------------------------
 const listReceiptsService = async (query) => {
     const { skip, take, page, limit } = (0, api_response_1.getPagination)(query.page, query.limit);
+    /* مطابقةٌ بترتيبٍ صريح — انظر `core/search/text-match` */
+    const searchIds = query.search
+        ? await (0, text_match_1.matchTextIds)("Receipt", [(0, text_match_1.containsOn)(["receiptNumber"], query.search)])
+        : null;
     const where = {
         ...(query.status && { status: query.status }),
         ...(query.paymentId && { paymentId: query.paymentId }),
         ...(query.printed !== undefined && { printed: query.printed }),
-        ...(query.search && { receiptNumber: { contains: query.search } }),
+        ...(searchIds && { id: { in: searchIds } }),
         ...((query.dateFrom || query.dateTo || query.studentId) && {
             payment: {
                 ...((query.dateFrom || query.dateTo) && {

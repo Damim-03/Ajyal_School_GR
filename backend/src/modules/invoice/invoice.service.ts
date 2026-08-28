@@ -22,6 +22,11 @@ import {
   InvoiceQueryInput,
   CancelInvoiceInput,
 } from "./invoice.schema";
+import {
+  containsOn,
+  matchTextIds,
+  words,
+} from "../../core/search/text-match";
 
 /**
  * الدفعات الموزَّعة على الفاتورة — في القائمة كما في التفصيل.
@@ -395,6 +400,30 @@ export const listInvoicesService = async (query: InvoiceQueryInput) => {
     }),
   };
 
+  /*
+   * المطابقةُ بترتيبٍ صريح — انظر `core/search/text-match`.
+   *
+   * وطرفان لا واحد: رقمُ الفاتورة في جدولها، واسمُ الطالب في جدوله.
+   * والاسمُ يُقسَّم كلماتٍ لأنّه في حقلين — «سعد الله تسنيم» لا يوجد
+   * في `lastName` وحده ولا في `firstName` وحده.
+   */
+  const invoiceIds = query.search
+    ? await matchTextIds("Invoice", [
+        containsOn(["invoiceNumber"], query.search),
+      ])
+    : null;
+
+  const studentIds = query.search
+    ? await matchTextIds(
+        "Student",
+        words(query.search).length > 1
+          ? words(query.search).map((token) =>
+              containsOn(["firstName", "lastName"], token),
+            )
+          : [containsOn(["firstName", "lastName"], query.search)],
+      )
+    : null;
+
   const where: Prisma.InvoiceWhereInput = {
     ...(query.status && { status: query.status }),
     ...(query.month !== undefined && { month: query.month }),
@@ -412,17 +441,8 @@ export const listInvoicesService = async (query: InvoiceQueryInput) => {
      */
     ...(query.search && {
       OR: [
-        { invoiceNumber: { contains: query.search } },
-        {
-          studentEnrollment: {
-            student: {
-              OR: [
-                { lastName: { contains: query.search } },
-                { firstName: { contains: query.search } },
-              ],
-            },
-          },
-        },
+        { id: { in: invoiceIds ?? [] } },
+        { studentEnrollment: { studentId: { in: studentIds ?? [] } } },
       ],
     }),
     ...(Object.keys(enrollmentFilter).length > 0 && {

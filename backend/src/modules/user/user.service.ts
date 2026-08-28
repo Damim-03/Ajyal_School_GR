@@ -13,6 +13,11 @@ import {
   UpdateUserInput,
   UserQueryInput,
 } from "./user.schema";
+import {
+  containsOn,
+  matchTextIds,
+  words,
+} from "../../core/search/text-match";
 
 // كلمة المرور لا تُختار أبداً — لا تخرج من هذه الطبقة
 const userSelect = {
@@ -131,17 +136,24 @@ const ensureNotLastActiveAdmin = async (userId: string, action: string) => {
 export const listUsersService = async (query: UserQueryInput) => {
   const { skip, take, page, limit } = getPagination(query.page, query.limit);
 
+  /* مطابقةٌ بترتيبٍ صريح — انظر `core/search/text-match` — والاسمُ في حقلين فيُقسَّم كلماتٍ */
+  const searchIds = query.search
+    ? await matchTextIds("User", words(query.search).length > 1
+        ? words(query.search).map((token) =>
+            containsOn(["firstName", "lastName"], token),
+          )
+        : [
+            containsOn(
+              ["username", "firstName", "lastName", "email"],
+              query.search,
+            ),
+          ])
+    : null;
+
   const where: Prisma.UserWhereInput = {
     ...(query.isActive !== undefined && { isActive: query.isActive }),
     ...(query.roleId && { roleId: query.roleId }),
-    ...(query.search && {
-      OR: [
-        { username: { contains: query.search } },
-        { firstName: { contains: query.search } },
-        { lastName: { contains: query.search } },
-        { email: { contains: query.search } },
-      ],
-    }),
+    ...(searchIds && { id: { in: searchIds } }),
   };
 
   const [users, total] = await Promise.all([

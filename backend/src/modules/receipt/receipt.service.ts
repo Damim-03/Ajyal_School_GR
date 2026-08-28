@@ -8,6 +8,7 @@ import { ErrorCodeEnum } from "../../core/enums/error-code.enum";
 import { getPagination, buildPagination } from "../../core/config/api-response";
 import { startOfUtcDay, addUtcDays } from "../../core/utils/time";
 import { ReceiptQueryInput, CancelReceiptInput } from "./receipt.schema";
+import { containsOn, matchTextIds } from "../../core/search/text-match";
 
 const receiptSelect = {
   id: true,
@@ -113,11 +114,16 @@ const findOrThrow = async (id: string) => {
 export const listReceiptsService = async (query: ReceiptQueryInput) => {
   const { skip, take, page, limit } = getPagination(query.page, query.limit);
 
+  /* مطابقةٌ بترتيبٍ صريح — انظر `core/search/text-match` */
+  const searchIds = query.search
+    ? await matchTextIds("Receipt", [containsOn(["receiptNumber"], query.search)])
+    : null;
+
   const where: Prisma.ReceiptWhereInput = {
     ...(query.status && { status: query.status }),
     ...(query.paymentId && { paymentId: query.paymentId }),
     ...(query.printed !== undefined && { printed: query.printed }),
-    ...(query.search && { receiptNumber: { contains: query.search } }),
+    ...(searchIds && { id: { in: searchIds } }),
     ...((query.dateFrom || query.dateTo || query.studentId) && {
       payment: {
         ...((query.dateFrom || query.dateTo) && {

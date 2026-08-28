@@ -9,6 +9,7 @@ const api_response_1 = require("../../core/config/api-response");
 const time_1 = require("../../core/utils/time");
 const teacher_debt_share_service_1 = require("../teacher-debt-share/teacher-debt-share.service");
 const document_number_1 = require("../../core/utils/document-number");
+const text_match_1 = require("../../core/search/text-match");
 const paymentSelect = {
     id: true,
     paymentNumber: true,
@@ -119,17 +120,27 @@ const listPaymentsService = async (query) => {
      * طالب. فلو كُتب كلُّ مرشِّحٍ في موضعه لتكرّر مفتاحُ `invoice` مرّتين
      * حين يجتمع رقمُ التسجيل والاسم — والثاني يمحو الأوّل صامتاً.
      */
-    const studentFilter = {
-        ...(query.studentNumber && {
-            studentNumber: { contains: query.studentNumber },
-        }),
-        ...(query.studentName && {
-            OR: [
-                { firstName: { contains: query.studentName } },
-                { lastName: { contains: query.studentName } },
-            ],
-        }),
-    };
+    /*
+     * المطابقةُ النصّية بترتيبٍ صريح — انظر `core/search/text-match`.
+     * والاسمُ يُقسَّم كلماتٍ لأنّه في حقلين.
+     */
+    const numberIds = query.studentNumber
+        ? await (0, text_match_1.matchTextIds)("Student", [
+            (0, text_match_1.containsOn)(["studentNumber"], query.studentNumber),
+        ])
+        : null;
+    const nameIds = query.studentName
+        ? await (0, text_match_1.matchTextIds)("Student", (0, text_match_1.words)(query.studentName).length > 1
+            ? (0, text_match_1.words)(query.studentName).map((token) => (0, text_match_1.containsOn)(["firstName", "lastName"], token))
+            : [(0, text_match_1.containsOn)(["firstName", "lastName"], query.studentName)])
+        : null;
+    /* مرشِّحان مستقلّان على المعرّف — يُجمعان بـAND لا يتزاحمان */
+    const studentById = [];
+    if (numberIds)
+        studentById.push({ id: { in: numberIds } });
+    if (nameIds)
+        studentById.push({ id: { in: nameIds } });
+    const studentFilter = studentById.length > 0 ? { AND: studentById } : {};
     const enrollmentFilter = {
         ...(query.studentId && { studentId: query.studentId }),
         ...(Object.keys(studentFilter).length > 0 && { student: studentFilter }),
@@ -140,6 +151,16 @@ const listPaymentsService = async (query) => {
             invoice: { studentEnrollment: enrollmentFilter },
         }),
     };
+    const paymentIds = query.search
+        ? await (0, text_match_1.matchTextIds)("Payment", [
+            (0, text_match_1.containsOn)(["paymentNumber"], query.search),
+        ])
+        : null;
+    const receiptIds = query.search
+        ? await (0, text_match_1.matchTextIds)("Receipt", [
+            (0, text_match_1.containsOn)(["receiptNumber"], query.search),
+        ])
+        : null;
     const where = {
         ...(query.status && { status: query.status }),
         ...(query.paymentMethod && { paymentMethod: query.paymentMethod }),
@@ -154,8 +175,8 @@ const listPaymentsService = async (query) => {
          */
         ...(query.search && {
             OR: [
-                { paymentNumber: { contains: query.search } },
-                { receipt: { receiptNumber: { contains: query.search } } },
+                { id: { in: paymentIds ?? [] } },
+                { receipt: { id: { in: receiptIds ?? [] } } },
             ],
         }),
         ...((query.dateFrom || query.dateTo) && {

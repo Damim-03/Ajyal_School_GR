@@ -10,6 +10,7 @@ const time_1 = require("../../core/utils/time");
 const document_number_1 = require("../../core/utils/document-number");
 const tuition_scope_1 = require("../../core/pricing/tuition-scope");
 const eligibility_1 = require("../../core/pricing/eligibility");
+const text_match_1 = require("../../core/search/text-match");
 /**
  * الدفعات الموزَّعة على الفاتورة — في القائمة كما في التفصيل.
  *
@@ -302,6 +303,23 @@ const listInvoicesService = async (query) => {
             teachingAssignment: assignmentFilter,
         }),
     };
+    /*
+     * المطابقةُ بترتيبٍ صريح — انظر `core/search/text-match`.
+     *
+     * وطرفان لا واحد: رقمُ الفاتورة في جدولها، واسمُ الطالب في جدوله.
+     * والاسمُ يُقسَّم كلماتٍ لأنّه في حقلين — «سعد الله تسنيم» لا يوجد
+     * في `lastName` وحده ولا في `firstName` وحده.
+     */
+    const invoiceIds = query.search
+        ? await (0, text_match_1.matchTextIds)("Invoice", [
+            (0, text_match_1.containsOn)(["invoiceNumber"], query.search),
+        ])
+        : null;
+    const studentIds = query.search
+        ? await (0, text_match_1.matchTextIds)("Student", (0, text_match_1.words)(query.search).length > 1
+            ? (0, text_match_1.words)(query.search).map((token) => (0, text_match_1.containsOn)(["firstName", "lastName"], token))
+            : [(0, text_match_1.containsOn)(["firstName", "lastName"], query.search)])
+        : null;
     const where = {
         ...(query.status && { status: query.status }),
         ...(query.month !== undefined && { month: query.month }),
@@ -319,17 +337,8 @@ const listInvoicesService = async (query) => {
          */
         ...(query.search && {
             OR: [
-                { invoiceNumber: { contains: query.search } },
-                {
-                    studentEnrollment: {
-                        student: {
-                            OR: [
-                                { lastName: { contains: query.search } },
-                                { firstName: { contains: query.search } },
-                            ],
-                        },
-                    },
-                },
+                { id: { in: invoiceIds ?? [] } },
+                { studentEnrollment: { studentId: { in: studentIds ?? [] } } },
             ],
         }),
         ...(Object.keys(enrollmentFilter).length > 0 && {

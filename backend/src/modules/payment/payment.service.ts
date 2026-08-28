@@ -15,6 +15,11 @@ import {
   PaymentQueryInput,
   CancelPaymentInput,
 } from "./payment.schema";
+import {
+  containsOn,
+  matchTextIds,
+  words,
+} from "../../core/search/text-match";
 
 const paymentSelect = {
   id: true,
@@ -168,17 +173,35 @@ export const listPaymentsService = async (query: PaymentQueryInput) => {
    * طالب. فلو كُتب كلُّ مرشِّحٍ في موضعه لتكرّر مفتاحُ `invoice` مرّتين
    * حين يجتمع رقمُ التسجيل والاسم — والثاني يمحو الأوّل صامتاً.
    */
-  const studentFilter: Prisma.StudentWhereInput = {
-    ...(query.studentNumber && {
-      studentNumber: { contains: query.studentNumber },
-    }),
-    ...(query.studentName && {
-      OR: [
-        { firstName: { contains: query.studentName } },
-        { lastName: { contains: query.studentName } },
-      ],
-    }),
-  };
+  /*
+   * المطابقةُ النصّية بترتيبٍ صريح — انظر `core/search/text-match`.
+   * والاسمُ يُقسَّم كلماتٍ لأنّه في حقلين.
+   */
+  const numberIds = query.studentNumber
+    ? await matchTextIds("Student", [
+        containsOn(["studentNumber"], query.studentNumber),
+      ])
+    : null;
+
+  const nameIds = query.studentName
+    ? await matchTextIds(
+        "Student",
+        words(query.studentName).length > 1
+          ? words(query.studentName).map((token) =>
+              containsOn(["firstName", "lastName"], token),
+            )
+          : [containsOn(["firstName", "lastName"], query.studentName)],
+      )
+    : null;
+
+  /* مرشِّحان مستقلّان على المعرّف — يُجمعان بـAND لا يتزاحمان */
+  const studentById: Prisma.StudentWhereInput[] = [];
+
+  if (numberIds) studentById.push({ id: { in: numberIds } });
+  if (nameIds) studentById.push({ id: { in: nameIds } });
+
+  const studentFilter: Prisma.StudentWhereInput =
+    studentById.length > 0 ? { AND: studentById } : {};
 
   const enrollmentFilter: Prisma.StudentEnrollmentWhereInput = {
     ...(query.studentId && { studentId: query.studentId }),
@@ -191,6 +214,18 @@ export const listPaymentsService = async (query: PaymentQueryInput) => {
       invoice: { studentEnrollment: enrollmentFilter },
     }),
   };
+
+  const paymentIds = query.search
+    ? await matchTextIds("Payment", [
+        containsOn(["paymentNumber"], query.search),
+      ])
+    : null;
+
+  const receiptIds = query.search
+    ? await matchTextIds("Receipt", [
+        containsOn(["receiptNumber"], query.search),
+      ])
+    : null;
 
   const where: Prisma.PaymentWhereInput = {
     ...(query.status && { status: query.status }),
@@ -206,8 +241,8 @@ export const listPaymentsService = async (query: PaymentQueryInput) => {
      */
     ...(query.search && {
       OR: [
-        { paymentNumber: { contains: query.search } },
-        { receipt: { receiptNumber: { contains: query.search } } },
+        { id: { in: paymentIds ?? [] } },
+        { receipt: { id: { in: receiptIds ?? [] } } },
       ],
     }),
     ...((query.dateFrom || query.dateTo) && {

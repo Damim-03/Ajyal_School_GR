@@ -11,6 +11,7 @@ import {
   UpdateClassroomInput,
   ClassroomQueryInput,
 } from "./classroom.schema";
+import { containsOn, matchTextIds } from "../../core/search/text-match";
 
 const classroomSelect = {
   id: true,
@@ -69,15 +70,15 @@ const ensureUniqueCode = async (code: string, excludeId?: string) => {
 export const listClassroomsService = async (query: ClassroomQueryInput) => {
   const { skip, take, page, limit } = getPagination(query.page, query.limit);
 
+  /* مطابقةٌ بترتيبٍ صريح — انظر `core/search/text-match` */
+  const searchIds = query.search
+    ? await matchTextIds("Classroom", [containsOn(["name", "code"], query.search)])
+    : null;
+
   const where: Prisma.ClassroomWhereInput = {
     ...(query.isActive !== undefined && { isActive: query.isActive }),
     ...(query.floor !== undefined && { floor: query.floor }),
-    ...(query.search && {
-      OR: [
-        { name: { contains: query.search } },
-        { code: { contains: query.search } },
-      ],
-    }),
+    ...(searchIds && { id: { in: searchIds } }),
   };
 
   const [classrooms, total] = await Promise.all([

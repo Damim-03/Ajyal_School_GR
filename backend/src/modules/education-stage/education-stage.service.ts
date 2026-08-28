@@ -11,6 +11,7 @@ import {
   UpdateEducationStageInput,
   EducationStageQueryInput,
 } from "./education-stage.schema";
+import { containsOn, matchTextIds } from "../../core/search/text-match";
 
 const educationStageSelect = {
   id: true,
@@ -75,10 +76,15 @@ export const listEducationStagesService = async (
 ) => {
   const { skip, take, page, limit } = getPagination(query.page, query.limit);
 
+  /* مطابقةٌ بترتيبٍ صريح — انظر `core/search/text-match` */
+  const searchIds = query.search
+    ? await matchTextIds("EducationStage", [containsOn(["name"], query.search)])
+    : null;
+
   const where: Prisma.EducationStageWhereInput = {
     ...(query.isActive !== undefined && { isActive: query.isActive }),
     ...(query.type && { type: query.type }),
-    ...(query.search && { name: { contains: query.search } }),
+    ...(searchIds && { id: { in: searchIds } }),
   };
 
   const [educationStages, total] = await Promise.all([

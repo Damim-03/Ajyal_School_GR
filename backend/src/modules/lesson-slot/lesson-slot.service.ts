@@ -13,6 +13,7 @@ import {
   UpdateLessonSlotInput,
   LessonSlotQueryInput,
 } from "./lesson-slot.schema";
+import { containsOn, matchTextIds } from "../../core/search/text-match";
 
 const lessonSlotSelect = {
   id: true,
@@ -192,11 +193,16 @@ const ensureValidRange = (startTime: string, endTime: string) => {
 export const listLessonSlotsService = async (query: LessonSlotQueryInput) => {
   const { skip, take, page, limit } = getPagination(query.page, query.limit);
 
+  /* مطابقةٌ بترتيبٍ صريح — انظر `core/search/text-match` */
+  const searchIds = query.search
+    ? await matchTextIds("LessonSlot", [containsOn(["name"], query.search)])
+    : null;
+
   const where: Prisma.LessonSlotWhereInput = {
     ...(query.academicYearId && { academicYearId: query.academicYearId }),
     ...(query.teacherId && { teacherId: query.teacherId }),
     ...(query.isActive !== undefined && { isActive: query.isActive }),
-    ...(query.search && { name: { contains: query.search } }),
+    ...(searchIds && { id: { in: searchIds } }),
   };
 
   const [slots, total] = await Promise.all([

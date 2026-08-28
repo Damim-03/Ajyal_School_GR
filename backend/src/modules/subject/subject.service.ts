@@ -11,6 +11,7 @@ import {
   UpdateSubjectInput,
   SubjectQueryInput,
 } from "./subject.schema";
+import { containsOn, matchTextIds } from "../../core/search/text-match";
 
 // --------------------------------------------------
 // Select موحّد — نفس الحقول في كل الردود
@@ -95,14 +96,14 @@ export const listSubjectsService = async (query: SubjectQueryInput) => {
 
   // ترتيب الأعمدة في MySQL غير حسّاس لحالة الأحرف (utf8mb4_unicode_ci)
   // لذلك لا حاجة لـ mode: "insensitive" — وهو غير مدعوم أصلاً على MySQL
+  /* مطابقةٌ بترتيبٍ صريح — انظر `core/search/text-match` */
+  const searchIds = query.search
+    ? await matchTextIds("Subject", [containsOn(["name", "code"], query.search)])
+    : null;
+
   const where: Prisma.SubjectWhereInput = {
     ...(query.isActive !== undefined && { isActive: query.isActive }),
-    ...(query.search && {
-      OR: [
-        { name: { contains: query.search } },
-        { code: { contains: query.search } },
-      ],
-    }),
+    ...(searchIds && { id: { in: searchIds } }),
   };
 
   const [subjects, total] = await Promise.all([

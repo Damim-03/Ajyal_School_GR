@@ -11,6 +11,7 @@ import {
   UpdateLevelInput,
   LevelQueryInput,
 } from "./level.schema";
+import { containsOn, matchTextIds } from "../../core/search/text-match";
 
 const levelSelect = {
   id: true,
@@ -96,12 +97,17 @@ const nextSortOrder = async (educationStageId: string): Promise<number> => {
 export const listLevelsService = async (query: LevelQueryInput) => {
   const { skip, take, page, limit } = getPagination(query.page, query.limit);
 
+  /* مطابقةٌ بترتيبٍ صريح — انظر `core/search/text-match` */
+  const searchIds = query.search
+    ? await matchTextIds("Level", [containsOn(["name"], query.search)])
+    : null;
+
   const where: Prisma.LevelWhereInput = {
     ...(query.isActive !== undefined && { isActive: query.isActive }),
     ...(query.educationStageId && {
       educationStageId: query.educationStageId,
     }),
-    ...(query.search && { name: { contains: query.search } }),
+    ...(searchIds && { id: { in: searchIds } }),
   };
 
   const [levels, total] = await Promise.all([

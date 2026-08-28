@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { buildTemplate } from "./template";
 import { readWorkbook } from "./read-workbook";
@@ -29,6 +29,21 @@ const readTemplate = async (kind: SheetKind) =>
   readWorkbook(asFile(await buildTemplate(kind)), kind);
 
 const KINDS: SheetKind[] = ["students", "teachers"];
+
+/*
+ * تسخينُ `exceljs` قبل أوّل اختبار.
+ *
+ * `buildTemplate` يستورده **ديناميكياً** (ليخرج من حزمة التطبيق
+ * الأساسية)، فأوّلُ نداءٍ يدفع ثمنَ تحويل مكتبةٍ بحجم ميغابايت.
+ * وعلى جهازٍ مثقل يتجاوز ذلك مهلةَ الاختبار الافتراضية فيسقط بلا
+ * علاقةٍ بما يفحصه — تذبذبٌ يُفقد الثقةَ بالمجموعة كلِّها.
+ *
+ * فيُدفع الثمنُ مرّةً هنا بمهلةٍ سخيّة، وتبقى الاختباراتُ على
+ * مهلتها الطبيعية.
+ */
+beforeAll(async () => {
+  await import("exceljs");
+}, 120_000);
 
 describe("النموذج ↔ القارئ", () => {
   it.each(KINDS)("يُقرأ نموذج %s وتُعرف أعمدتُه كلُّها", async (kind) => {

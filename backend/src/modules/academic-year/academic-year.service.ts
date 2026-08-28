@@ -12,6 +12,7 @@ import {
   UpdateAcademicYearInput,
   AcademicYearQueryInput,
 } from "./academic-year.schema";
+import { containsOn, matchTextIds } from "../../core/search/text-match";
 
 const academicYearSelect = {
   id: true,
@@ -71,10 +72,15 @@ export const listAcademicYearsService = async (
 ) => {
   const { skip, take, page, limit } = getPagination(query.page, query.limit);
 
+  /* مطابقةٌ بترتيبٍ صريح — انظر `core/search/text-match` */
+  const searchIds = query.search
+    ? await matchTextIds("AcademicYear", [containsOn(["name"], query.search)])
+    : null;
+
   const where: Prisma.AcademicYearWhereInput = {
     ...(query.isActive !== undefined && { isActive: query.isActive }),
     ...(query.isCurrent !== undefined && { isCurrent: query.isCurrent }),
-    ...(query.search && { name: { contains: query.search } }),
+    ...(searchIds && { id: { in: searchIds } }),
   };
 
   const [academicYears, total] = await Promise.all([

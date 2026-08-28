@@ -404,7 +404,6 @@ export default function StudentAssignmentPage() {
       {adding && openAssignment && (
         <AssignDialog
           assignment={openAssignment}
-          yearId={yearId}
           /* من هم فيه الآن — لمنع تكرارٍ قبل أن يُطلب من الخادم */
           enrolled={rows}
           onClose={() => setAdding(false)}
@@ -629,19 +628,20 @@ function GroupRoster({
  * إسنادُ طالبٍ إلى الفوج المفتوح.
  *
  * حقلان لا حقل: الاسمُ يُكتب حروفاً والرقمُ خاناتٍ، وكلاهما يبحث في
- * المؤسسة كلِّها لا في الفوج — لأنّ المقصود إدخالُ من ليس فيه. ولا
+ * المؤسسة كلِّها لا في الفوج — لأنّ المقصود إدخالُ من ليس فيه. **ولا
+ * يُقيَّد بالسنة الدراسية**: قيدُها في الخادم يعني «له تسجيلٌ فيها»،
+ * وهذه الشاشةُ تُنشئ التسجيلَ الأوّل — فكان يُخفي المستورَد حديثاً
+ * ومن سُجّل للتوّ. ولا
  * يُسنَد إلّا بعد اختيارٍ صريحٍ من القائمة: زرُّ الإسناد يبقى مقفلاً
  * حتّى يُنتقى طالبٌ بعينه، فلا يُسنَد شبيهُ الاسم.
  */
 function AssignDialog({
   assignment,
-  yearId,
   enrolled,
   onClose,
   onAssign,
 }: {
   assignment: Assignment;
-  yearId: string;
   enrolled: Enrollment[];
   onClose: () => void;
   onAssign: (student: Student) => Promise<void>;
@@ -735,7 +735,18 @@ function AssignDialog({
               if (!text.trim()) setPicked(null);
             }}
             onPick={pick}
-            scope={{ academicYearId: yearId, isActive: true }}
+            /*
+             * **بلا `academicYearId` عمداً.**
+             *
+             * الخادمُ يترجمه إلى «له تسجيلٌ في هذه السنة»، وهذه
+             * الشاشةُ تُنشئ التسجيلَ الأوّل. فكان النطاقُ يُخفي بالضبط
+             * من جئنا نُسنده: طالبٌ سُجّل للتوّ أو استُورد من ملفّ
+             * موادُّه صفر، فلا يظهر في البحث أبداً.
+             *
+             * والطالبُ لا ينتمي إلى سنةٍ أصلاً — التسجيلُ هو الذي
+             * ينتمي. فالمرشِّحُ الصحيح هنا `isActive` وحده.
+             */
+            scope={{ isActive: true }}
             placeholder="اكتب حرفاً أو حرفين من الاسم أو اللقب…"
             accent={ACCENT}
           />
@@ -753,7 +764,8 @@ function AssignDialog({
               if (!text.trim()) setPicked(null);
             }}
             onPick={pick}
-            scope={{ academicYearId: yearId, isActive: true }}
+            /* كسابقتها — البحثُ بالرقم يجب أن يجد المستورَد حديثاً */
+            scope={{ isActive: true }}
             placeholder="2026000…"
             accent={ACCENT}
           />

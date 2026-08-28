@@ -5,6 +5,7 @@ const client_1 = require("../../core/prisma/client");
 const app_errors_1 = require("../../core/errors/app.errors");
 const error_code_enum_1 = require("../../core/enums/error-code.enum");
 const api_response_1 = require("../../core/config/api-response");
+const text_match_1 = require("../../core/search/text-match");
 const levelSelect = {
     id: true,
     educationStageId: true,
@@ -66,12 +67,16 @@ const nextSortOrder = async (educationStageId) => {
 // --------------------------------------------------
 const listLevelsService = async (query) => {
     const { skip, take, page, limit } = (0, api_response_1.getPagination)(query.page, query.limit);
+    /* مطابقةٌ بترتيبٍ صريح — انظر `core/search/text-match` */
+    const searchIds = query.search
+        ? await (0, text_match_1.matchTextIds)("Level", [(0, text_match_1.containsOn)(["name"], query.search)])
+        : null;
     const where = {
         ...(query.isActive !== undefined && { isActive: query.isActive }),
         ...(query.educationStageId && {
             educationStageId: query.educationStageId,
         }),
-        ...(query.search && { name: { contains: query.search } }),
+        ...(searchIds && { id: { in: searchIds } }),
     };
     const [levels, total] = await Promise.all([
         client_1.prisma.level.findMany({

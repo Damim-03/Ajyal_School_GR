@@ -11,6 +11,7 @@ import {
   UpdateStudyGroupInput,
   StudyGroupQueryInput,
 } from "./study-group.schema";
+import { containsOn, matchTextIds } from "../../core/search/text-match";
 
 const studyGroupSelect = {
   id: true,
@@ -90,11 +91,16 @@ const ensureUniqueName = async (
 export const listStudyGroupsService = async (query: StudyGroupQueryInput) => {
   const { skip, take, page, limit } = getPagination(query.page, query.limit);
 
+  /* مطابقةٌ بترتيبٍ صريح — انظر `core/search/text-match` */
+  const searchIds = query.search
+    ? await matchTextIds("StudyGroup", [containsOn(["name"], query.search)])
+    : null;
+
   const where: Prisma.StudyGroupWhereInput = {
     ...(query.isActive !== undefined && { isActive: query.isActive }),
     ...(query.levelId && { levelId: query.levelId }),
     ...(query.type && { type: query.type }),
-    ...(query.search && { name: { contains: query.search } }),
+    ...(searchIds && { id: { in: searchIds } }),
   };
 
   const [studyGroups, total] = await Promise.all([

@@ -9,6 +9,7 @@ const client_1 = require("../../core/prisma/client");
 const app_errors_1 = require("../../core/errors/app.errors");
 const error_code_enum_1 = require("../../core/enums/error-code.enum");
 const api_response_1 = require("../../core/config/api-response");
+const text_match_1 = require("../../core/search/text-match");
 // كلمة المرور لا تُختار أبداً — لا تخرج من هذه الطبقة
 const userSelect = {
     id: true,
@@ -94,17 +95,18 @@ const ensureNotLastActiveAdmin = async (userId, action) => {
 // --------------------------------------------------
 const listUsersService = async (query) => {
     const { skip, take, page, limit } = (0, api_response_1.getPagination)(query.page, query.limit);
+    /* مطابقةٌ بترتيبٍ صريح — انظر `core/search/text-match` — والاسمُ في حقلين فيُقسَّم كلماتٍ */
+    const searchIds = query.search
+        ? await (0, text_match_1.matchTextIds)("User", (0, text_match_1.words)(query.search).length > 1
+            ? (0, text_match_1.words)(query.search).map((token) => (0, text_match_1.containsOn)(["firstName", "lastName"], token))
+            : [
+                (0, text_match_1.containsOn)(["username", "firstName", "lastName", "email"], query.search),
+            ])
+        : null;
     const where = {
         ...(query.isActive !== undefined && { isActive: query.isActive }),
         ...(query.roleId && { roleId: query.roleId }),
-        ...(query.search && {
-            OR: [
-                { username: { contains: query.search } },
-                { firstName: { contains: query.search } },
-                { lastName: { contains: query.search } },
-                { email: { contains: query.search } },
-            ],
-        }),
+        ...(searchIds && { id: { in: searchIds } }),
     };
     const [users, total] = await Promise.all([
         client_1.prisma.user.findMany({
